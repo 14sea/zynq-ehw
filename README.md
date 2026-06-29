@@ -27,6 +27,9 @@ untouched.
   champion genome through the register-loaded VRC array and publishes mailbox
   score tags. True host-sent genomes still need a PS→PL command path because the
   copied DFX top does not pin out NEORV32 `uart0`.
+- **EHW-0.3 bridge started** — `sw/ehw/ehw_ga_mbox.c` runs the deterministic GA
+  resident on NEORV32 and publishes progress/champion tags; its host stub is
+  byte-exact to the Python oracle.
 
 ## Layout
 
@@ -39,11 +42,13 @@ untouched.
 - `docs/hw_notes.md` — board facts used as codegen constraints: mailbox addresses,
   fixed-point conventions, VRC register map, ICAP/PCAP handoff, settle/build
   variance notes.
+- `docs/board_results.md` — exact board observations and mailbox words for each
+  hardware gate.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and
   `ga_eval.c` for EHW-0.1, plus `ehw_eval_mbox.c` for the EHW-0.2 VRC/mailbox
-  bridge.
+  bridge and `ehw_ga_mbox.c` for the EHW-0.3 board-resident GA bridge.
 - `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
 - `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
   bit-exact CSV curves plus the M7.5.3 golden bitmap guard.

@@ -25,6 +25,21 @@ def decode(word: int) -> str:
         return f"SCORE: correct={correct}/40 sse_low16={sse_lo}"
     if tag == 0xE3:
         return f"FITNESS: low24=0x{word & 0xFFFFFF:06x}"
+    if 0xD0 <= tag <= 0xD7:
+        i = tag - 0xD0
+        vals = [(word >> 16) & 0xFF, (word >> 8) & 0xFF, word & 0xFF]
+        signed = [v - 256 if v >= 128 else v for v in vals]
+        return f"GENOME[{i * 3:02d}..{i * 3 + 2:02d}]: {signed[0]} {signed[1]} {signed[2]}"
+    if word == 0xE8000000:
+        return "GA_BOOT: board-resident GA reached main"
+    if tag == 0xE9:
+        return f"GA_GEN: gen={(word >> 8) & 0xFF} correct={word & 0xFF}/40"
+    if tag == 0xEA:
+        return f"GA_SSE: low24={word & 0xFFFFFF}"
+    if tag == 0xEB:
+        return f"GA_FITNESS: low24=0x{word & 0xFFFFFF:06x}"
+    if tag == 0xEC:
+        return f"GA_DONE: correct={word & 0xFF}/40"
     return f"UNKNOWN: 0x{word:08x}"
 
 

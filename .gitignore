@@ -25,3 +25,8 @@ m65_icap/
 
 # OS
 .DS_Store
+
+# Copied build plumbing — generated/upstream, not tracked
+rtl_src/
+sw_src/
+vivado/dfx/build/

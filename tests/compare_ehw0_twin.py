@@ -39,12 +39,17 @@ def main() -> int:
     out_dir = ROOT / "runs" / "tests"
     out_dir.mkdir(parents=True, exist_ok=True)
     exe = out_dir / "ehw_ga_eval"
+    mbox_exe = out_dir / "ehw_ga_mbox"
     py_csv = out_dir / "ehw0_python.csv"
     c_csv = out_dir / "ehw0_c.csv"
+    mbox_csv = out_dir / "ehw0_ga_mbox.csv"
 
     check_python_golden()
     run([args.cc, "-std=c99", "-Wall", "-Wextra", "-O2", "-o", str(exe), "sw/ehw/ga_eval.c"])
     run([str(exe), "--check-golden"])
+    run([args.cc, "-std=c99", "-Wall", "-Wextra", "-DEHW_HOST_STUB", "-I", "sw/ehw",
+         f"-DEHW_GA_POP={args.population}", f"-DEHW_GA_GENS={args.generations}",
+         "-o", str(mbox_exe), "sw/ehw/ehw_ga_mbox.c"])
     common = [
         "--rng", "xorshift",
         "--generations", str(args.generations),
@@ -53,16 +58,21 @@ def main() -> int:
     ]
     run([sys.executable, "sim/oracle_evolve.py", *common, "--csv", str(py_csv)])
     run([str(exe), *common, "--csv", str(c_csv)])
+    run([str(mbox_exe), str(mbox_csv)])
 
     py_data = py_csv.read_bytes()
     c_data = c_csv.read_bytes()
     if py_data != c_data:
         print(f"FAIL: CSV mismatch: {py_csv} != {c_csv}", file=sys.stderr)
         return 1
+    mbox_data = mbox_csv.read_bytes()
+    if py_data != mbox_data:
+        print(f"FAIL: GA mailbox stub mismatch: {py_csv} != {mbox_csv}", file=sys.stderr)
+        return 1
 
     lines = py_csv.read_text().splitlines()
     last = lines[-1] if len(lines) > 1 else "<empty>"
-    print(f"PASS: Python oracle and C twin are bit-exact ({len(lines) - 1} generations logged)")
+    print(f"PASS: Python oracle, C twin, and GA mailbox stub are bit-exact ({len(lines) - 1} generations logged)")
     print(f"last: {last}")
     return 0
 

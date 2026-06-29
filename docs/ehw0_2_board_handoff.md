@@ -35,3 +35,14 @@ Next decision for true host-in-loop EHW-0.2:
 
 The second option is likely simpler and closer to EHW-0.3, because it avoids a
 new bidirectional mailbox before the core evaluator has been proven on silicon.
+
+## EHW-0.3 Bridge Added
+
+`sw/ehw/ehw_ga_mbox.c` takes the second route: the GA runs resident on NEORV32 and
+the PS watches progress/champion mailbox words. Its host stub is checked against
+the Python oracle by `tests/compare_ehw0_twin.py`, so the board gate becomes:
+
+1. build the firmware into the static/NEORV32 image;
+2. `fpga loadb` the resulting bitstream;
+3. poll `md 0x41200000 1` or run `host/ehw_watch.py`;
+4. confirm the generation curve reaches the same champion as the host model.

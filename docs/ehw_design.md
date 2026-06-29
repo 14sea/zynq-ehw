@@ -193,7 +193,7 @@ and the loop is provably live, not hung.
 | **EHW-0.0** | `oracle_evolve.py` GA evolves 4-4-2 weights to target acc (host only) | — | ✅ host acc curve |
 | **EHW-0.1** | C twin GA bit-exact to oracle (shared kernel, host-seeded xorshift) | host | ✅ mism=0 via `tests/compare_ehw0_twin.py` |
 | **EHW-0.2** | board: NEORV32 evaluates genomes on VRC array; fitness bit-exact | VRC | bridge started: compiled champion evaluator in `sw/ehw/ehw_eval_mbox.c`; true host-in-loop awaits PS→PL command path |
-| **EHW-0.3** | board-resident GA on NEORV32; full evolution curve via mailbox, bit-exact | VRC, on-board GA | curve == oracle |
+| **EHW-0.3** | board-resident GA on NEORV32; full evolution curve via mailbox, bit-exact | VRC, on-board GA | host-stub curve == oracle via `tests/compare_ehw0_twin.py`; board run pending |
 | **EHW-0.4** | **evolution-vs-training** table (GA champion vs M7 SGD, same net) | VRC | comparison written |
 | **EHW-0.5** | ICAP-bake GA champion into `lutkcm` tile, classify live, attest | ICAP reveal | board == champion |
 | **EHW-1.0** | numpy CGP GA evolves 2-bit multiplier (truth-table fitness) | — | 16/16 rows |

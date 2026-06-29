@@ -76,6 +76,26 @@ Default compiled champion expected by the host stub:
 - SSE: `4799`
 - fitness: `39995201`
 
+## EHW-0.3 Board-Resident GA Mailbox Tags
+
+`sw/ehw/ehw_ga_mbox.c` runs the deterministic GA on NEORV32 and publishes:
+
+- `0xE8000000`: board-resident GA firmware reached `main`.
+- `0xE900ggcc`: generation progress; `gg` is generation low 8 bits, `cc` is best
+  correct count.
+- `0xEAssssss`: current best SSE low 24 bits.
+- `0xEBffffff`: current best fitness low 24 bits.
+- `0xEC0000cc`: GA done; `cc` is final correct count.
+- `0xD0aabbcc` .. `0xD7aabbcc`: final 24-byte champion genome, three signed
+  INT8 bytes per mailbox word.
+
+Host gate:
+
+- `tests/compare_ehw0_twin.py` compiles `ehw_ga_mbox.c` with `EHW_HOST_STUB` and
+  compares its CSV curve byte-for-byte against `sim/oracle_evolve.py`.
+- Default board parameters are `seed=3`, `population=32`, `generations=64`; this
+  reaches `40/40` by generation 1 in the current oracle.
+
 ## 4x4 VRC Array Register Map
 
 The register-loaded VRC path uses `tpu_accel.v` from the copied `zynq_xpart`
@@ -199,4 +219,6 @@ options are:
   progress, score, and champion reporting.
 
 Until that is decided, `sw/ehw/ehw_eval_mbox.c` is the board bridge: it evaluates
-a compiled champion genome on the VRC array and publishes mailbox results.
+a compiled champion genome on the VRC array and publishes mailbox results. The
+next bridge, `sw/ehw/ehw_ga_mbox.c`, runs the GA on-board and uses the mailbox for
+progress/champion reporting, avoiding a PS-to-PL genome stream for now.
