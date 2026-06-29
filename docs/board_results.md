@@ -121,3 +121,38 @@ to a perfect solution, champion bit-identical to the host oracle.
   0xF1000000 — `docs/hw_notes.md`). The **host gate did NOT catch this** (host stub
   uses `MBOX_STUB`), only the board did → board run is the final gate for
   board-specific addresses. Fixed → rebuilt → PASS.
+
+---
+
+## EHW-0.5 ICAP champion-bake reveal — PASS (2026-06-29)
+
+**"The chip wrote its evolved weights into its own LUT logic, live."** The EHW-0.3
+board-evolved champion's W1 tile (16 INT8 weights) was ICAP-baked into the LUT-KCM
+fabric, PS/NEORV32 never reset, mailbox bit-exact to the VPU model.
+
+- Setup: built static + `rm_lutkcm` in zynq_ehw (`build_lutkcm.tcl`, impl_7), firmware
+  `sw/ehw/lutkcm_post.c` (= zynq_xpart `tpu_vpu_firmware`: drives lutkcm tile + VPU
+  bias→leaky→requant, publishes POST). **VPU leaky here is `z-(z>>>α)`** (NOT the
+  m753 `z>>k`) — so this is a *mechanism* reveal (evolved weights live in LUT logic,
+  output bit-exact to the VPU model), not the same classifier accuracy.
+- Champion W1 tile (champion[0:16] as 4×4): `[[3,-1,-3,-2],[13,13,21,18],
+  [-7,-3,-7,0],[4,0,2,-35]]`. VPU-model golden POST = `[-14,127,-81,-128]` →
+  mailbox **0x80AF7FF2**.
+- Frame gen (reusing M7.5.1 tooling, outputs to `vivado/dfx/m65_icap/`, gitignored):
+  `m753_edit_tile.tcl` baked the 16 weights into the routed impl_7 dcp → champion
+  partial; prjxray `bitread -y` diff (57 set + 10 clr bits) → `m75-build-frameseqs.py`
+  → **20 per-frame ICAP write sequences**, all 20 self-checked vs prjxray.
+- Board flow: `fpga loadb` lutkcm → baseline **0x1019391F** (matches VPU golden) →
+  `PCAP_PR=0` (`mw 0xF8007000 0x4400e07f`) → attest `readreg 12 = 0x13722093` →
+  20× `hwicap-uart.py writeseq` → mailbox **0x1019391F → 0x80AF7FF2** (3× stable,
+  bit-exact) → re-attest `0x13722093` → `PCAP_PR=1` restored.
+
+### Gotcha caught on silicon (worth keeping)
+- First bake loop ran in the foreground and was **killed by the 2-min tool timeout
+  mid-`writeseq`** → left the ICAP config FSM mid-frame; subsequent `readreg`
+  returned garbage (`0xffffffdb`) and re-baking on top did NOT recover (mailbox stuck
+  at a mixed `0x157f1cee`). The board stayed responsive (mailbox + NEORV32 alive — NOT
+  a DEVCFG wedge). **Recovery: full `fpga loadb` reload** (resets ICAP + tile to
+  baseline) → re-attest clean `0x13722093` → bake all 20 **uninterrupted in the
+  background** → PASS. **Lesson: never run the multi-frame ICAP bake in a foreground
+  tool call (timeout kills it mid-transfer and corrupts ICAP); always background it.**
