@@ -91,3 +91,33 @@ Result:
   - The 4×4 VRC array (`tpu_accel`) computes correctly on silicon: SSE + genome
     match the host model exactly → the register-map driver in `ehw_ga_mbox.c` is
     hardware-verified. The 300000-count settle was sufficient for `rm1_tpu`.
+
+---
+
+## EHW-1.1 board-resident CGP GA (2-bit multiplier) — PASS (2026-06-29)
+
+**On-chip evolution of a logic circuit on real silicon.** Board-resident CGP GA on
+NEORV32 evolved a 2-bit unsigned multiplier (fixed-routing LUT grid, `cgp_kernel.h`)
+to a perfect solution, champion bit-identical to the host oracle.
+
+- Firmware: `sw/ehw/cgp_ga_mbox.c` (Claude-authored for board; GA helpers + loop
+  COPIED VERBATIM from ChatGPT's `cgp_eval.c` for bit-exactness). `.text` 1780 B.
+  Software LUT-grid eval (does NOT use the fabric array) — so this is on-chip
+  *evolution of a logic circuit*, not yet a fabric-LUT substrate (that = `cgp_vrc.v`,
+  a later rung).
+- Bitstream: same static+`rm1_tpu` build, new IMEM (timing met WNS +7.574).
+- **Pre-board host gate (PASS):** `cc -DCGP_HOST_STUB ... cgp_ga_mbox.c` champion ==
+  `cgp_eval.c`/`oracle_cgp.py` champion, bit-exact.
+- Observed mailbox (`0xCC`/`0xCA`/`0xB0..0xBB`):
+  - `0xcc000010` — DONE rows = 16/16
+  - `0xca000040` — fitness 64/64
+  - champion genome (b0..bb): `aaaa cccc f0f0 ff00 aaaa cccc f0f0 ff00 a0a0 6ac0
+    4c00 8000` — **bit-identical to host** (12/12 words), 12 active nodes.
+
+### Gotcha caught on silicon (worth keeping)
+- First board attempt: mailbox stuck at `0x00000000` — firmware wasn't writing. Root
+  cause = I wrote the firmware-side `MBOX` to the **PS** address `0x41200000` instead
+  of the **PL** mailbox input `0xF1000000` (PS *reads* 0x41200000; firmware *writes*
+  0xF1000000 — `docs/hw_notes.md`). The **host gate did NOT catch this** (host stub
+  uses `MBOX_STUB`), only the board did → board run is the final gate for
+  board-specific addresses. Fixed → rebuilt → PASS.
