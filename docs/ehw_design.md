@@ -240,3 +240,84 @@ clean evolution-vs-training narrative on the exact M7 net), then **EHW-1.0 → 1
 once `xbus_icap` throughput is characterised. Start next session by extending
 `sim/oracle_*.py` into `oracle_evolve.py` and getting the host GA bit-exact before
 any board work — same opening move that made every M7 milestone land.
+
+## 11. Related work & positioning (vs CoBEA and Whitley et al.)
+
+Two recent works revived direct-bitstream intrinsic EHW on a *modern* part (Lattice
+iCE40, open IceStorm toolchain). Both PDFs are in `ref/`. This section pins down how
+our design relates to them — and, by contrast, justifies our three core decisions.
+
+- **CoBEA** — Hoffmann, Fritzsch, Bogdan, *GECCO '22 Companion*
+  ([doi:10.1145/3520304.3528821](https://doi.org/10.1145/3520304.3528821)). A Python
+  framework for EHW by **direct bitstream manipulation**; its headline result is a
+  **130× faster reconfiguration** (integrated direct-reconfig + bitstream compaction
+  vs IceStorm+flash; single reconfig ~3.5 s → ~86 ms). Philosophically it **rejects
+  VRC and DPR** as "safe abstractions [that] neglect the huge potential for solutions
+  outside their abstraction model." Future work it names explicitly: *"support Xilinx
+  7-Series … they support dynamic partial reconfiguration … update only parts of the
+  chip"* and security (bind a design to one device).
+- **Whitley, Yoder, Carpenter** — *"Resurrecting FPGA Intrinsic Analog Evolvable
+  Hardware," ISAL 2021* ([doi:10.1162/isal_a_00448](https://doi.org/10.1162/isal_a_00448)).
+  Intrinsic **analog** EHW: evolves **unclocked** circuits that exploit device physics
+  (Thompson redux). Genome = CLB bitstream (864 b/CLB, 96 CLBs); to tame the space and
+  contention they constrain **routing** (8-neighbour Moore, ≤2 inputs, one Boolean op
+  per CLB). GA pop 50 / 100 gens, ~3.5 s/eval, MCU does 12-bit ADC of the analog
+  output for fitness. Tasks: amplitude maximisation, pulse oscillation. Key finding:
+  evolved circuits are **device-entwined** — dead on 2 of 3 other same-model FPGAs,
+  temperature-coupled.
+
+### Per-axis comparison
+
+| Axis | Whitley (ISAL'21) | CoBEA (GECCO'22) | **This project** |
+|---|---|---|---|
+| FPGA part | Lattice iCE40 HX1K | iCE40 HX1K/HX8K | **Xilinx 7-series XC7Z010** (prjxray) — CoBEA's named future work |
+| Reconfig mechanism | host→flash/SRAM, whole chip | integrated direct reconfig + compaction, whole chip (no DPR on iCE40) | **(a) VRC: register-loaded, no bitstream write/eval; (b) on-chip ICAP/DPR self-reconfig** under a running soft-core |
+| Cost / eval | ~3.5 s | ~86 ms | **VRC ~µs–ms; ICAP paid once (champion only)** |
+| Genome / what's mutated | constrained **routing** + Boolean op | raw bitstream (philosophically unconstrained) | **LUT-INIT / register config only — routing never evolved** |
+| Intrinsic? | yes, **exploits analog physics** | yes | yes (real silicon) but **digital, clocked, physics-exploitation scoped out** |
+| Controller arch. | host CPU + external MCU + passive FPGA | host-driven | **GA/eval on-chip** (NEORV32 + PS + mailbox): chip = controller + substrate + measurement |
+| Cross-chip transfer | **no** (2/3 dead) — the physics proof | n/a | **yes / deterministic**, bit-exact to a numpy oracle |
+| Safety / attestation | none | future work | **already have** measured-boot (M5) + ICAP-readback attest |
+| Application | analog oscillators/discriminators | framework + reconfig speed + security | **ML: evolve NN weights, evolution-vs-gradient-training**; + CGP logic circuit |
+
+### Three readings that justify our decisions
+
+1. **We deliberately take the road CoBEA criticises — and that is the right call on
+   7-series.** CoBEA's thesis is that VRC/DPR abstractions throw away reachable
+   solutions; our entire EHW-0 line is VRC + LUT-INIT-only. The justification is the
+   substrate: on 7-series, unconstrained routing edits risk **net contention / device
+   damage** (the literature's own repeated warning). iCE40's bitstream is fully
+   documented and less catastrophic to poke; 7-series is not. We trade Thompson-style
+   "reach outside the abstraction" for **structural safety + determinism**. This is a
+   genuine values fork, stated openly — not a claim of superiority.
+2. **On mechanism we are strictly ahead of both — and it is exactly CoBEA's wish
+   list.** CoBEA's future work is "7-series + DPR, reconfigure only part of the chip";
+   that is our *starting point*, already HW-verified (M7.3+/M7.5). Both papers use a
+   three-box rig (host GA + external MCU + passive FPGA); we **self-reconfigure**
+   (on-chip ICAP under a live NEORV32, fitness via on-chip mailbox). In the strong
+   sense of "intrinsic," our loop is more self-contained.
+3. **The M7.2 gremlin is the very thing Whitley prizes — we just invert the stance.**
+   Whitley's headline is circuits "entwined with physics" that die on a different
+   die. Our **M7.2 build-dependent in-context-routing** (placement changes → STA-clean
+   but functionally wrong array) is an *uninvited* dose of the same effect. They treat
+   such physical coupling as the **feature to exploit**; we documented it as a **bug**
+   and route around it with VRC (single fixed bitstream → deterministic, immune). Same
+   phenomenon, opposite worldview — worth remembering if we ever want a "Thompson
+   mode" demo: M7.2 says this part *will* give us device-entwined behaviour for free.
+
+### Honest maturity caveat
+
+Both papers are peer-reviewed and show **real evolved circuits on silicon** (loss/
+fitness curves, cross-chip and temperature robustness data). We currently have the
+**substrate + this design**: the M7.5 ICAP/VRC/mailbox primitives are HW-verified,
+but the EHW search loop is **not built and has evolved nothing yet**. Our claim is
+feasibility + blueprint, not a demonstrated evolution run. EHW-0.0→0.3 is what closes
+that gap.
+
+### One-line positioning
+
+We are not reproducing these papers: we move direct-bitstream/intrinsic EHW onto the
+**7-series part they named but did not target**, make it **self-reconfiguring**, and
+swap **physics-exploitation for LUT-INIT/VRC safety + an ML application** (evolution
+vs gradient training). Our EHW-2 stretch (on-chip ICAPE2 per-eval LUT-INIT edits) is
+the closest point of contact — still LUT-INIT-only and self-hosted, on harder silicon.
