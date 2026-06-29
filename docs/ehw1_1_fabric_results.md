@@ -1,4 +1,4 @@
-# EHW-1.1-fabric Host Gate — CGP VRC
+# EHW-1.1-fabric Results — CGP VRC
 
 Generated / verified by:
 
@@ -41,4 +41,22 @@ Register map:
 aaaa cccc f0f0 ff00 aaaa cccc f0f0 ff00 a0a0 6ac0 4c00 8000
 ```
 
-Current status: host gate passed; board build/run pending.
+Host gate passed; board result below confirms the same champion on real fabric.
+
+## Board Result
+
+Status: **PASS — HW-VERIFIED on EBAZ4205 (2026-06-29)**.
+
+- Build: static + `rm_cgp_vrc` via `vivado/dfx/build_cgp_vrc.tcl` (`cfg10`/`impl_10`).
+- Firmware: `sw/ehw/cgp_vrc_mbox.c`.
+- Fitness path: NEORV32 writes all 12 INIT registers, drives the 16 truth-table inputs,
+  and reads `OUTPUT` from the fabric CGP VRC over MMIO.
+- Observed mailbox:
+  - `0xdc000010`: DONE, `16/16` truth-table rows.
+  - `0xda000040`: `64/64` fitness bits.
+  - `0xA0..0xAB`: champion genome
+    `aaaa cccc f0f0 ff00 aaaa cccc f0f0 ff00 a0a0 6ac0 4c00 8000`.
+
+Vivado synth gotcha: no-input Verilog functions passed `iverilog` but failed Vivado
+`[Synth 8-10738]`; `rtl/cgp_vrc.v` now gives those functions a dummy input. Future
+RTL gates should add a quick OOC `synth_design` check before full DFX build.

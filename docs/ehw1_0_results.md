@@ -65,5 +65,6 @@ a b | p  gold
 - Python GA and C GA CSV curves are byte-for-byte identical.
 - Final row reaches `64/64` bits and `16/16` truth-table rows.
 
-This is host-only. The EHW-1.1 board step still needs `rtl/cgp_vrc.v` and a
-board-side evaluator.
+This host oracle has since been board-verified in two forms: EHW-1.1-sw
+(`sw/ehw/cgp_ga_mbox.c`, software LUT-grid eval on NEORV32) and EHW-1.1-fabric
+(`rtl/cgp_vrc.v`, real config-loaded fabric LUTs). See `docs/board_results.md`.

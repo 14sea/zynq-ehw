@@ -39,13 +39,15 @@ untouched.
 - **EHW-1.1 HW-VERIFIED on EBAZ4205 (software-eval)** — `sw/ehw/cgp_ga_mbox.c` runs
   the CGP GA resident on NEORV32 → 2-bit multiplier 16/16, champion bit-identical to
   host. ⚠️ **This evaluates the LUT grid in NEORV32 *software*, not in a fabric VRC
-  substrate.** The fabric-CGP version (`rtl/cgp_vrc.v`, the grid as real config-loaded
-  LUTs) is the NEXT milestone — see `docs/next_handoff.md`.
+  substrate.** The fabric-CGP version is EHW-1.1-fabric below.
 - **EHW-1.1-fabric HW-VERIFIED on EBAZ4205** — `rtl/cgp_vrc.v` implements the CGP grid
   as real config-loaded fabric LUTs behind an XBUS register map; the board-resident GA
   evaluated fitness **on the fabric VRC** (MMIO drive) and evolved the 2-bit multiplier
   to 16/16 rows, champion bit-identical to host (`docs/board_results.md`). This is the
   true fabric substrate — the evolved circuit *is* hardware, vs EHW-1.1-sw's software eval.
+- **EHW-1.2 host prep done** — `rtl/cgp_baked.v` hardwires the evolved CGP multiplier
+  as LUT4 INITs; baseline→champion ICAP reveal flow is staged via
+  `vivado/dfx/build_cgp_baked.tcl` and `vivado/dfx/cgp_baked_edit_champ.tcl`.
 
 ## Layout
 
@@ -62,7 +64,8 @@ untouched.
   hardware gate.
 - `docs/ehw0_4_results.md` — evolution-vs-gradient-training table for EHW-0.
 - `docs/ehw1_0_results.md` — host-only CGP 2-bit multiplier result.
-- `docs/ehw1_1_fabric_results.md` — host gate for the fabric CGP VRC substrate.
+- `docs/ehw1_1_fabric_results.md` — host + board result for the fabric CGP VRC substrate.
+- `docs/ehw1_2_results.md` — host prep for ICAP-baking the evolved CGP multiplier.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
@@ -70,13 +73,14 @@ untouched.
 - `rtl/cgp_vrc.v` — EHW-1.1-fabric register-configured CGP VRC core and XBUS wrapper.
 - `rtl/dfx/tpu_rp_rm_cgp_vrc.v` — DFX RM wrapper exposing the CGP VRC in the existing
   `0xF0000000` NEORV32 peripheral window.
+- `rtl/cgp_baked.v` — EHW-1.2 hardwired LUT4 CGP grid for ICAP INIT edits.
 - `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and
   `ga_eval.c` for EHW-0.1, plus `ehw_eval_mbox.c` for the EHW-0.2 VRC/mailbox
   bridge, `ehw_ga_mbox.c` for the EHW-0.3 board-resident GA bridge, and
   `cgp_kernel.h`/`cgp_eval.c` for the EHW-1.0 CGP twin, `cgp_ga_mbox.c` for the
   EHW-1.1-sw board-resident software-eval CGP GA, `cgp_vrc_mbox.c` for the
-  EHW-1.1-fabric board-resident fabric-eval CGP GA, and `lutkcm_post.c` for the
-  EHW-0.5 ICAP-bake POST.
+  EHW-1.1-fabric board-resident fabric-eval CGP GA, `cgp_baked_post.c` for the
+  EHW-1.2 baked-CGP POST, and `lutkcm_post.c` for the EHW-0.5 ICAP-bake POST.
 - `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
 - `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
   bit-exact CSV curves plus the M7.5.3 golden bitmap guard.
@@ -84,6 +88,8 @@ untouched.
   bit-exact CGP curves.
 - `tests/compare_cgp_vrc.py` — builds/runs the CGP VRC RTL host gate and firmware
   host stub.
+- `tests/compare_cgp_baked.py` — builds/runs the baked-CGP RTL/firmware host gate
+  and optional Vivado OOC synth check.
 - `external/` — local snapshots of selected reference files copied from
   `/home/test/zynq_xpart` and `/home/test/zynq_agentctl`. These make this project
   independent; edit only the copies here, never the source projects. Also includes

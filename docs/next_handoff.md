@@ -1,14 +1,16 @@
 # Next-milestone handoff (Claude → ChatGPT)
 
-Status (2026-06-29): **EHW-0.3, EHW-0.4, EHW-1.0, EHW-1.1-sw, EHW-0.5 all done**
-(board runs in `docs/board_results.md`; pushed to github.com/14sea/zynq-ehw). Board-
-verified on EBAZ4205: EHW-0.3 (GA classifier 40/40), EHW-1.1-sw (CGP 2-bit multiplier
-16/16, **software** LUT-grid eval), EHW-0.5 (ICAP-bake evolved champion into LUT-KCM
-fabric → `0x80AF7FF2`). P1/P2/P3 below are all COMPLETE.
+Status (2026-06-29): **EHW-0.3, EHW-0.4, EHW-1.0, EHW-1.1-sw, EHW-1.1-fabric,
+EHW-0.5 all done; EHW-1.2 host prep done** (board runs in `docs/board_results.md`;
+pushed to github.com/14sea/zynq-ehw). Board-verified on EBAZ4205: EHW-0.3 (GA
+classifier 40/40), EHW-1.1-sw (CGP 2-bit multiplier 16/16, **software** LUT-grid
+eval), EHW-1.1-fabric (CGP multiplier 16/16 on true fabric VRC), EHW-0.5
+(ICAP-bake evolved champion into LUT-KCM fabric → `0x80AF7FF2`). P1/P2/P3/P4
+below are COMPLETE; P5 is host-prepped and awaiting board ICAP run.
 
-**▶ Next real target = EHW-1.1-fabric board build/run (P4 below)** — promote EHW-1.1
-from software-eval to a true fabric VRC (the CGP grid as config-loaded LUTs). Host
-prep is done; build + board verification are still pending.
+**▶ Next real target = EHW-1.2 (P5 below)** — EHW-1.1-fabric is now HW-VERIFIED:
+the CGP grid is a true config-loaded fabric VRC, and the board-resident GA reaches
+16/16 rows with a host-identical champion.
 
 Priorities are ordered so you can deliver each fully **host-side with a self-proof**
 (per `docs/workflow.md` rule 1); I'll handle the board steps.
@@ -83,10 +85,29 @@ champion bit-identical to host (`docs/board_results.md`). Synth-compat fix to
 - **Firmware:** a board CGP GA like `cgp_ga_mbox.c` but the fitness eval drives the
   `cgp_vrc` registers (config + apply inputs + read outputs) instead of `cgp_eval_grid`
   software. Same GA (keep bit-exact to `cgp_eval.c`).
-- **Host gate first:** a Verilog testbench (or a host model of the register protocol)
-  proving the grid computes the truth table for a known genome, **before** the board
-  build. Then I build (new RM or reuse the tpu_rp partition) + board-verify TT 16/16.
+- **Host + board gates:** `tests/compare_cgp_vrc.py` proves the register protocol
+  host-side; board run proves TT 16/16 on the fabric substrate.
 - Watch the M7.2 build-lottery (new fabric logic in the RP); keep the grid small.
+
+## P5 — EHW-1.2: ICAP-bake evolved multiplier LUT-INITs (HOST PREP DONE; BOARD PENDING)
+
+Bake the EHW-1.1-fabric champion LUT INITs into a hardwired/baked LUT variant and
+show the multiplier running live after ICAP update, mirroring the EHW-0.5 champion
+reveal but for the CGP logic circuit.
+
+- Reuse the proven P4 champion genome:
+  `aaaa cccc f0f0 ff00 aaaa cccc f0f0 ff00 a0a0 6ac0 4c00 8000`.
+- Add a host gate that predicts the baked multiplier truth table exactly before
+  any board run.
+- Include a quick Vivado OOC `synth_design` check for new RTL; `iverilog` alone
+  missed the no-input-function incompatibility in P4.
+
+Status: host prep complete in `rtl/cgp_baked.v`,
+`rtl/dfx/tpu_rp_rm_cgp_baked_base.v`,
+`rtl/dfx/tpu_rp_rm_cgp_baked_champ.v`, `sw/ehw/cgp_baked_post.c`,
+`tests/compare_cgp_baked.py`, `vivado/dfx/build_cgp_baked.tcl`, and
+`vivado/dfx/cgp_baked_edit_champ.tcl`. `docs/ehw1_2_results.md` records the
+baseline/champion truth-table expectations and frame-sequence generation flow.
 
 ---
 
@@ -100,5 +121,6 @@ champion bit-identical to host (`docs/board_results.md`). Synth-compat fix to
 - Isolation absolute: edit only `zynq_ehw`; `external/` is read-only reference.
 - Hardware facts go in `docs/hw_notes.md`; I log board runs in `docs/board_results.md`.
 
-Recommended order: P1–P3 DONE; P4 host gate DONE. **Next = build + board-verify
-P4 (`rtl/cgp_vrc.v` fabric CGP VRC)** and record TT 16/16 in `docs/board_results.md`.
+Recommended order: P1–P4 DONE; P5 host prep DONE. **Next = board-run P5 / EHW-1.2
+ICAP-bake the evolved multiplier LUT-INITs** and record the mailbox transition in
+`docs/board_results.md`.
