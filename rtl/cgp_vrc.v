@@ -85,6 +85,7 @@ module cgp_vrc (
     endfunction
 
     function [6:0] fitness_count;
+        input dummy;   // Vivado synth requires >=1 function input (iverilog allows 0)
         reg [3:0] out;
         integer idx;
         integer bitn;
@@ -102,6 +103,7 @@ module cgp_vrc (
     endfunction
 
     function [4:0] rows_count;
+        input dummy;   // Vivado synth requires >=1 function input
         reg [3:0] out;
         integer idx;
         integer bitn;
@@ -123,6 +125,7 @@ module cgp_vrc (
     endfunction
 
     function [4:0] active_count;
+        input dummy;   // Vivado synth requires >=1 function input
         integer node;
         integer count;
         begin
@@ -162,9 +165,9 @@ module cgp_vrc (
                 10'h001: rdata = 32'h0000_0001;
                 10'h002: rdata = {28'd0, input_idx};
                 10'h003: rdata = {28'd0, out_bits};
-                10'h004: rdata = {25'd0, fitness_count()};
-                10'h005: rdata = {27'd0, rows_count()};
-                10'h006: rdata = {27'd0, active_count()};
+                10'h004: rdata = {25'd0, fitness_count(1'b0)};
+                10'h005: rdata = {27'd0, rows_count(1'b0)};
+                10'h006: rdata = {27'd0, active_count(1'b0)};
                 default: rdata = 32'd0;
             endcase
         end

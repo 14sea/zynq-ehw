@@ -41,9 +41,11 @@ untouched.
   host. ⚠️ **This evaluates the LUT grid in NEORV32 *software*, not in a fabric VRC
   substrate.** The fabric-CGP version (`rtl/cgp_vrc.v`, the grid as real config-loaded
   LUTs) is the NEXT milestone — see `docs/next_handoff.md`.
-- **EHW-1.1-fabric host gate done** — `rtl/cgp_vrc.v` implements the CGP grid as
-  real config-loaded fabric LUTs behind an XBUS register map; `tests/compare_cgp_vrc.py`
-  verifies the golden multiplier through RTL simulation and a firmware host stub.
+- **EHW-1.1-fabric HW-VERIFIED on EBAZ4205** — `rtl/cgp_vrc.v` implements the CGP grid
+  as real config-loaded fabric LUTs behind an XBUS register map; the board-resident GA
+  evaluated fitness **on the fabric VRC** (MMIO drive) and evolved the 2-bit multiplier
+  to 16/16 rows, champion bit-identical to host (`docs/board_results.md`). This is the
+  true fabric substrate — the evolved circuit *is* hardware, vs EHW-1.1-sw's software eval.
 
 ## Layout
 

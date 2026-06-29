@@ -156,3 +156,34 @@ fabric, PS/NEORV32 never reset, mailbox bit-exact to the VPU model.
   baseline) → re-attest clean `0x13722093` → bake all 20 **uninterrupted in the
   background** → PASS. **Lesson: never run the multi-frame ICAP bake in a foreground
   tool call (timeout kills it mid-transfer and corrupts ICAP); always background it.**
+
+---
+
+## EHW-1.1-fabric: CGP GA on a real fabric VRC — PASS (2026-06-29)
+
+**On-chip evolution of a logic circuit on a TRUE fabric substrate.** Unlike EHW-1.1-sw
+(software LUT-grid eval), here the fitness is evaluated on `rtl/cgp_vrc.v` — the CGP
+grid as config-loaded LUTs in real FPGA fabric, driven over MMIO. The evolved circuit
+*is* hardware.
+
+- Substrate: `rtl/cgp_vrc.v` (3×4 LUT4 grid, 12 config-loaded INIT regs, fixed
+  column-to-column routing) wrapped as a DFX RM `rtl/dfx/tpu_rp_rm_cgp_vrc.v`
+  (drop-in `tpu_rp`, XBUS window @0xF0000000). Built static+`rm_cgp_vrc` via
+  `vivado/dfx/build_cgp_vrc.tcl` (cfg10/impl_10). Firmware `sw/ehw/cgp_vrc_mbox.c`
+  runs the GA on NEORV32; **fitness eval writes the 12 INITs + applies the 16 inputs
+  + reads the grid outputs over the cgp_vrc registers** (real fabric eval).
+- Mailbox tags: `0xD8` main, `0xD9` gen+rows, `0xDA` fitness, `0xDC` done, `0xA0..0xAB`
+  champion genome.
+- Observed: `0xdc000010` (DONE 16/16 rows), `0xda000040` (64/64 bits), champion genome
+  `aaaa cccc f0f0 ff00 aaaa cccc f0f0 ff00 a0a0 6ac0 4c00 8000` — **bit-identical to the
+  host oracle** (12/12 words). Champion bit-exact to `tests/compare_cgp_vrc.py`.
+
+### Gotcha caught on silicon (worth keeping)
+- `rtl/cgp_vrc.v` passed the iverilog host gate but **failed Vivado synth**: three
+  functions (`fitness_count`/`rows_count`/`active_count`) had **no input** (read
+  module signals) — iverilog allows it, Vivado errors `[Synth 8-10738] function must
+  have at least one input`. Fix = add a dummy `input` + pass `1'b0` (logic-neutral,
+  host gate still 16/16). **Lesson: the iverilog host gate does NOT catch Vivado-synth
+  strictness — add a quick OOC `synth_design` check (~1 min) to the RTL host gate
+  before the full DFX build.** (Same class as the EHW-1.1-sw MBOX-address bug: the
+  host gate has blind spots; the board build/run is the final gate.)

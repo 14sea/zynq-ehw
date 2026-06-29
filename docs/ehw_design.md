@@ -198,7 +198,7 @@ and the loop is provably live, not hung.
 | **EHW-0.5** | ICAP-bake GA champion into `lutkcm` tile, classify live, attest | ICAP reveal | ✅ **HW-VERIFIED** — mailbox `0x1019391F→0x80AF7FF2` bit-exact, attested (`docs/board_results.md`) |
 | **EHW-1.0** | CGP GA evolves 2-bit multiplier (truth-table fitness) | — | ✅ 16/16 rows via `tests/compare_cgp_twin.py` |
 | **EHW-1.1-sw** | board-resident CGP GA on NEORV32, **software** LUT-grid eval | on-board GA, SW eval | ✅ **HW-VERIFIED** — 2-bit multiplier 16/16, champion bit-identical (`sw/ehw/cgp_ga_mbox.c`, `docs/board_results.md`) |
-| **EHW-1.1-fabric** *(NEXT)* | `rtl/cgp_vrc.v` = CGP grid as real config-loaded **fabric LUTs**; board evolves the multiplier on the VRC | VRC (fabric) | ✅ host gate via `tests/compare_cgp_vrc.py`; board TT 16/16 pending |
+| **EHW-1.1-fabric** | `rtl/cgp_vrc.v` = CGP grid as real config-loaded **fabric LUTs**; board evolves the multiplier on the VRC | VRC (fabric) | ✅ **HW-VERIFIED** — board TT 16/16, champion bit-identical (`docs/board_results.md`) |
 | **EHW-1.2** | ICAP-bake evolved multiplier's LUT-INITs, run live, attest | ICAP reveal | board TT 16/16 |
 | **EHW-2** *(stretch)* | small run with **per-eval on-chip ICAPE2** edits (authentic bitstream evolution) | true-ICAP | a few gens converge live |
 

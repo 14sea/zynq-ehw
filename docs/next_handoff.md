@@ -63,14 +63,16 @@ firmware `sw/ehw/lutkcm_post.c`, frames via `m753_edit_tile.tcl` + prjxray diff 
 `0x80AF7FF2`, bit-exact to the VPU-model golden (VPU leaky `z-(z>>>α)`), attested. Full
 log + the "never foreground a multi-frame ICAP bake" gotcha in `docs/board_results.md`.
 
-## P4 — EHW-1.1-fabric: `rtl/cgp_vrc.v` (HOST GATE DONE; BOARD PENDING)
+## P4 — EHW-1.1-fabric: `rtl/cgp_vrc.v` — DONE (HW-VERIFIED)
 
-Promote EHW-1.1 from software-eval (DONE) to a **true fabric VRC**: the CGP grid as
-real config-loaded LUTs, evaluated in fabric, not in NEORV32 software.
+Promoted EHW-1.1 from software-eval to a **true fabric VRC**: the CGP grid as real
+config-loaded LUTs, evaluated in fabric (not NEORV32 software).
 
-Status: host prep done in `rtl/cgp_vrc.v`, `rtl/dfx/tpu_rp_rm_cgp_vrc.v`,
-`sw/ehw/cgp_vrc_mbox.c`, and `tests/compare_cgp_vrc.py`; `docs/ehw1_1_fabric_results.md`
-records the register map and host-gate result. Board build/run still pending.
+Status: ✅ **HW-VERIFIED on EBAZ4205** — built static+`rm_cgp_vrc` (`build_cgp_vrc.tcl`,
+impl_10), firmware `sw/ehw/cgp_vrc_mbox.c` evaluates fitness over the `cgp_vrc` MMIO
+regs; on silicon the GA reached 2-bit multiplier 16/16 rows (mailbox `0xdc000010`),
+champion bit-identical to host (`docs/board_results.md`). Synth-compat fix to
+`rtl/cgp_vrc.v` (no-input functions → dummy input; iverilog allowed it, Vivado didn't).
 
 - **RTL `rtl/cgp_vrc.v`:** an `R×C` grid (start 3×4 LUT4) of config-loadable nodes;
   each node's truth table (16-bit INIT) loaded from a config register (so the genome
