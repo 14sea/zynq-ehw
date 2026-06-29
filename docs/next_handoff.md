@@ -1,12 +1,17 @@
 # Next-milestone handoff (Claude → ChatGPT)
 
-Status: **EHW-0.3 is HW-VERIFIED on the EBAZ4205** (board-resident GA on the 4×4 VRC
-array converged 40/40, champion bit-identical to `sim/oracle_evolve.py`; full log in
-`docs/board_results.md`). The build→board pipeline now works in `zynq_ehw`.
+Status (2026-06-29): **EHW-0.3, EHW-0.4, EHW-1.0, EHW-1.1-sw, EHW-0.5 all done**
+(board runs in `docs/board_results.md`; pushed to github.com/14sea/zynq-ehw). Board-
+verified on EBAZ4205: EHW-0.3 (GA classifier 40/40), EHW-1.1-sw (CGP 2-bit multiplier
+16/16, **software** LUT-grid eval), EHW-0.5 (ICAP-bake evolved champion into LUT-KCM
+fabric → `0x80AF7FF2`). P1/P2/P3 below are all COMPLETE.
 
-Please advance the ladder. Priorities below are ordered so you can deliver each
-fully **host-side with a self-proof** (per `docs/workflow.md` rule 1); I'll handle
-the board steps.
+**▶ Next real target = EHW-1.1-fabric (P4 below): `rtl/cgp_vrc.v`** — promote EHW-1.1
+from software-eval to a true fabric VRC (the CGP grid as config-loaded LUTs). New RTL
+= your deliverable; I build + board it.
+
+Priorities are ordered so you can deliver each fully **host-side with a self-proof**
+(per `docs/workflow.md` rule 1); I'll handle the board steps.
 
 ---
 
@@ -49,19 +54,33 @@ Status: implemented in `sim/oracle_cgp.py` and `sw/ehw/cgp_eval.c`; host gate is
 - Reference only (check license, vendor no RTL): tiny-tpu / CGP literature in
   `external/research/`.
 
-## P3 — EHW-0.5: ICAP champion-bake reveal (board-coupled — I lead, you prep)
+## P3 — EHW-0.5: ICAP champion-bake reveal — DONE (HW-VERIFIED)
 
-The "chip writes its evolved weights into its own LUT logic, live" headline. Reuses
-the M7.5.1 ICAP machinery (`rm_lutkcm` + frame-seq tooling). This needs board + ICAP,
-so I'll drive it — but you can prep the host pieces:
+The "chip writes its evolved weights into its own LUT logic, live" headline. Built on
+the M7.5.1 ICAP machinery: built static+`rm_lutkcm` in zynq_ehw (`build_lutkcm.tcl`),
+firmware `sw/ehw/lutkcm_post.c`, frames via `m753_edit_tile.tcl` + prjxray diff +
+`m75-build-frameseqs.py` (20 frames). On EBAZ4205: baseline `0x1019391F` → ICAP-bake →
+`0x80AF7FF2`, bit-exact to the VPU-model golden (VPU leaky `z-(z>>>α)`), attested. Full
+log + the "never foreground a multi-frame ICAP bake" gotcha in `docs/board_results.md`.
 
-- A firmware/flow that, given the EHW-0.3 champion genome (24 bytes), produces the
-  ICAP frame sequence that bakes those weights into the `lutkcm` tile (adapt
-  `external/zynq_xpart` `m75_edit_tile.tcl` + `m75-build-frameseqs.py`).
-- A host verifier: predicted `lutkcm`/VPU mailbox value for the baked champion, so
-  the board read can be checked bit-exact (mind the **VPU leaky** `z-(z>>>α)` here,
-  NOT the m753 `z>>k` — different path, see `docs/hw_notes.md` "Leaky Variants";
-  add a fresh golden cross-check).
+## P4 — EHW-1.1-fabric: `rtl/cgp_vrc.v` (NEXT — your deliverable)
+
+Promote EHW-1.1 from software-eval (DONE) to a **true fabric VRC**: the CGP grid as
+real config-loaded LUTs, evaluated in fabric, not in NEORV32 software.
+
+- **RTL `rtl/cgp_vrc.v`:** an `R×C` grid (start 3×4 LUT4) of config-loadable nodes;
+  each node's truth table (16-bit INIT) loaded from a config register (so the genome
+  is written into registers per eval, VRC-style — like `systolic_array_4x4.v` loads
+  weights). Fixed feed-forward routing (column→column), contention-safe. Expose on the
+  NEORV32 xbus (model on `wb_tpu_accel.v`/`tpu_accel.v` register map) so firmware can:
+  write the 12 node INITs, drive the 16 input combinations, read back the 4 outputs.
+- **Firmware:** a board CGP GA like `cgp_ga_mbox.c` but the fitness eval drives the
+  `cgp_vrc` registers (config + apply inputs + read outputs) instead of `cgp_eval_grid`
+  software. Same GA (keep bit-exact to `cgp_eval.c`).
+- **Host gate first:** a Verilog testbench (or a host model of the register protocol)
+  proving the grid computes the truth table for a known genome, **before** the board
+  build. Then I build (new RM or reuse the tpu_rp partition) + board-verify TT 16/16.
+- Watch the M7.2 build-lottery (new fabric logic in the RP); keep the grid small.
 
 ---
 
@@ -75,4 +94,5 @@ so I'll drive it — but you can prep the host pieces:
 - Isolation absolute: edit only `zynq_ehw`; `external/` is read-only reference.
 - Hardware facts go in `docs/hw_notes.md`; I log board runs in `docs/board_results.md`.
 
-Recommended order: **P1 → P2** (both host-only, fast), then ping me for **P3**.
+Recommended order: P1–P3 DONE. **Next = P4 (`rtl/cgp_vrc.v` fabric CGP VRC)** — write
+the RTL + host gate, then ping me to build + board it.

@@ -192,13 +192,19 @@ and the loop is provably live, not hung.
 |---|---|---|---|
 | **EHW-0.0** | `oracle_evolve.py` GA evolves 4-4-2 weights to target acc (host only) | — | ✅ host acc curve |
 | **EHW-0.1** | C twin GA bit-exact to oracle (shared kernel, host-seeded xorshift) | host | ✅ mism=0 via `tests/compare_ehw0_twin.py` |
-| **EHW-0.2** | board: NEORV32 evaluates genomes on VRC array; fitness bit-exact | VRC | bridge started: compiled champion evaluator in `sw/ehw/ehw_eval_mbox.c`; true host-in-loop awaits PS→PL command path |
-| **EHW-0.3** | board-resident GA on NEORV32; full evolution curve via mailbox, bit-exact | VRC, on-board GA | host-stub curve == oracle via `tests/compare_ehw0_twin.py`; board run pending |
-| **EHW-0.4** | **evolution-vs-training** table (GA champion vs M7 SGD, same net) | VRC | ✅ `docs/ehw0_4_results.md` |
-| **EHW-0.5** | ICAP-bake GA champion into `lutkcm` tile, classify live, attest | ICAP reveal | board == champion |
+| **EHW-0.2** | board: NEORV32 evaluates genomes on VRC array; fitness bit-exact | VRC | bridge started (`sw/ehw/ehw_eval_mbox.c`); superseded by EHW-0.3 (true host-in-loop still awaits a PS→PL command path) |
+| **EHW-0.3** | board-resident GA on NEORV32; full evolution curve via mailbox, bit-exact | VRC, on-board GA | ✅ **HW-VERIFIED** — board 40/40, champion bit-identical to oracle (`docs/board_results.md`) |
+| **EHW-0.4** | **evolution-vs-training** table (GA champion vs M7 SGD, same net) | VRC | ✅ `docs/ehw0_4_results.md` (GA 40/40 > gradient 37/40) |
+| **EHW-0.5** | ICAP-bake GA champion into `lutkcm` tile, classify live, attest | ICAP reveal | ✅ **HW-VERIFIED** — mailbox `0x1019391F→0x80AF7FF2` bit-exact, attested (`docs/board_results.md`) |
 | **EHW-1.0** | CGP GA evolves 2-bit multiplier (truth-table fitness) | — | ✅ 16/16 rows via `tests/compare_cgp_twin.py` |
-| **EHW-1.1** | `cgp_vrc.v` + C eval; board evolves multiplier on VRC, bit-exact | VRC | TT 16/16 on board |
+| **EHW-1.1-sw** | board-resident CGP GA on NEORV32, **software** LUT-grid eval | on-board GA, SW eval | ✅ **HW-VERIFIED** — 2-bit multiplier 16/16, champion bit-identical (`sw/ehw/cgp_ga_mbox.c`, `docs/board_results.md`) |
+| **EHW-1.1-fabric** *(NEXT)* | `rtl/cgp_vrc.v` = CGP grid as real config-loaded **fabric LUTs**; board evolves the multiplier on the VRC | VRC (fabric) | board TT 16/16 on the fabric substrate |
 | **EHW-1.2** | ICAP-bake evolved multiplier's LUT-INITs, run live, attest | ICAP reveal | board TT 16/16 |
+
+> **NB (EHW-1.1 distinction):** EHW-1.1-sw (DONE) runs the GA *and* evaluates the LUT
+> grid in NEORV32 software — proves on-chip evolution of a logic circuit, but the grid
+> is not in fabric. EHW-1.1-fabric (the original `cgp_vrc.v` intent) puts the grid in
+> real config-loaded LUTs so the evolved circuit *is* hardware. Don't conflate them.
 | **EHW-2** *(stretch)* | small run with **per-eval on-chip ICAPE2** edits (authentic bitstream evolution) | true-ICAP | a few gens converge live |
 
 Gates mirror M7's discipline: host bit-exact first, then on-board, then the ICAP

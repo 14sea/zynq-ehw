@@ -23,20 +23,24 @@ untouched.
   C/xorshift GA path; `tests/compare_ehw0_twin.py` checks Python vs C CSV output
   byte-for-byte and checks the M7.5.3 trained genome against its golden
   classification bitmap.
-- **EHW-0.2 bridge started** — `sw/ehw/ehw_eval_mbox.c` evaluates a compiled
-  champion genome through the register-loaded VRC array and publishes mailbox
-  score tags. True host-sent genomes still need a PS→PL command path because the
-  copied DFX top does not pin out NEORV32 `uart0`.
-- **EHW-0.3 bridge started** — `sw/ehw/ehw_ga_mbox.c` runs the deterministic GA
-  resident on NEORV32 and publishes progress/champion tags; its host stub is
-  byte-exact to the Python oracle.
-- **EHW-0.4 host comparison done** — `sim/ehw0_4_compare.py` regenerates the
-  board-verified GA champion vs the M7.5.3 trained INT8 tile comparison: GA reaches
-  40/40 labels, the trained tile is 37/40 labels but 0 mismatches against its
-  upstream golden bitmap.
-- **EHW-1.0 host oracle done** — `sim/oracle_cgp.py` evolves a fixed-routing
-  3×4 LUT4 CGP grid into a 2-bit multiplier; `tests/compare_cgp_twin.py` proves
-  Python/C bit-exact convergence to 16/16 truth-table rows.
+- **EHW-0.3 HW-VERIFIED on EBAZ4205** — `sw/ehw/ehw_ga_mbox.c` runs the GA resident
+  on NEORV32 over the 4×4 register-loaded VRC array; on silicon it converged 40/40
+  with the champion genome **bit-identical to the host oracle** (`docs/board_results.md`).
+- **EHW-0.4 host comparison done** — `sim/ehw0_4_compare.py`: GA champion 40/40 labels
+  vs the M7.5.3 gradient-trained tile's 37/40 — evolution beats gradient on this INT8
+  net (`docs/ehw0_4_results.md`).
+- **EHW-0.5 HW-VERIFIED on EBAZ4205** — the EHW-0.3 evolved W1 tile was **ICAP-baked
+  into the LUT-KCM fabric, live** (PS/NEORV32 never reset); mailbox
+  `0x1019391F → 0x80AF7FF2`, bit-exact to the VPU-model golden, attested
+  (`sw/ehw/lutkcm_post.c`, `vivado/dfx/build_lutkcm.tcl`).
+- **EHW-1.0 host oracle done** — `sim/oracle_cgp.py` + `tests/compare_cgp_twin.py`:
+  CGP GA evolves a fixed-routing 3×4 LUT4 grid into a 2-bit multiplier, 16/16 rows,
+  Python/C bit-exact.
+- **EHW-1.1 HW-VERIFIED on EBAZ4205 (software-eval)** — `sw/ehw/cgp_ga_mbox.c` runs
+  the CGP GA resident on NEORV32 → 2-bit multiplier 16/16, champion bit-identical to
+  host. ⚠️ **This evaluates the LUT grid in NEORV32 *software*, not in a fabric VRC
+  substrate.** The fabric-CGP version (`rtl/cgp_vrc.v`, the grid as real config-loaded
+  LUTs) is the NEXT milestone — see `docs/next_handoff.md`.
 
 ## Layout
 
