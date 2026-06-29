@@ -30,3 +30,4 @@ m65_icap/
 rtl_src/
 sw_src/
 vivado/dfx/build/
+vivado/**/hd_visual/
