@@ -6,9 +6,9 @@ verified on EBAZ4205: EHW-0.3 (GA classifier 40/40), EHW-1.1-sw (CGP 2-bit multi
 16/16, **software** LUT-grid eval), EHW-0.5 (ICAP-bake evolved champion into LUT-KCM
 fabric → `0x80AF7FF2`). P1/P2/P3 below are all COMPLETE.
 
-**▶ Next real target = EHW-1.1-fabric (P4 below): `rtl/cgp_vrc.v`** — promote EHW-1.1
-from software-eval to a true fabric VRC (the CGP grid as config-loaded LUTs). New RTL
-= your deliverable; I build + board it.
+**▶ Next real target = EHW-1.1-fabric board build/run (P4 below)** — promote EHW-1.1
+from software-eval to a true fabric VRC (the CGP grid as config-loaded LUTs). Host
+prep is done; build + board verification are still pending.
 
 Priorities are ordered so you can deliver each fully **host-side with a self-proof**
 (per `docs/workflow.md` rule 1); I'll handle the board steps.
@@ -63,10 +63,14 @@ firmware `sw/ehw/lutkcm_post.c`, frames via `m753_edit_tile.tcl` + prjxray diff 
 `0x80AF7FF2`, bit-exact to the VPU-model golden (VPU leaky `z-(z>>>α)`), attested. Full
 log + the "never foreground a multi-frame ICAP bake" gotcha in `docs/board_results.md`.
 
-## P4 — EHW-1.1-fabric: `rtl/cgp_vrc.v` (NEXT — your deliverable)
+## P4 — EHW-1.1-fabric: `rtl/cgp_vrc.v` (HOST GATE DONE; BOARD PENDING)
 
 Promote EHW-1.1 from software-eval (DONE) to a **true fabric VRC**: the CGP grid as
 real config-loaded LUTs, evaluated in fabric, not in NEORV32 software.
+
+Status: host prep done in `rtl/cgp_vrc.v`, `rtl/dfx/tpu_rp_rm_cgp_vrc.v`,
+`sw/ehw/cgp_vrc_mbox.c`, and `tests/compare_cgp_vrc.py`; `docs/ehw1_1_fabric_results.md`
+records the register map and host-gate result. Board build/run still pending.
 
 - **RTL `rtl/cgp_vrc.v`:** an `R×C` grid (start 3×4 LUT4) of config-loadable nodes;
   each node's truth table (16-bit INIT) loaded from a config register (so the genome
@@ -94,5 +98,5 @@ real config-loaded LUTs, evaluated in fabric, not in NEORV32 software.
 - Isolation absolute: edit only `zynq_ehw`; `external/` is read-only reference.
 - Hardware facts go in `docs/hw_notes.md`; I log board runs in `docs/board_results.md`.
 
-Recommended order: P1–P3 DONE. **Next = P4 (`rtl/cgp_vrc.v` fabric CGP VRC)** — write
-the RTL + host gate, then ping me to build + board it.
+Recommended order: P1–P3 DONE; P4 host gate DONE. **Next = build + board-verify
+P4 (`rtl/cgp_vrc.v` fabric CGP VRC)** and record TT 16/16 in `docs/board_results.md`.

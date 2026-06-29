@@ -41,6 +41,9 @@ untouched.
   host. ⚠️ **This evaluates the LUT grid in NEORV32 *software*, not in a fabric VRC
   substrate.** The fabric-CGP version (`rtl/cgp_vrc.v`, the grid as real config-loaded
   LUTs) is the NEXT milestone — see `docs/next_handoff.md`.
+- **EHW-1.1-fabric host gate done** — `rtl/cgp_vrc.v` implements the CGP grid as
+  real config-loaded fabric LUTs behind an XBUS register map; `tests/compare_cgp_vrc.py`
+  verifies the golden multiplier through RTL simulation and a firmware host stub.
 
 ## Layout
 
@@ -57,19 +60,28 @@ untouched.
   hardware gate.
 - `docs/ehw0_4_results.md` — evolution-vs-gradient-training table for EHW-0.
 - `docs/ehw1_0_results.md` — host-only CGP 2-bit multiplier result.
+- `docs/ehw1_1_fabric_results.md` — host gate for the fabric CGP VRC substrate.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
 - `sim/oracle_cgp.py` — EHW-1.0 CGP/LUT-INIT oracle for a 2-bit multiplier.
+- `rtl/cgp_vrc.v` — EHW-1.1-fabric register-configured CGP VRC core and XBUS wrapper.
+- `rtl/dfx/tpu_rp_rm_cgp_vrc.v` — DFX RM wrapper exposing the CGP VRC in the existing
+  `0xF0000000` NEORV32 peripheral window.
 - `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and
   `ga_eval.c` for EHW-0.1, plus `ehw_eval_mbox.c` for the EHW-0.2 VRC/mailbox
   bridge, `ehw_ga_mbox.c` for the EHW-0.3 board-resident GA bridge, and
-  `cgp_kernel.h`/`cgp_eval.c` for the EHW-1.0 CGP twin.
+  `cgp_kernel.h`/`cgp_eval.c` for the EHW-1.0 CGP twin, `cgp_ga_mbox.c` for the
+  EHW-1.1-sw board-resident software-eval CGP GA, `cgp_vrc_mbox.c` for the
+  EHW-1.1-fabric board-resident fabric-eval CGP GA, and `lutkcm_post.c` for the
+  EHW-0.5 ICAP-bake POST.
 - `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
 - `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
   bit-exact CSV curves plus the M7.5.3 golden bitmap guard.
 - `tests/compare_cgp_twin.py` — builds the CGP C twin and verifies Python/C
   bit-exact CGP curves.
+- `tests/compare_cgp_vrc.py` — builds/runs the CGP VRC RTL host gate and firmware
+  host stub.
 - `external/` — local snapshots of selected reference files copied from
   `/home/test/zynq_xpart` and `/home/test/zynq_agentctl`. These make this project
   independent; edit only the copies here, never the source projects. Also includes
