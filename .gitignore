@@ -1,0 +1,23 @@
+# Reference papers — copyrighted PDFs, do not push to public remote
+ref/
+
+# Python / venv
+__pycache__/
+*.pyc
+.env/
+
+# Vivado / build noise
+*.jou
+*.log
+.Xil/
+vivado*.str
+*.backup.jou
+*.backup.log
+
+# Large generated bitstreams / frame sequences (regenerable)
+*.bit
+*.bin
+m65_icap/
+
+# OS
+.DS_Store
