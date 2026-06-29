@@ -5,6 +5,10 @@ ref/
 __pycache__/
 *.pyc
 .env/
+runs/
+
+# Local reference snapshots copied/cloned for offline study; do not publish them
+external/
 
 # Vivado / build noise
 *.jou

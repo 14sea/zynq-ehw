@@ -16,8 +16,17 @@ untouched.
 - **Design done** — see `docs/`. Decisions: task = the full ladder (EHW-0 evolve
   weights → EHW-1 evolve a logic circuit); substrate = **VRC first → true-ICAP
   finish**.
-- **Build pending** — no search loop implemented yet. Next: extend a numpy GA
-  oracle, get the host GA bit-exact, then go on-board.
+- **EHW-0.0 done** — `sim/oracle_evolve.py` implements a deterministic GA over the
+  M7.5.3-lite 24-byte INT8 weight genome, using the same fixed-point inference
+  task as `zynq_xpart`.
+- **EHW-0.1 host gate done** — `sw/ehw/ga_eval.c` mirrors the Python oracle with a
+  C/xorshift GA path; `tests/compare_ehw0_twin.py` checks Python vs C CSV output
+  byte-for-byte and checks the M7.5.3 trained genome against its golden
+  classification bitmap.
+- **EHW-0.2 bridge started** — `sw/ehw/ehw_eval_mbox.c` evaluates a compiled
+  champion genome through the register-loaded VRC array and publishes mailbox
+  score tags. True host-sent genomes still need a PS→PL command path because the
+  copied DFX top does not pin out NEORV32 `uart0`.
 
 ## Layout
 
@@ -25,6 +34,21 @@ untouched.
   exists in zynq-xpart; only the GA search layer is new).
 - `docs/ehw_design.md` — detailed design: VRC↔ICAP duality, GA engine, throughput
   budget, the EHW-0/EHW-1/EHW-2 milestone ladder, risk register, reuse map.
+- `docs/reference_map.md` — which files to mine from `/home/test/zynq_xpart` and
+  `/home/test/zynq_agentctl`, without editing those projects in place.
+- `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
+  under `runs/` (gitignored).
+- `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and
+  `ga_eval.c` for EHW-0.1, plus `ehw_eval_mbox.c` for the EHW-0.2 VRC/mailbox
+  bridge.
+- `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
+- `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
+  bit-exact CSV curves plus the M7.5.3 golden bitmap guard.
+- `external/` — local snapshots of selected reference files copied from
+  `/home/test/zynq_xpart` and `/home/test/zynq_agentctl`. These make this project
+  independent; edit only the copies here, never the source projects. Also includes
+  `external/research/cobea/`, a shallow-cloned CoBEA research-code snapshot for
+  architecture study.
 - `ref/` — the two direct-bitstream-EHW reference papers (CoBEA, GECCO '22;
   Whitley et al., ISAL '21). **gitignored** (copyrighted PDFs), like zynq-xpart's
   `references/`.
