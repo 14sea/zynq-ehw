@@ -43,6 +43,9 @@ def main() -> int:
     py_csv = out_dir / "ehw0_python.csv"
     c_csv = out_dir / "ehw0_c.csv"
     mbox_csv = out_dir / "ehw0_ga_mbox.csv"
+    compare_doc = out_dir / "ehw0_4_results.md"
+    compare_csv = out_dir / "ehw0_4_compare.csv"
+    compare_ga_csv = out_dir / "ehw0_4_ga_curve.csv"
 
     check_python_golden()
     run([args.cc, "-std=c99", "-Wall", "-Wextra", "-O2", "-o", str(exe), "sw/ehw/ga_eval.c"])
@@ -59,6 +62,15 @@ def main() -> int:
     run([sys.executable, "sim/oracle_evolve.py", *common, "--csv", str(py_csv)])
     run([str(exe), *common, "--csv", str(c_csv)])
     run([str(mbox_exe), str(mbox_csv)])
+    run([
+        sys.executable, "sim/ehw0_4_compare.py",
+        "--seed", "3",
+        "--population", str(args.population),
+        "--generations", str(args.generations),
+        "--doc", str(compare_doc),
+        "--csv", str(compare_csv),
+        "--ga-csv", str(compare_ga_csv),
+    ])
 
     py_data = py_csv.read_bytes()
     c_data = c_csv.read_bytes()

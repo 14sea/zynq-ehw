@@ -30,6 +30,13 @@ untouched.
 - **EHW-0.3 bridge started** — `sw/ehw/ehw_ga_mbox.c` runs the deterministic GA
   resident on NEORV32 and publishes progress/champion tags; its host stub is
   byte-exact to the Python oracle.
+- **EHW-0.4 host comparison done** — `sim/ehw0_4_compare.py` regenerates the
+  board-verified GA champion vs the M7.5.3 trained INT8 tile comparison: GA reaches
+  40/40 labels, the trained tile is 37/40 labels but 0 mismatches against its
+  upstream golden bitmap.
+- **EHW-1.0 host oracle done** — `sim/oracle_cgp.py` evolves a fixed-routing
+  3×4 LUT4 CGP grid into a 2-bit multiplier; `tests/compare_cgp_twin.py` proves
+  Python/C bit-exact convergence to 16/16 truth-table rows.
 
 ## Layout
 
@@ -44,14 +51,21 @@ untouched.
   variance notes.
 - `docs/board_results.md` — exact board observations and mailbox words for each
   hardware gate.
+- `docs/ehw0_4_results.md` — evolution-vs-gradient-training table for EHW-0.
+- `docs/ehw1_0_results.md` — host-only CGP 2-bit multiplier result.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
+- `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
+- `sim/oracle_cgp.py` — EHW-1.0 CGP/LUT-INIT oracle for a 2-bit multiplier.
 - `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and
   `ga_eval.c` for EHW-0.1, plus `ehw_eval_mbox.c` for the EHW-0.2 VRC/mailbox
-  bridge and `ehw_ga_mbox.c` for the EHW-0.3 board-resident GA bridge.
+  bridge, `ehw_ga_mbox.c` for the EHW-0.3 board-resident GA bridge, and
+  `cgp_kernel.h`/`cgp_eval.c` for the EHW-1.0 CGP twin.
 - `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
 - `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
   bit-exact CSV curves plus the M7.5.3 golden bitmap guard.
+- `tests/compare_cgp_twin.py` — builds the CGP C twin and verifies Python/C
+  bit-exact CGP curves.
 - `external/` — local snapshots of selected reference files copied from
   `/home/test/zynq_xpart` and `/home/test/zynq_agentctl`. These make this project
   independent; edit only the copies here, never the source projects. Also includes

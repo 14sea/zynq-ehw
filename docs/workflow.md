@@ -15,7 +15,7 @@ both sides follow. Read it before contributing.
 
 1. **Every hardware-bound deliverable from ChatGPT ships with a host gate.**
    No board-targeted code is accepted without a host-side self-proof:
-   numpy oracle + portable-C twin + bit-exact test + a **golden cross-check**
+   deterministic host oracle + portable-C twin + bit-exact test + a **golden cross-check**
    against the relevant zynq_xpart HW-verified oracle. Rationale: ChatGPT can't
    see the board, so its code must be verifiable on the host first; Claude's
    board step then only has to confirm **board == host model**.

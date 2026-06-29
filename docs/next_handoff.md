@@ -10,9 +10,12 @@ the board steps.
 
 ---
 
-## P1 — EHW-0.4: evolution vs gradient-training (host-only, do first)
+## P1 — EHW-0.4: evolution vs gradient-training (host-only, do first) — DONE
 
 The scientific headline of EHW-0. Same net, two ways to get the weights.
+
+Status: implemented in `sim/ehw0_4_compare.py`; generated result in
+`docs/ehw0_4_results.md`.
 
 - **Compare** the GA champion (just verified on board) against the **M7-trained**
   genome on the *same* folded 4-4-2 net (`M753_TRAINED_GENOME` in
@@ -27,16 +30,19 @@ The scientific headline of EHW-0. Same net, two ways to get the weights.
   a small table + a short `docs/ehw0_4_results.md`. No board needed.
 - **Host gate:** reproducible from a fixed seed; numbers must be regenerable.
 
-## P2 — EHW-1.0: CGP 2-bit multiplier oracle (host-only)
+## P2 — EHW-1.0: CGP 2-bit multiplier oracle (host-only) — DONE
 
 Start the classic-logic-circuit rung (design doc §6).
+
+Status: implemented in `sim/oracle_cgp.py` and `sw/ehw/cgp_eval.c`; host gate is
+`tests/compare_cgp_twin.py`; generated result in `docs/ehw1_0_results.md`.
 
 - **Genome** = LUT-INIT truth tables of an `R×C` fixed-routing CGP grid (routing is
   NOT evolved — contention-safe). Suggested 3×4 grid of LUT4 nodes (~192 genome
   bits) for a 4-in→4-out 2-bit unsigned multiplier.
 - **Fitness** = 64-bit Hamming match to the golden truth table (16 rows × 4 outs).
   Optional secondary objective: node count (CGP area minimisation).
-- **Deliverable:** `sim/oracle_cgp.py` (numpy GA over the grid) + a portable-C twin
+- **Deliverable:** `sim/oracle_cgp.py` (deterministic GA over the grid) + a portable-C twin
   + a bit-exact test (`tests/compare_cgp_twin.py`), same pattern as EHW-0.
 - **Host gate:** GA reaches 16/16 rows; Py↔C bit-exact. **No board yet** — the
   `rtl/cgp_vrc.v` substrate + board run is a later rung (I'll build it).

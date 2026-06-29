@@ -66,7 +66,7 @@ Three tiers, all reused from the agentctl / M7 stack:
   - **Board-resident GA (fast variant):** the entire GA runs *on NEORV32* (genome
     RAM + xorshift RNG + tournament), PS only seeds the run and reads the champion
     + loss curve. No per-eval UART → thousands of evals/sec. Recommended once the
-    host-in-the-loop version is validated bit-exact against a numpy oracle.
+    host-in-the-loop version is validated bit-exact against a host oracle.
 
 ---
 
@@ -132,7 +132,7 @@ Deliberately textbook so the result is legible:
 - **Elitism:** keep top 1–2 unchanged.
 - **Fitness:** task-specific scalar (below), maximised.
 - **Termination:** target fitness reached or `G` generations.
-- **Oracle twin:** a numpy `sim/oracle_evolve.py` (extend the `sim/oracle_*.py`
+- **Oracle twin:** a deterministic `sim/oracle_evolve.py` (extend the `sim/oracle_*.py`
   pattern) runs the *identical* GA in fixed-point host-side; the board run
   must track it **bit-exact** (same seed, same selection order), exactly as M7.0
   validated training. This is how we trust the on-board GA.
@@ -194,9 +194,9 @@ and the loop is provably live, not hung.
 | **EHW-0.1** | C twin GA bit-exact to oracle (shared kernel, host-seeded xorshift) | host | ✅ mism=0 via `tests/compare_ehw0_twin.py` |
 | **EHW-0.2** | board: NEORV32 evaluates genomes on VRC array; fitness bit-exact | VRC | bridge started: compiled champion evaluator in `sw/ehw/ehw_eval_mbox.c`; true host-in-loop awaits PS→PL command path |
 | **EHW-0.3** | board-resident GA on NEORV32; full evolution curve via mailbox, bit-exact | VRC, on-board GA | host-stub curve == oracle via `tests/compare_ehw0_twin.py`; board run pending |
-| **EHW-0.4** | **evolution-vs-training** table (GA champion vs M7 SGD, same net) | VRC | comparison written |
+| **EHW-0.4** | **evolution-vs-training** table (GA champion vs M7 SGD, same net) | VRC | ✅ `docs/ehw0_4_results.md` |
 | **EHW-0.5** | ICAP-bake GA champion into `lutkcm` tile, classify live, attest | ICAP reveal | board == champion |
-| **EHW-1.0** | numpy CGP GA evolves 2-bit multiplier (truth-table fitness) | — | 16/16 rows |
+| **EHW-1.0** | CGP GA evolves 2-bit multiplier (truth-table fitness) | — | ✅ 16/16 rows via `tests/compare_cgp_twin.py` |
 | **EHW-1.1** | `cgp_vrc.v` + C eval; board evolves multiplier on VRC, bit-exact | VRC | TT 16/16 on board |
 | **EHW-1.2** | ICAP-bake evolved multiplier's LUT-INITs, run live, attest | ICAP reveal | board TT 16/16 |
 | **EHW-2** *(stretch)* | small run with **per-eval on-chip ICAPE2** edits (authentic bitstream evolution) | true-ICAP | a few gens converge live |
@@ -212,7 +212,7 @@ ICAP reveal, mailbox decoders `m7-watch-*.py`, `build_dfx.tcl`, reset-to-U-Boot 
 `uboot-fpga-load.py`, measured-boot gate (M5), `xbus_icap.v` for EHW-2.
 
 **New (lives in `zynq_ehw/`):**
-- `sim/oracle_evolve.py` — numpy GA + fitness oracle (both tasks).
+- `sim/oracle_evolve.py` — deterministic GA + fitness oracle (both tasks).
 - `sw/ehw/ga_eval.c` (+ shared `ehw_kernel.h`) — NEORV32 eval + optional on-board GA.
 - `host/ehw_eA.py` — PS evolution controller (host-in-loop variant), reuses
   agentctl/mailbox/probe-wait patterns.
@@ -281,7 +281,7 @@ our design relates to them — and, by contrast, justifies our three core decisi
 | Genome / what's mutated | constrained **routing** + Boolean op | raw bitstream (philosophically unconstrained) | **LUT-INIT / register config only — routing never evolved** |
 | Intrinsic? | yes, **exploits analog physics** | yes | yes (real silicon) but **digital, clocked, physics-exploitation scoped out** |
 | Controller arch. | host CPU + external MCU + passive FPGA | host-driven | **GA/eval on-chip** (NEORV32 + PS + mailbox): chip = controller + substrate + measurement |
-| Cross-chip transfer | **no** (2/3 dead) — the physics proof | n/a | **yes / deterministic**, bit-exact to a numpy oracle |
+| Cross-chip transfer | **no** (2/3 dead) — the physics proof | n/a | **yes / deterministic**, bit-exact to a host oracle |
 | Safety / attestation | none | future work | **already have** measured-boot (M5) + ICAP-readback attest |
 | Application | analog oscillators/discriminators | framework + reconfig speed + security | **ML: evolve NN weights, evolution-vs-gradient-training**; + CGP logic circuit |
 
