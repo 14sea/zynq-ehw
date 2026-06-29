@@ -321,3 +321,71 @@ We are not reproducing these papers: we move direct-bitstream/intrinsic EHW onto
 swap **physics-exploitation for LUT-INIT/VRC safety + an ML application** (evolution
 vs gradient training). Our EHW-2 stretch (on-chip ICAPE2 per-eval LUT-INIT edits) is
 the closest point of contact — still LUT-INIT-only and self-hosted, on harder silicon.
+
+## 12. Lessons adopted from prior art (actionable)
+
+§11 is about how we *differ*; this section is what we should *borrow*. Each item is
+tagged with its source and where it lands in our plan.
+
+### A. Adopt directly (changes our code/RTL)
+
+1. **Non-zero seed search** *(Whitley)* — random circuits almost all score 0 (output
+   disconnected / sparse), so do a short random search for ONE non-zero-fitness
+   individual and seed the initial population from it. **→ EHW-1 (CGP):** random
+   LUT-INIT genomes mostly give all-wrong truth tables (flat landscape); seed first.
+   **→ EHW-0 (weights):** random INT8 weights can saturate to a constant output stuck
+   at 50% — same cure. Implement in `oracle_evolve.py` init; mirror on-board.
+2. **Expect plateau→leap landscapes; give partial credit; watch the underlying metric,
+   not the shaped fitness** *(Whitley)* — they saw long flat stretches punctuated by
+   jumps (a subnet binds to the output in one mutation), and with a peaky `1/|f−n|`
+   fitness the *mean fitness* read ≈0 while the population was actually progressing
+   (visible only in mean *frequency*). **→ §4 fitness:** use a continuous shaped
+   fitness (`acc + (−SSE)` term), and **log/plot the raw metric (acc, SSE)** alongside
+   fitness so we don't misread a plateau as stagnation.
+3. **Reconfig is the only bottleneck — optimise it separately from the app, and keep
+   the inner loop in one resident process** *(CoBEA)* — their 130× came from (i) sending
+   only changed data, (ii) direct SRAM config (no flash), (iii) **no external-tool
+   calls per eval** (Whitley's 3.5 s/eval was mostly packer+programmer spawns).
+   **→ host-in-loop variant:** hold the serial port open in ONE long-lived process;
+   never `spawn` vivado/openocd per eval (a real trap in our current script set).
+   **→ EHW-2 ICAP:** send only diff frames (our prjxray-diff + single-FAR-envelope
+   already does this — make it explicit), never round-trip a host file.
+4. **Fixed evolvable region inside a constant "basic bitstream"** *(CoBEA)* — synthesise
+   the static once, mutate only the evolvable region each cycle. **→** this is exactly
+   our DFX static + RP/RM; keep the evolvable substrate a small fixed-location tile
+   (the RP / LUT-KCM tile), everything else constant.
+5. **Standardised per-generation logging (CSV/HDF5)** *(CoBEA)* — cheap, and essential
+   for the **evolution-vs-gradient-training** table (EHW-0.4) to be clean and
+   reproducible. **→** log `{gen, individual, genome, fitness, acc, SSE}` per eval.
+
+### B. Validates choices we already made (no change, just confidence)
+
+- **Standard GA + tournament selection** at pop≈50 / ~100 gens *(both papers)* →
+  confirms our textbook-GA, k=3 tournament, pop≈32 scale.
+- **Device-coupling is real** *(Whitley: evolved circuit dead on 2/3 sibling FPGAs,
+  temperature-sensitive)* → **bake robustness checks into the gates**: after the
+  champion ICAP-bake, verify across power-cycles / re-loads. Our M7.2 build-variance
+  is the local analogue of their cross-chip death.
+- **Guard against reward-hacking** *(Whitley's upside-down-but-passing waveform)* →
+  every gate must verify the champion does the **task**, not merely hits the fitness
+  proxy.
+
+### C. Reference assets to mine
+
+- **CoBEA source:** `github.com/nmi-leipzig/cobea` — Python, clean-architecture GA
+  framework with EA engine decoupled from the FPGA backend. Borrow its
+  **`evaluate(genome) -> fitness` interface** so one GA engine serves EHW-0 (weights,
+  VRC/ICAP) and EHW-1 (CGP) behind a common substrate API.
+- **Whitley:** `evolvablehardware.org` — tutorials + source for reproducing Thompson
+  tasks; engineering detail on the measurement rig and seed search.
+
+### D. The inversion worth keeping in our back pocket
+
+Whitley *exploits* device-coupling; we route around it. But if we ever want a
+"Thompson-mode" easter egg, **M7.2 is free device-entwined behaviour on this exact
+part** — a placement-dependent, STA-clean-yet-functionally-distinct effect. Normally a
+bug we dodge with VRC; on demand, a feature to show.
+
+> Cross-refs: A2 feeds **§4 (GA engine — fitness shaping & monitoring)**; A1 feeds
+> **§4 (init)**; B (robustness, reward-hacking) and A3/A4 feed **§9 (risk register)**;
+> A5 feeds **§7 EHW-0.4** (the evolution-vs-training table needs the logs).
