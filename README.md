@@ -36,6 +36,9 @@ untouched.
   budget, the EHW-0/EHW-1/EHW-2 milestone ladder, risk register, reuse map.
 - `docs/reference_map.md` — which files to mine from `/home/test/zynq_xpart` and
   `/home/test/zynq_agentctl`, without editing those projects in place.
+- `docs/hw_notes.md` — board facts used as codegen constraints: mailbox addresses,
+  fixed-point conventions, VRC register map, ICAP/PCAP handoff, settle/build
+  variance notes.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and

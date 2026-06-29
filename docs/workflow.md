@@ -32,7 +32,7 @@ both sides follow. Read it before contributing.
 
 4. **Hardware truth lives in the repo, not in one AI's head.** ChatGPT cannot
    read Claude's memory, so all board gotchas and numeric conventions go in
-   `docs/hw_notes.md` (mailbox addresses, fixed-point conventions e.g.
+   [`docs/hw_notes.md`](hw_notes.md) (mailbox addresses, fixed-point conventions e.g.
    `down = 8 - wshift - ashift`, the two leaky variants, post-config settle, the
    M7.2 in-context-routing gremlin, load-via-`fpga loadb` etc.). Code is written
    against that file, not against guesses.
