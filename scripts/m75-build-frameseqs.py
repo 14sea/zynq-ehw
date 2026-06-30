@@ -80,6 +80,7 @@ def main():
     print(f"raw differing words: {len(D)}   changed frames: {len(fars)}")
 
     ok = 0
+    start_floor = -1   # frames lay out in increasing FAR order; assign starts monotonically
     for far in fars:
         changes = setb.get(far, set()) | clrb.get(far, set())
         wofss = sorted({w for w, _ in changes})
@@ -114,7 +115,18 @@ def main():
             man.write(f"FAR 0x{far:08x}: NO valid start (wofs={wofss})\n")
             print(f"  FAR 0x{far:08x}: NO valid start", file=sys.stderr)
             continue
-        start = starts[0]
+        # FIX (EHW-1.2): pick the first valid start STRICTLY GREATER than the previous
+        # FAR's. Two FARs with an identical diff pattern (e.g. n8/n10 flipping the same
+        # INIT bits) otherwise both anchor to the first copy (starts[0]) and write each
+        # other's frame data. Frames are laid out in increasing FAR order, so a
+        # monotonic floor pins each FAR to its own frame.
+        above = [s for s in starts if s > start_floor]
+        if not above:
+            man.write(f"FAR 0x{far:08x}: no start > floor {start_floor} (starts={starts})\n")
+            print(f"  FAR 0x{far:08x}: no start above floor {start_floor}", file=sys.stderr)
+            continue
+        start = above[0]
+        start_floor = start
         frames2 = WB[start:start + 2 * FW]
         if len(frames2) != 2 * FW:
             man.write(f"FAR 0x{far:08x}: out-of-range start={start}\n"); continue

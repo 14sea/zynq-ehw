@@ -199,7 +199,7 @@ and the loop is provably live, not hung.
 | **EHW-1.0** | CGP GA evolves 2-bit multiplier (truth-table fitness) | — | ✅ 16/16 rows via `tests/compare_cgp_twin.py` |
 | **EHW-1.1-sw** | board-resident CGP GA on NEORV32, **software** LUT-grid eval | on-board GA, SW eval | ✅ **HW-VERIFIED** — 2-bit multiplier 16/16, champion bit-identical (`sw/ehw/cgp_ga_mbox.c`, `docs/board_results.md`) |
 | **EHW-1.1-fabric** | `rtl/cgp_vrc.v` = CGP grid as real config-loaded **fabric LUTs**; board evolves the multiplier on the VRC | VRC (fabric) | ✅ **HW-VERIFIED** — board TT 16/16, champion bit-identical (`docs/board_results.md`) |
-| **EHW-1.2** | ICAP-bake evolved multiplier's LUT-INITs, run live, attest | ICAP reveal | ✅ host prep via `tests/compare_cgp_baked.py`; board ICAP run pending |
+| **EHW-1.2** | ICAP-rewrite the evolved multiplier's LUT-INITs, run live, attest | ICAP reveal | ✅ **HW-VERIFIED** — ICAP rewrote n8..n11 → broken 7/16 multiplier became perfect 16/16, live (`docs/board_results.md`) |
 | **EHW-2** *(stretch)* | small run with **per-eval on-chip ICAPE2** edits (authentic bitstream evolution) | true-ICAP | a few gens converge live |
 
 > **NB (EHW-1.1 distinction):** EHW-1.1-sw (DONE) runs the GA *and* evaluates the LUT

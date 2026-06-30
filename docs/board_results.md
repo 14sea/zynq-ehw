@@ -187,3 +187,37 @@ grid as config-loaded LUTs in real FPGA fabric, driven over MMIO. The evolved ci
   strictness — add a quick OOC `synth_design` check (~1 min) to the RTL host gate
   before the full DFX build.** (Same class as the EHW-1.1-sw MBOX-address bug: the
   host gate has blind spots; the board build/run is the final gate.)
+
+---
+
+## EHW-1.2: ICAP-rewrite the evolved logic circuit's LUTs, live — PASS (2026-06-29)
+
+**The chip rewrites its own evolved logic circuit, live.** A baked-CGP grid that
+computes a *broken* 2-bit multiplier (7/16 rows) is transformed by ICAP — editing only
+the 4 logic LUT INITs (n8..n11) — into a *perfect* multiplier (16/16), PS/NEORV32 never
+reset. The CGP analogue of EHW-0.5.
+
+- Built static+`rm_cgp_baked_base` (`build_cgp_baked.tcl`, impl_11); firmware
+  `sw/ehw/cgp_baked_post.c` drives the baked grid over MMIO + publishes rows/fitness/
+  marker. Champion edit = `cgp_baked_edit_champ.tcl` sets n8..n11 INITs (A0A0/6AC0/
+  4C00/8000 = champion genome[8..11]) in the routed baseline DCP → 4-frame ICAP diff
+  (28 set bits, FAR 0x004014a0..a3).
+- Board: `fpga loadb` baseline → `0xe3000007` (rows 7), `0xe4000032` (fit 50),
+  `0xe5475030` (marker CGP0) → PCAP_PR=0 → attest `0x13722093` → 4× `writeseq` →
+  **`0xe3000010` (rows 16), `0xe4000040` (fit 64)** → marker stays `0xe5475030` (only
+  the logic LUTs were edited, not the marker constant — honest: same bitstream, evolved
+  logic ICAP-rewritten) → attest → PCAP_PR=1.
+
+### Gotcha caught + FIXED on silicon (a real tooling bug)
+- First bake corrupted the grid (rows 7→1, marker also flipped) — NOT the champion.
+  Root cause = **`scripts/m75-build-frameseqs.py` frame-anchoring assigned the SAME
+  start to two FARs** (a0 & a2 both 18629; a1 & a3 both 18730) because n8/n10 (and
+  n9/n11) flip the *identical* INIT bit pattern, so the per-FAR pattern match took
+  `starts[0]` for both → FAR a2/a3 wrote a0/a1's frame data to the wrong address.
+- **Fix:** assign starts monotonically — frames lay out in increasing FAR order, so
+  pick the first valid start **strictly greater than the previous FAR's**. After the
+  fix the 4 frames anchor to **distinct** starts 18629/18730/18831/18932 (distinct
+  ECCs) → re-bake → PASS. Board recovered between attempts by `fpga loadb` reload (and
+  a `Ctrl-C` to clear a stuck `loady`). **Lesson: the M7.5.1 pattern-anchor is unsafe
+  for small diffs where multiple frames share an identical bit-pattern; the monotonic-
+  start fix makes it robust. Verify distinct per-FAR starts host-side before baking.**

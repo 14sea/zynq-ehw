@@ -45,9 +45,12 @@ untouched.
   evaluated fitness **on the fabric VRC** (MMIO drive) and evolved the 2-bit multiplier
   to 16/16 rows, champion bit-identical to host (`docs/board_results.md`). This is the
   true fabric substrate — the evolved circuit *is* hardware, vs EHW-1.1-sw's software eval.
-- **EHW-1.2 host prep done** — `rtl/cgp_baked.v` hardwires the evolved CGP multiplier
-  as LUT4 INITs; baseline→champion ICAP reveal flow is staged via
-  `vivado/dfx/build_cgp_baked.tcl` and `vivado/dfx/cgp_baked_edit_champ.tcl`.
+- **EHW-1.2 HW-VERIFIED on EBAZ4205** — `rtl/cgp_baked.v` bakes the evolved CGP
+  multiplier as LUT4 INITs; on silicon, ICAP rewrote only the 4 logic LUTs (n8..n11)
+  to transform a **broken 7/16 multiplier into a perfect 16/16**, live (PS/NEORV32
+  never reset). mailbox `0xe3000007→0xe3000010` (rows 7→16). The CGP analogue of
+  EHW-0.5 (`docs/board_results.md`). Also fixed a real `m75-build-frameseqs.py`
+  anchoring bug (duplicate frame start for identical-diff frames).
 
 ## Layout
 

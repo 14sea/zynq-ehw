@@ -1,12 +1,13 @@
 # Next-milestone handoff (Claude → ChatGPT)
 
-Status (2026-06-29): **EHW-0.3, EHW-0.4, EHW-1.0, EHW-1.1-sw, EHW-1.1-fabric,
-EHW-0.5 all done; EHW-1.2 host prep done** (board runs in `docs/board_results.md`;
-pushed to github.com/14sea/zynq-ehw). Board-verified on EBAZ4205: EHW-0.3 (GA
-classifier 40/40), EHW-1.1-sw (CGP 2-bit multiplier 16/16, **software** LUT-grid
-eval), EHW-1.1-fabric (CGP multiplier 16/16 on true fabric VRC), EHW-0.5
-(ICAP-bake evolved champion into LUT-KCM fabric → `0x80AF7FF2`). P1/P2/P3/P4
-below are COMPLETE; P5 is host-prepped and awaiting board ICAP run.
+Status (2026-06-30): **EHW-0.3, EHW-0.4, EHW-1.0, EHW-1.1-sw, EHW-1.1-fabric,
+EHW-0.5, EHW-1.2 ALL HW-VERIFIED** (board runs in `docs/board_results.md`).
+Board-verified on EBAZ4205: EHW-0.3 (GA classifier 40/40), EHW-1.1-sw (CGP 2-bit
+multiplier 16/16, **software** LUT-grid eval), EHW-1.1-fabric (CGP multiplier 16/16
+on true fabric VRC), EHW-0.5 (ICAP-bake evolved weights into LUT-KCM →
+`0x80AF7FF2`), EHW-1.2 (ICAP-rewrite the evolved logic circuit's LUTs → broken 7/16
+multiplier becomes perfect 16/16, live). **P1–P5 ALL COMPLETE.** Local commits not
+yet pushed since `ea82519` — ask user re push.
 
 **▶ Next real target = EHW-1.2 (P5 below)** — EHW-1.1-fabric is now HW-VERIFIED:
 the CGP grid is a true config-loaded fabric VRC, and the board-resident GA reaches
@@ -89,7 +90,15 @@ champion bit-identical to host (`docs/board_results.md`). Synth-compat fix to
   host-side; board run proves TT 16/16 on the fabric substrate.
 - Watch the M7.2 build-lottery (new fabric logic in the RP); keep the grid small.
 
-## P5 — EHW-1.2: ICAP-bake evolved multiplier LUT-INITs (HOST PREP DONE; BOARD PENDING)
+## P5 — EHW-1.2: ICAP-rewrite the evolved multiplier's LUTs — DONE (HW-VERIFIED)
+
+✅ On EBAZ4205: ICAP rewrote only the 4 logic LUTs (n8..n11) of the baked CGP grid,
+transforming a broken 7/16 multiplier into a perfect 16/16, live. mailbox
+`0xe3000007→0xe3000010`. Fixed a real `scripts/m75-build-frameseqs.py` anchoring bug
+(two FARs with identical diff patterns got the same frame start → wrong bake; fix =
+monotonic per-FAR start assignment). Full log + the bug/fix in `docs/board_results.md`.
+
+<details><summary>original P5 spec</summary>
 
 Bake the EHW-1.1-fabric champion LUT INITs into a hardwired/baked LUT variant and
 show the multiplier running live after ICAP update, mirroring the EHW-0.5 champion
@@ -108,6 +117,7 @@ Status: host prep complete in `rtl/cgp_baked.v`,
 `tests/compare_cgp_baked.py`, `vivado/dfx/build_cgp_baked.tcl`, and
 `vivado/dfx/cgp_baked_edit_champ.tcl`. `docs/ehw1_2_results.md` records the
 baseline/champion truth-table expectations and frame-sequence generation flow.
+</details>
 
 ---
 
