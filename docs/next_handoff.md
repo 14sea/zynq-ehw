@@ -6,12 +6,10 @@ Board-verified on EBAZ4205: EHW-0.3 (GA classifier 40/40), EHW-1.1-sw (CGP 2-bit
 multiplier 16/16, **software** LUT-grid eval), EHW-1.1-fabric (CGP multiplier 16/16
 on true fabric VRC), EHW-0.5 (ICAP-bake evolved weights into LUT-KCM →
 `0x80AF7FF2`), EHW-1.2 (ICAP-rewrite the evolved logic circuit's LUTs → broken 7/16
-multiplier becomes perfect 16/16, live). **P1–P5 ALL COMPLETE.** Local commits not
-yet pushed since `ea82519` — ask user re push.
+multiplier becomes perfect 16/16, live). **P1–P5 ALL COMPLETE.**
 
-**▶ Next real target = EHW-1.2 (P5 below)** — EHW-1.1-fabric is now HW-VERIFIED:
-the CGP grid is a true config-loaded fabric VRC, and the board-resident GA reaches
-16/16 rows with a host-identical champion.
+**▶ Next real target:** no mandatory ladder item remains. Options are polish/writeup,
+tag/release, or EHW-2 stretch (small per-eval on-chip ICAPE2 evolution).
 
 Priorities are ordered so you can deliver each fully **host-side with a self-proof**
 (per `docs/workflow.md` rule 1); I'll handle the board steps.
@@ -131,6 +129,5 @@ baseline/champion truth-table expectations and frame-sequence generation flow.
 - Isolation absolute: edit only `zynq_ehw`; `external/` is read-only reference.
 - Hardware facts go in `docs/hw_notes.md`; I log board runs in `docs/board_results.md`.
 
-Recommended order: P1–P4 DONE; P5 host prep DONE. **Next = board-run P5 / EHW-1.2
-ICAP-bake the evolved multiplier LUT-INITs** and record the mailbox transition in
-`docs/board_results.md`.
+Recommended order: **P1–P5 DONE.** Next work should be explicitly scoped: either
+writeup/release polish or the EHW-2 stretch.
