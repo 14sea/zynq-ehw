@@ -1,6 +1,6 @@
-# EHW-2 Host Prep — Per-Eval On-Chip ICAPE2 Bitstream Evolution
+# EHW-2 HW-VERIFIED — Per-Eval On-Chip ICAPE2 Bitstream Evolution
 
-Status: mechanism board-run completed; fidelity debug fix in progress.
+Status: **PASS — HW-VERIFIED on EBAZ4205 (2026-06-30)**.
 
 ## Scope
 
@@ -15,7 +15,7 @@ configuration engine.
 
 ## Minimal Experiment
 
-The first EHW-2 target is intentionally small:
+The EHW-2 target is intentionally small:
 
 - Substrate: one `DONT_TOUCH` LUT6 in `rtl/ehw2_lut_target.v`.
 - Genome: the low 8 INIT bits, interpreted as a 3-input truth table.
@@ -54,9 +54,13 @@ the same-route bitstreams and their prjxray `bitread -y` outputs:
 ```sh
 python3 scripts/ehw2-build-framebank-from-bits.py --out-dir runs/ehw2_seqs \
   --bit-template 'vivado/icap_ehw2/build/ehw2_init_{init}.bit' \
-  --bits-template 'vivado/icap_ehw2/ehw2_seqs2/init_{init}.bits' \
+  --bits-template 'runs/ehw2_bitread/init_{init}.bits' \
   00 80 a8 e8
 ```
+
+The `.bits` files must be generated from the exact `.bit` files in
+`--bit-template`; stale bitread output from a previous build can self-check the
+wrong FDRI positions and fail frame anchoring.
 
 Internally, `scripts/ehw2-framebank-pack.py` packs up to 4 candidate INITs into
 the 8KB framebuf used by `rtl/neorv32_soc_icap.vhd`. Each candidate can contain
@@ -104,10 +108,22 @@ e8: bit_00400d22_100_06, bit_00400d23_100_06, bit_00400d23_100_07, bit_00400d23_
 ```
 
 So the board was genuinely editing CRAM, but each phenotype was truncated to a
-single FAR before fitness measurement. The next board run should use the multi-seq
-framebank format above before investigating DIN byte/bit ordering.
+single FAR before fitness measurement. The fix was the multi-seq framebank format
+above; no DIN byte/bit-ordering change was needed.
 
-## Board Run
+## Verified Board Result
+
+After rebuilding the 8KB framebuf RTL and descriptor firmware, then regenerating
+the multi-FAR framebank, the EBAZ4205 run converged to the expected target:
+
+- final mailbox: `0xeb0308e8`
+- decoded: candidate `3` (`0xe8`), fitness `8/8`, observed mask `0xe8`
+- stability: observed repeatedly, no wedge, `lut_o` live
+
+This is the final EHW-2 PASS: NEORV32 rewrote a live LUT-INIT through the fabric
+`xbus_icap` every fitness evaluation and selected the target candidate on silicon.
+
+## Reproduction Flow
 
 Required board-side steps:
 
@@ -161,9 +177,8 @@ After the run, restore PCAP ownership:
 mw 0xF8007000 0x4c00e07f
 ```
 
-## Open Gate
+## Gate Status
 
-The internal ICAPE2 mechanism has run on EBAZ4205. The open gate is a fidelity
-rerun using the multi-FAR framebank. The local environment can gate the
-firmware/oracle/framebank contract, but only hardware can prove the corrected
-sequence bank lands the intended LUT INIT values.
+Host gates cover the oracle, firmware stub, and framebank format. The corrected
+multi-FAR framebank has also been hardware-verified on EBAZ4205 via the final
+`0xeb0308e8` mailbox result.

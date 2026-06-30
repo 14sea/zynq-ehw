@@ -78,9 +78,10 @@ untouched.
 - `docs/ehw0_4_results.md` — evolution-vs-gradient-training table for EHW-0.
 - `docs/ehw1_0_results.md` — host-only CGP 2-bit multiplier result.
 - `docs/ehw1_1_fabric_results.md` — host + board result for the fabric CGP VRC substrate.
-- `docs/ehw1_2_results.md` — host prep for ICAP-baking the evolved CGP multiplier.
-- `docs/ehw2_results.md` — EHW-2 host prep and board handoff for per-eval ICAPE2
-  LUT-INIT evolution.
+- `docs/ehw1_2_results.md` — host + board result for ICAP-baking the evolved CGP
+  multiplier.
+- `docs/ehw2_results.md` — host + board result for per-eval ICAPE2 LUT-INIT
+  evolution.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.

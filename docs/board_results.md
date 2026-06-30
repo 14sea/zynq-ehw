@@ -36,7 +36,8 @@ Expected mailbox sequence:
 
 Result:
 
-- status: pending board run
+- status: superseded by EHW-0.3 board-resident GA; not part of the final milestone
+  ladder
 - exact observed words:
 - notes:
 
@@ -230,8 +231,8 @@ reset. The CGP analogue of EHW-0.5.
 ## EHW-2: per-eval on-chip ICAPE2 LUT-INIT evolution — PASS (HW-VERIFIED 2026-06-30)
 
 **The hardest path: NEORV32 drives the fabric `xbus_icap` (ICAPE2) to rewrite a live
-LUT-INIT every fitness eval — authentic Thompson live-bitstream evolution.** The
-mechanism runs on silicon, but the LUT-edit result is not yet correct.
+LUT-INIT every fitness eval — authentic Thompson live-bitstream evolution.** Final
+result: the mechanism and the LUT-edit fidelity both pass on silicon.
 
 - Built PS7 + `neorv32_soc_icap` (`build_ehw2_icap.tcl`); 4 same-route INIT bitstreams
   (00/80/a8/e8). Firmware `sw/ehw/ehw2_icap_micro.c` reads a framebank from the AXI
@@ -246,14 +247,11 @@ mechanism runs on silicon, but the LUT-edit result is not yet correct.
   steady **`0xeb020520`** (best candidate 2=a8, fitness 5/8, observed mask `0x20`).
   **Expected `0xeb0308e8`** (candidate 3=e8, 8/8, mask `0xe8`). No wedge; board stayed
   responsive; PCAP_PR restored.
-- **Diagnosis:** observed masks don't match the candidate INITs (different candidates
+- **First-run diagnosis:** observed masks didn't match the candidate INITs (different candidates
   give different masks, so the ICAP writes have *some* effect but don't land the INIT
-  correctly). Almost certainly the known internal-ICAPE2 gotcha: DIN bit/byte ordering
-  for ICAPE2-from-fabric differs from the PS-HWICAP `writeseq` envelope (raw-FDRI,
-  no-GRESTORE), OR the `lut_o` 8-combo readout in firmware is off. Both are board-only
-  (the host gate used fake fixed-length seqs + a stub eval, so neither the real frame
-  format nor `lut_o` was covered). **Next: a debug round on `rtl/xbus_icap.v` data
-  handling + the frame format (try DIN bit-reversal) and the `lut_o` readout.**
+  correctly). This initially looked like a possible internal-ICAPE2 DIN ordering or
+  `lut_o` readout issue, but the host-side diagnosis below found the simpler root
+  cause first.
 
 **Post-run host diagnosis (2026-06-30):** before changing DIN ordering, the generated
 framebank itself was found incomplete. All `cand/seq_*.seq.bin` files targeted only FAR

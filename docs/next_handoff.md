@@ -146,16 +146,16 @@ Current scoped experiment:
 First board run proved the internal ICAPE2 mechanism but failed fidelity with
 `0xEB020520`. Host-side diagnosis found the candidate framebank had truncated each
 candidate to one FAR (`0x00400d22`), while INIT `80/a8/e8` also require FAR
-`0x00400d23`. The current fix is multi-sequence descriptors per candidate; rerun
-before chasing DIN byte/bit ordering. PASS target after new framebank staging:
-mailbox `0xEA0308E8` followed by steady `0xEB0308E8`.
+`0x00400d23`. The fix was multi-sequence descriptors per candidate; the rerun
+passed with mailbox `0xEA0308E8` followed by steady `0xEB0308E8`.
 
-Open board work:
+Verified board flow:
 
 - Build the `neorv32_soc_icap` static with the EHW-2 target and firmware.
 - Generate all changed single-FAR frame sequences for INIT values `00`, `80`, `a8`,
   `e8` from one routed design; prefer `ehw2-build-framebank-from-bits.py` over
-  manual copying.
+  manual copying. Its `.bits` inputs must come from the exact `.bit` files used for
+  extraction; stale bitread output from an older build will mis-anchor frames.
 - Stage the framebank, clear `PCAP_PR`, and run the NEORV32 eval loop.
 
 ---
@@ -170,5 +170,5 @@ Open board work:
 - Isolation absolute: edit only `zynq_ehw`; `external/` is read-only reference.
 - Hardware facts go in `docs/hw_notes.md`; I log board runs in `docs/board_results.md`.
 
-Recommended order: **P1–P5 DONE; P6 host prep next.** Board gate is required for the
-EHW-2 claim because only hardware can prove `xbus_icap` and ICAPE2 frame writes.
+Recommended next step: optional writeup/release polish or tag. The mandatory
+EHW-0 → EHW-2 ladder is complete and board-verified.
