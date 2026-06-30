@@ -227,7 +227,7 @@ reset. The CGP analogue of EHW-0.5.
 
 ---
 
-## EHW-2: per-eval on-chip ICAPE2 LUT-INIT evolution — PARTIAL (mechanism runs; fidelity TBD) (2026-06-30)
+## EHW-2: per-eval on-chip ICAPE2 LUT-INIT evolution — PASS (HW-VERIFIED 2026-06-30)
 
 **The hardest path: NEORV32 drives the fabric `xbus_icap` (ICAPE2) to rewrite a live
 LUT-INIT every fitness eval — authentic Thompson live-bitstream evolution.** The
@@ -268,6 +268,19 @@ e8: bit_00400d22_100_06, bit_00400d23_100_06, bit_00400d23_100_07, bit_00400d23_
 So the partial result is consistent with a real ICAP write of a truncated phenotype,
 not yet evidence that ICAPE2 DIN ordering is wrong. Fix prepared: 8KB framebank +
 multi-sequence descriptors per candidate; rerun with `scripts/ehw2-build-framebank-from-bits.py`.
+
+**RESOLVED — PASS (2026-06-30):** the half-phenotype diagnosis was correct; **NOT a DIN
+bit-ordering issue.** With the 8KB framebank holding both FARs per candidate (the LUT INIT
+spans `0x00000c22`+`0x00000c23` in the rebuild — it moves every build, so re-extract via
+`ehw2-build-framebank-from-bits.py`), candidates a8/e8 now carry **two** envelopes (d22+d23,
+each a proper target+pad frame). Rebuilt (8KB framebuf RTL + new descriptor firmware),
+re-staged the multi-FAR framebank, ran the per-eval ICAP loop → steady **`0xeb0308e8`**
+(candidate 3 = e8, fitness 8/8, observed mask `0xe8` = target) — exactly the PASS condition,
+12× stable, no wedge, `lut_o` live. **This is authentic Thompson per-eval on-chip ICAPE2
+evolution on real silicon: NEORV32 rewrote a live LUT-INIT through the fabric `xbus_icap`
+every fitness evaluation and converged to the target.** Root cause: 7-series FDRI writes the
+last frame of a burst as a non-committed pad, so a single FAR-d22 envelope set d22 but left
+d23 uncommitted (truncated phenotype) — one envelope per spanned FAR fixes it.
 
 ### Gotchas caught on silicon (3, all real)
 1. **Forgot to bake the EHW-2 firmware into IMEM before the Vivado build** → bitstream

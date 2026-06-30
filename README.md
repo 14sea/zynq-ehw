@@ -53,12 +53,14 @@ untouched.
   never reset). mailbox `0xe3000007→0xe3000010` (rows 7→16). The CGP analogue of
   EHW-0.5 (`docs/board_results.md`). Also fixed a real `m75-build-frameseqs.py`
   anchoring bug (duplicate frame start for identical-diff frames).
-- **EHW-2 stretch partial on EBAZ4205** — `rtl/ehw2_lut_target.v` +
-  `sw/ehw/ehw2_icap_micro.c` define the stretch demo: NEORV32 stages each fitness
-  eval by streaming candidate LUT-INIT frame sequences through `rtl/xbus_icap.v`,
-  then scores the live edited LUT. The internal ICAPE2 mechanism ran on board, but
-  the first framebank truncated multi-FAR candidates and produced `0xEB020520`;
-  multi-sequence candidate descriptors are the next fidelity fix.
+- **EHW-2 stretch HW-VERIFIED on EBAZ4205** — authentic Thompson **per-eval on-chip
+  ICAPE2** evolution: `sw/ehw/ehw2_icap_micro.c` runs on NEORV32 and, every fitness
+  evaluation, streams a candidate LUT-INIT frame sequence through `rtl/xbus_icap.v`
+  (fabric ICAPE2) to **rewrite a live LUT in the running bitstream**, then scores the
+  edited LUT. Converged to the target (mailbox `0xeb0308e8` = candidate e8, fitness
+  8/8, mask `0xe8`). Key fix: the LUT INIT spans two config FARs, so each candidate
+  needs **two** frame envelopes (the multi-FAR 8KB framebank) — a single envelope left
+  the 2nd frame as a non-committed pad (`docs/board_results.md`).
 
 ## Layout
 

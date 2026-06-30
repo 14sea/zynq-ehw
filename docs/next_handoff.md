@@ -1,15 +1,11 @@
 # Next-milestone handoff (Claude → ChatGPT)
 
-Status (2026-06-30): **EHW-0.3, EHW-0.4, EHW-1.0, EHW-1.1-sw, EHW-1.1-fabric,
-EHW-0.5, EHW-1.2 ALL HW-VERIFIED** (board runs in `docs/board_results.md`).
-Board-verified on EBAZ4205: EHW-0.3 (GA classifier 40/40), EHW-1.1-sw (CGP 2-bit
-multiplier 16/16, **software** LUT-grid eval), EHW-1.1-fabric (CGP multiplier 16/16
-on true fabric VRC), EHW-0.5 (ICAP-bake evolved weights into LUT-KCM →
-`0x80AF7FF2`), EHW-1.2 (ICAP-rewrite the evolved logic circuit's LUTs → broken 7/16
-multiplier becomes perfect 16/16, live). **P1–P5 ALL COMPLETE.**
-
-**▶ Current stretch target:** EHW-2 host prep is underway: small per-eval on-chip
-ICAPE2 evolution using a staged LUT-INIT framebank and NEORV32-side fitness.
+Status (2026-06-30): **THE WHOLE LADDER IS HW-VERIFIED — EHW-0.3, EHW-0.4, EHW-1.0,
+EHW-1.1-sw, EHW-1.1-fabric, EHW-0.5, EHW-1.2, AND the EHW-2 stretch** (board runs in
+`docs/board_results.md`). EHW-2 = per-eval on-chip ICAPE2 LUT-INIT evolution converged
+to target (`0xeb0308e8`) — authentic Thompson live-bitstream evolution. **P1–P6 ALL
+COMPLETE; no mandatory ladder item remains.** Next work is optional: writeup/release
+polish, a tag, or deeper EHW-2 variants.
 
 Priorities are ordered so you can deliver each fully **host-side with a self-proof**
 (per `docs/workflow.md` rule 1); I'll handle the board steps.
@@ -120,7 +116,10 @@ baseline/champion truth-table expectations and frame-sequence generation flow.
 
 ---
 
-## P6 — EHW-2 stretch: per-eval on-chip ICAPE2 evolution — HOST PREP
+## P6 — EHW-2 stretch: per-eval on-chip ICAPE2 evolution — DONE (HW-VERIFIED)
+
+✅ Converged to target on EBAZ4205 (mailbox `0xeb0308e8`). Fix: LUT INIT spans 2 FARs → multi-FAR 8KB framebank (each candidate writes both frames; a single envelope left the 2nd frame as a non-committed pad). See `docs/board_results.md`.
+
 
 Goal: every fitness eval performs a real in-fabric ICAP LUT-INIT rewrite through
 `rtl/xbus_icap.v`, then measures the live edited LUT. The PS stages the candidate
