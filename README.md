@@ -11,6 +11,10 @@ prjxray, measured-boot, the 4×4 array + LUT-KCM, PS mailbox). Per project polic
 those assets are **copied in here, never edited in place** — `zynq-xpart` is left
 untouched.
 
+## License
+
+Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored; prjxray/Vivado are external tools; the `ref/` papers are gitignored.
+
 ## Status
 
 - **Design done** — see `docs/`. Decisions: task = the full ladder (EHW-0 evolve

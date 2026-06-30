@@ -1,0 +1,19 @@
+zynq_ehw — Evolvable Hardware on the EBAZ4205 (XC7Z010)
+Copyright 2026 14sea
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Third-party components (NOT vendored in this repository; fetched/used separately):
+
+- NEORV32 RISC-V soft-core (https://github.com/stnolting/neorv32) — BSD-3-Clause.
+  Fetched at build time by scripts/setup-deps.sh into rtl_src/ (gitignored).
+- Project X-Ray / prjxray + its database (f4pga) — used as an external tool for
+  locating LUT-INIT config bits; not redistributed here.
+- Xilinx Vivado 2025.2 — proprietary build tool; not redistributed.
+
+The two reference papers under ref/ (CoBEA, GECCO'22; Whitley et al., ISAL'21) are
+copyrighted by their respective publishers and are gitignored (not distributed).
+
+Portions of the RTL, scripts, and build flows are copied from the sibling project
+zynq-xpart (same author, same Apache-2.0 terms); the sibling projects are never
+modified by this repository.
