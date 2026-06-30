@@ -172,3 +172,24 @@ Verified board flow:
 
 Recommended next step: optional writeup/release polish or tag. The mandatory
 EHW-0 → EHW-2 ladder is complete and board-verified.
+
+---
+
+## P7 — generalize the EHW-2 candidate / framebank generation (ChatGPT)
+
+`scripts/ehw2-build-framebank-from-bits.py` already generalizes the *extraction*: arbitrary
+candidate INIT bytes (`nargs="+"`), auto-locates the target LUT's FAR(s) per build, and emits
+the multi-FAR framebank. What is still hardcoded / manual and worth generalizing:
+
+- **Candidate set is hand-listed (`00 80 a8 e8`).** Generalize to a search-space spec: a target
+  truth-table mask + the GA's actual candidate stream (so the bank holds the GA's real
+  population, not 4 didactic points), or a "generate K candidates between baseline and target".
+- **Per-INIT bitstreams are pre-built** by editing one routed design's LUT INIT in
+  `build_ehw2_icap.tcl`. Generalize to: given a target genome/mask, auto-emit the needed INIT
+  variants (and, ideally, a single-frame edit on the routed DCP like `cgp_baked_edit_champ.tcl`
+  instead of N full builds).
+- **Bigger genome:** more than one LUT (a small CGP grid through ICAPE2), which makes the
+  framebuf-size / per-eval-frame-count budget real.
+- Keep the host gate (`tests/compare_ehw2_micro.py`) covering the new descriptor/contract, and
+  remember: the target LUT moves every build → frames must be re-extracted from the fresh
+  bitstreams (the `.bits` must match the `.bit` build).

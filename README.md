@@ -62,6 +62,32 @@ untouched.
   needs **two** frame envelopes (the multi-FAR 8KB framebank) — a single envelope left
   the 2nd frame as a non-committed pad (`docs/board_results.md`).
 
+## Dependencies & reproduction environment
+
+Developed and hardware-verified against these versions (others may work; this is the tested baseline). Host gates need only Python + a C compiler + iverilog; the board/ICAP flows additionally need Vivado, the RISC-V toolchain, prjxray, and the EBAZ4205.
+
+| Tool | Version | Used for |
+|---|---|---|
+| Python | **3.12** + numpy | host oracles, framebank/ICAP tooling, mailbox decoders |
+| C compiler (host) | any C99 (gcc/clang) | portable-C twins (`-DEHW*_HOST_STUB`) |
+| Icarus Verilog | **12.0** | RTL host gates (`cgp_vrc`, `cgp_baked`, `ehw2`) |
+| Vivado | **2025.2** | bitstream builds (`vivado/dfx/*.tcl`, `vivado/icap_ehw2/*.tcl`) + optional OOC `synth_design` gate |
+| RISC-V GCC | `riscv64-unknown-elf-` 13.x | NEORV32 firmware (`sw/ehw/*.c` → IMEM) |
+| picolibc | system pkg | firmware libc (`-specs=picolibc.specs`); `setup-deps.sh` applies the errno-guard patch |
+| NEORV32 | **v1.12.9** | soft-core RTL + libs; fetched by `scripts/setup-deps.sh` (gitignored, not vendored) — BSD-3 licensed upstream |
+| prjxray + DB | f4pga | LUT-INIT frame location for ICAP edits (`/home/test/prjxray` + `/home/test/prjxray-db`, part `xc7z010clg400-1`) |
+| Board tooling | — | openocd `ebaz4205.cfg`, `uboot-intercept.py`, `/dev/ebaz-uart` — live in `/home/test/xilinx`, NOT this repo |
+| Board | EBAZ4205 (XC7Z010) | JTAG = Digilent HS3 (FT232H); UART = CH340 @115200; original miner U-Boot, break key `d`; SRST not wired (reset via SLCR) |
+
+Two large dependencies are kept **out of the repo** (gitignored, regenerable): the NEORV32 source (`rtl_src/`, via `scripts/setup-deps.sh`) and Vivado build outputs (`vivado/**/build/`). `external/` (read-only snapshots of the sibling projects) and `ref/` (copyrighted papers) are also gitignored.
+
+## Host tests (no board, no Vivado)
+
+```sh
+tests/run_host_gates.sh      # runs all 5 host gates: oracle<->C-twin bit-exact + RTL sims
+```
+Every board-bound deliverable ships with a host self-proof; this is the gate that must be green before any board run (see `docs/workflow.md`). Board reproduction (build → ICAP/load → mailbox) is in `docs/BOARD_REPRO.md`.
+
 ## Layout
 
 - `docs/ehw_feasibility.md` — feasibility verdict (every EHW primitive already
@@ -75,6 +101,10 @@ untouched.
   variance notes.
 - `docs/board_results.md` — exact board observations and mailbox words for each
   hardware gate.
+- `docs/WRITEUP.md` — paper-style report: problem, approach, results, prior-art diff,
+  limitations, reproducibility, failure cases.
+- `docs/BOARD_REPRO.md` — ordered per-milestone board reproduction checklist.
+- `tests/run_host_gates.sh` — one-command host gate runner (no board/Vivado).
 - `docs/ehw0_4_results.md` — evolution-vs-gradient-training table for EHW-0.
 - `docs/ehw1_0_results.md` — host-only CGP 2-bit multiplier result.
 - `docs/ehw1_1_fabric_results.md` — host + board result for the fabric CGP VRC substrate.
