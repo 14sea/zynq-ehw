@@ -23,6 +23,7 @@ vivado*.str
 *.bin
 m65_icap/
 vivado/dfx/cgp_icap/
+vivado/icap_ehw2/build/
 
 # OS
 .DS_Store

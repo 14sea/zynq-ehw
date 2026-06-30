@@ -1,9 +1,12 @@
-// INVESTIGATION ARTIFACT (task #8 part 1) -- see docs/icap_investigation.md.
-// Not in the active DFX build; the proven live LUT edit uses PCAP/loadbp (docs/lut_surgery.md).
-// This custom controller proved the ICAP is electrically reachable from NEORV32 (it can
-// perturb the LUT live) but could not do a clean/deterministic single-frame write on this board.
+// XBUS -> ICAPE2 self-reconfiguration controller.
 //
-// XBUS -> ICAPE2 self-reconfiguration + readback port (Zynq-7, static region).
+// Historical note: the first task-#8 attempt looked nondeterministic, but the later
+// zynq_xpart T2.3 resolution proved this controller can do a clean live LUT edit
+// when (a) the sequence contains no GRESTORE/GTS, (b) devcfg.CTRL[PCAP_PR] is cleared
+// so ICAP owns the configuration engine, and (c) swap mode 1 is used. EHW-2 reuses
+// that proven NEORV32 -> xbus_icap -> ICAPE2 path.
+//
+// Self-reconfiguration + readback port (Zynq-7, static region).
 //
 // NEORV32 fills a buffer with a config-word sequence, then triggers a burst that
 // streams it to ICAPE2 at one word/clock with CSIB held low (a CSIB de-assert

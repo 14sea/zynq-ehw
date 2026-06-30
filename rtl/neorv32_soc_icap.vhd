@@ -1,9 +1,9 @@
 -- neorv32_soc_icap.vhd — NEORV32 SoC that drives ICAP from inside the fabric (T2.3).
 --
--- "Fabric self-modifies": NEORV32 streams a single-frame config-write sequence to the
+-- "Fabric self-modifies": NEORV32 streams single-frame config-write sequences to the
 -- custom XBUS->ICAPE2 controller (rtl/xbus_icap.v), rewriting one CRAM frame (a LUT6
 -- truth table) live. The reconfiguration EXECUTION path is 100% in-fabric (NEORV32 ->
--- xbus_icap -> ICAPE2). The PS only (a) stages the frame payload once into a shared
+-- xbus_icap -> ICAPE2). The PS only (a) stages the frame payload bank once into a shared
 -- dual-port BRAM and (b) grants ICAP the config engine (devcfg PCAP_PR=0) and observes
 -- -- it is never in the reconfiguration loop itself (cf. the external-review DDR-staging
 -- pattern). Payload-in-BRAM (not baked in IMEM) also decouples the frame from the build,
@@ -13,8 +13,8 @@
 -- XBUS (Wishbone) memory map seen by NEORV32:
 --   0xF1000xxx : MBOX status register (write) -> mbox_o (PS reads over AXI-GPIO)
 --   0xF3000xxx : xbus_icap controller (custom XBUS->ICAPE2)
---   0xF4000xxx : LUT readback (read) -> lut_probe output bit0 (NEORV32 sees its edit)
---   0xF5000xxx : frame payload BRAM (read) -> staged by the PS via an AXI BRAM Ctrl
+--   0xF4000xxx : EHW-2 LUT target (write input row, read output bit0)
+--   0xF5000xxx : frame payload BRAM bank (read) -> staged by the PS via AXI-Lite
 --   others     : default ACK, reads 0
 
 library ieee;
@@ -32,11 +32,11 @@ entity neorv32_soc_icap is
     uart0_rxd_i  : in  std_ulogic;
     mbox_o       : out std_ulogic_vector(31 downto 0);  -- NEORV32 status -> PS
     mbox_valid_o : out std_ulogic;
-    lut_o        : out std_ulogic_vector(31 downto 0);  -- lut_probe output -> PS GPIO
+    lut_o        : out std_ulogic_vector(31 downto 0);  -- EHW-2 LUT output -> PS GPIO
     -- AXI4-Lite slave: PS stages the ICAP frame payload into the shared framebuf
     s_axi_aclk    : in  std_logic;
     s_axi_aresetn : in  std_logic;
-    s_axi_awaddr  : in  std_logic_vector(9 downto 0);
+    s_axi_awaddr  : in  std_logic_vector(11 downto 0);
     s_axi_awvalid : in  std_logic;
     s_axi_awready : out std_logic;
     s_axi_wdata   : in  std_logic_vector(31 downto 0);
@@ -46,7 +46,7 @@ entity neorv32_soc_icap is
     s_axi_bresp   : out std_logic_vector(1 downto 0);
     s_axi_bvalid  : out std_logic;
     s_axi_bready  : in  std_logic;
-    s_axi_araddr  : in  std_logic_vector(9 downto 0);
+    s_axi_araddr  : in  std_logic_vector(11 downto 0);
     s_axi_arvalid : in  std_logic;
     s_axi_arready : out std_logic;
     s_axi_rdata   : out std_logic_vector(31 downto 0);
@@ -88,6 +88,7 @@ architecture rtl of neorv32_soc_icap is
   signal lut_ack   : std_ulogic := '0';
   signal def_ack   : std_ulogic := '0';
   signal lut_q     : std_ulogic_vector(31 downto 0);
+  signal lut_i     : std_ulogic_vector(5 downto 0) := (others => '0');
 
   -- frame-BRAM read port (1-cycle registered ack)
   signal fb_ack    : std_ulogic := '0';
@@ -97,7 +98,7 @@ architecture rtl of neorv32_soc_icap is
     port (
       s_axi_aclk    : in  std_logic;
       s_axi_aresetn : in  std_logic;
-      s_axi_awaddr  : in  std_logic_vector(9 downto 0);
+      s_axi_awaddr  : in  std_logic_vector(11 downto 0);
       s_axi_awvalid : in  std_logic;
       s_axi_awready : out std_logic;
       s_axi_wdata   : in  std_logic_vector(31 downto 0);
@@ -107,14 +108,14 @@ architecture rtl of neorv32_soc_icap is
       s_axi_bresp   : out std_logic_vector(1 downto 0);
       s_axi_bvalid  : out std_logic;
       s_axi_bready  : in  std_logic;
-      s_axi_araddr  : in  std_logic_vector(9 downto 0);
+      s_axi_araddr  : in  std_logic_vector(11 downto 0);
       s_axi_arvalid : in  std_logic;
       s_axi_arready : out std_logic;
       s_axi_rdata   : out std_logic_vector(31 downto 0);
       s_axi_rresp   : out std_logic_vector(1 downto 0);
       s_axi_rvalid  : out std_logic;
       s_axi_rready  : in  std_logic;
-      rd_addr       : in  std_logic_vector(7 downto 0);
+      rd_addr       : in  std_logic_vector(9 downto 0);
       rd_data       : out std_logic_vector(31 downto 0)
     );
   end component;
@@ -135,8 +136,11 @@ architecture rtl of neorv32_soc_icap is
     );
   end component;
 
-  component lut_probe is
-    port ( q : out std_ulogic_vector(31 downto 0) );
+  component ehw2_lut_target is
+    port (
+      i : in  std_ulogic_vector(5 downto 0);
+      q : out std_ulogic_vector(31 downto 0)
+    );
   end component;
 
 begin
@@ -180,6 +184,9 @@ begin
   begin
     if rising_edge(clk_i) then
       lut_ack <= xbus_cyc and xbus_stb and lut_selected;
+      if (xbus_cyc and xbus_stb and lut_selected and xbus_we) = '1' then
+        lut_i <= xbus_dat_o(5 downto 0);
+      end if;
     end if;
   end process;
 
@@ -240,7 +247,7 @@ begin
     xbus_dat_r => icap_dat_r, xbus_ack => icap_ack, xbus_err => icap_err
   );
 
-  lut_inst: lut_probe port map ( q => lut_q );
+  lut_inst: ehw2_lut_target port map ( i => lut_i, q => lut_q );
 
   -- shared frame payload: PS writes via AXI-Lite; NEORV32 reads word index xbus_adr[9:2]
   framebuf_inst: axil_framebuf
@@ -252,8 +259,7 @@ begin
     s_axi_bready => s_axi_bready, s_axi_araddr => s_axi_araddr, s_axi_arvalid => s_axi_arvalid,
     s_axi_arready => s_axi_arready, s_axi_rdata => s_axi_rdata, s_axi_rresp => s_axi_rresp,
     s_axi_rvalid => s_axi_rvalid, s_axi_rready => s_axi_rready,
-    rd_addr => std_logic_vector(xbus_adr(9 downto 2)), rd_data => fb_rddata
+    rd_addr => std_logic_vector(xbus_adr(11 downto 2)), rd_data => fb_rddata
   );
 
 end architecture rtl;
-

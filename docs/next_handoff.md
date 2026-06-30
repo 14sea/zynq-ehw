@@ -8,8 +8,8 @@ on true fabric VRC), EHW-0.5 (ICAP-bake evolved weights into LUT-KCM →
 `0x80AF7FF2`), EHW-1.2 (ICAP-rewrite the evolved logic circuit's LUTs → broken 7/16
 multiplier becomes perfect 16/16, live). **P1–P5 ALL COMPLETE.**
 
-**▶ Next real target:** no mandatory ladder item remains. Options are polish/writeup,
-tag/release, or EHW-2 stretch (small per-eval on-chip ICAPE2 evolution).
+**▶ Current stretch target:** EHW-2 host prep is underway: small per-eval on-chip
+ICAPE2 evolution using a staged LUT-INIT framebank and NEORV32-side fitness.
 
 Priorities are ordered so you can deliver each fully **host-side with a self-proof**
 (per `docs/workflow.md` rule 1); I'll handle the board steps.
@@ -119,6 +119,38 @@ baseline/champion truth-table expectations and frame-sequence generation flow.
 
 ---
 
+## P6 — EHW-2 stretch: per-eval on-chip ICAPE2 evolution — HOST PREP
+
+Goal: every fitness eval performs a real in-fabric ICAP LUT-INIT rewrite through
+`rtl/xbus_icap.v`, then measures the live edited LUT. The PS stages the candidate
+bank once and grants ICAP ownership; it is not in the eval loop.
+
+Current scoped experiment:
+
+- `rtl/ehw2_lut_target.v`: one DONT_TOUCH LUT6 with firmware-controlled inputs.
+- `rtl/neorv32_soc_icap.vhd`: `0xF4000000` writes the LUT input row and reads bit0.
+- `rtl/axil_framebuf.vhd`: 1024x32 framebuf, enough for four 233-word ICAP sequences.
+- `sw/ehw/ehw2_icap_micro.c`: evaluates four staged candidates by streaming each
+  sequence through `xbus_icap`, sweeping 8 truth-table rows, and selecting the best.
+- `sim/ehw2_micro_oracle.py` + `tests/compare_ehw2_micro.py`: host gate for the
+  3-input majority target (`0xe8`, max 8/8).
+- `scripts/ehw2-framebank-pack.py` / `scripts/ehw2-framebank-load.py`: pack and
+  stage the candidate frame sequences.
+- `vivado/icap_ehw2/build_ehw2_icap.tcl`: zynq_ehw-local T2.3-style static build
+  and four same-route INIT bitstreams.
+
+Board handoff is in `docs/ehw2_results.md`. PASS target after sequence generation and
+board staging: mailbox `0xEA0308E8` followed by steady `0xEB0308E8`.
+
+Open board work:
+
+- Build the `neorv32_soc_icap` static with the EHW-2 target and firmware.
+- Generate candidate frame sequences for INIT values `00`, `80`, `a8`, `e8` from one
+  routed design.
+- Stage the framebank, clear `PCAP_PR`, and run the NEORV32 eval loop.
+
+---
+
 ## Constraints (don't regress)
 
 - Every hardware-bound deliverable ships with a host gate (oracle + C twin +
@@ -129,5 +161,5 @@ baseline/champion truth-table expectations and frame-sequence generation flow.
 - Isolation absolute: edit only `zynq_ehw`; `external/` is read-only reference.
 - Hardware facts go in `docs/hw_notes.md`; I log board runs in `docs/board_results.md`.
 
-Recommended order: **P1–P5 DONE.** Next work should be explicitly scoped: either
-writeup/release polish or the EHW-2 stretch.
+Recommended order: **P1–P5 DONE; P6 host prep next.** Board gate is required for the
+EHW-2 claim because only hardware can prove `xbus_icap` and ICAPE2 frame writes.

@@ -51,6 +51,10 @@ untouched.
   never reset). mailbox `0xe3000007→0xe3000010` (rows 7→16). The CGP analogue of
   EHW-0.5 (`docs/board_results.md`). Also fixed a real `m75-build-frameseqs.py`
   anchoring bug (duplicate frame start for identical-diff frames).
+- **EHW-2 host prep started** — `rtl/ehw2_lut_target.v` + `sw/ehw/ehw2_icap_micro.c`
+  define the stretch demo: NEORV32 stages each fitness eval by streaming a candidate
+  LUT-INIT frame sequence through `rtl/xbus_icap.v`, then scores the live edited LUT.
+  Host gate is `tests/compare_ehw2_micro.py`; board ICAPE2 run is pending.
 
 ## Layout
 
@@ -69,6 +73,8 @@ untouched.
 - `docs/ehw1_0_results.md` — host-only CGP 2-bit multiplier result.
 - `docs/ehw1_1_fabric_results.md` — host + board result for the fabric CGP VRC substrate.
 - `docs/ehw1_2_results.md` — host prep for ICAP-baking the evolved CGP multiplier.
+- `docs/ehw2_results.md` — EHW-2 host prep and board handoff for per-eval ICAPE2
+  LUT-INIT evolution.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
@@ -77,13 +83,16 @@ untouched.
 - `rtl/dfx/tpu_rp_rm_cgp_vrc.v` — DFX RM wrapper exposing the CGP VRC in the existing
   `0xF0000000` NEORV32 peripheral window.
 - `rtl/cgp_baked.v` — EHW-1.2 hardwired LUT4 CGP grid for ICAP INIT edits.
+- `rtl/ehw2_lut_target.v` / `rtl/neorv32_soc_icap.vhd` / `rtl/xbus_icap.v` —
+  EHW-2 stretch substrate for in-fabric ICAPE2 LUT-INIT edits.
 - `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and
   `ga_eval.c` for EHW-0.1, plus `ehw_eval_mbox.c` for the EHW-0.2 VRC/mailbox
   bridge, `ehw_ga_mbox.c` for the EHW-0.3 board-resident GA bridge, and
   `cgp_kernel.h`/`cgp_eval.c` for the EHW-1.0 CGP twin, `cgp_ga_mbox.c` for the
   EHW-1.1-sw board-resident software-eval CGP GA, `cgp_vrc_mbox.c` for the
   EHW-1.1-fabric board-resident fabric-eval CGP GA, `cgp_baked_post.c` for the
-  EHW-1.2 baked-CGP POST, and `lutkcm_post.c` for the EHW-0.5 ICAP-bake POST.
+  EHW-1.2 baked-CGP POST, `ehw2_icap_micro.c` for the EHW-2 per-eval ICAPE2
+  stretch, and `lutkcm_post.c` for the EHW-0.5 ICAP-bake POST.
 - `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
 - `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
   bit-exact CSV curves plus the M7.5.3 golden bitmap guard.
@@ -93,6 +102,10 @@ untouched.
   host stub.
 - `tests/compare_cgp_baked.py` — builds/runs the baked-CGP RTL/firmware host gate
   and optional Vivado OOC synth check.
+- `tests/compare_ehw2_micro.py` — verifies the EHW-2 Python oracle, C host stub,
+  and framebank packer contract.
+- `vivado/icap_ehw2/build_ehw2_icap.tcl` — EHW-2 T2.3-style static build and
+  same-route INIT bitstreams for frame extraction.
 - `external/` — local snapshots of selected reference files copied from
   `/home/test/zynq_xpart` and `/home/test/zynq_agentctl`. These make this project
   independent; edit only the copies here, never the source projects. Also includes
