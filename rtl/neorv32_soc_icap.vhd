@@ -14,7 +14,7 @@
 --   0xF1000xxx : MBOX status register (write) -> mbox_o (PS reads over AXI-GPIO)
 --   0xF3000xxx : xbus_icap controller (custom XBUS->ICAPE2)
 --   0xF4000xxx : EHW-2 LUT target (write input row, read output bit0)
---   0xF5000xxx : frame payload BRAM bank (read) -> staged by the PS via AXI-Lite
+--   0xF5000xxx-0xF5001xxx : frame payload BRAM bank -> staged by PS via AXI-Lite
 --   others     : default ACK, reads 0
 
 library ieee;
@@ -36,7 +36,7 @@ entity neorv32_soc_icap is
     -- AXI4-Lite slave: PS stages the ICAP frame payload into the shared framebuf
     s_axi_aclk    : in  std_logic;
     s_axi_aresetn : in  std_logic;
-    s_axi_awaddr  : in  std_logic_vector(11 downto 0);
+    s_axi_awaddr  : in  std_logic_vector(12 downto 0);
     s_axi_awvalid : in  std_logic;
     s_axi_awready : out std_logic;
     s_axi_wdata   : in  std_logic_vector(31 downto 0);
@@ -46,7 +46,7 @@ entity neorv32_soc_icap is
     s_axi_bresp   : out std_logic_vector(1 downto 0);
     s_axi_bvalid  : out std_logic;
     s_axi_bready  : in  std_logic;
-    s_axi_araddr  : in  std_logic_vector(11 downto 0);
+    s_axi_araddr  : in  std_logic_vector(12 downto 0);
     s_axi_arvalid : in  std_logic;
     s_axi_arready : out std_logic;
     s_axi_rdata   : out std_logic_vector(31 downto 0);
@@ -98,7 +98,7 @@ architecture rtl of neorv32_soc_icap is
     port (
       s_axi_aclk    : in  std_logic;
       s_axi_aresetn : in  std_logic;
-      s_axi_awaddr  : in  std_logic_vector(11 downto 0);
+      s_axi_awaddr  : in  std_logic_vector(12 downto 0);
       s_axi_awvalid : in  std_logic;
       s_axi_awready : out std_logic;
       s_axi_wdata   : in  std_logic_vector(31 downto 0);
@@ -108,14 +108,14 @@ architecture rtl of neorv32_soc_icap is
       s_axi_bresp   : out std_logic_vector(1 downto 0);
       s_axi_bvalid  : out std_logic;
       s_axi_bready  : in  std_logic;
-      s_axi_araddr  : in  std_logic_vector(11 downto 0);
+      s_axi_araddr  : in  std_logic_vector(12 downto 0);
       s_axi_arvalid : in  std_logic;
       s_axi_arready : out std_logic;
       s_axi_rdata   : out std_logic_vector(31 downto 0);
       s_axi_rresp   : out std_logic_vector(1 downto 0);
       s_axi_rvalid  : out std_logic;
       s_axi_rready  : in  std_logic;
-      rd_addr       : in  std_logic_vector(9 downto 0);
+      rd_addr       : in  std_logic_vector(10 downto 0);
       rd_data       : out std_logic_vector(31 downto 0)
     );
   end component;
@@ -160,7 +160,8 @@ begin
   mbox_selected <= '1' when xbus_adr(31 downto 12) = x"F1000" else '0';
   icap_selected <= '1' when xbus_adr(31 downto 12) = x"F3000" else '0';
   lut_selected  <= '1' when xbus_adr(31 downto 12) = x"F4000" else '0';
-  fb_selected   <= '1' when xbus_adr(31 downto 12) = x"F5000" else '0';
+  fb_selected   <= '1' when (xbus_adr(31 downto 12) = x"F5000" or
+                             xbus_adr(31 downto 12) = x"F5001") else '0';
   def_selected  <= '1' when (mbox_selected = '0' and icap_selected = '0'
                              and lut_selected = '0' and fb_selected = '0') else '0';
 
@@ -259,7 +260,7 @@ begin
     s_axi_bready => s_axi_bready, s_axi_araddr => s_axi_araddr, s_axi_arvalid => s_axi_arvalid,
     s_axi_arready => s_axi_arready, s_axi_rdata => s_axi_rdata, s_axi_rresp => s_axi_rresp,
     s_axi_rvalid => s_axi_rvalid, s_axi_rready => s_axi_rready,
-    rd_addr => std_logic_vector(xbus_adr(11 downto 2)), rd_data => fb_rddata
+    rd_addr => std_logic_vector(xbus_adr(12 downto 2)), rd_data => fb_rddata
   );
 
 end architecture rtl;

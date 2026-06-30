@@ -84,10 +84,13 @@ Result:
 - host cross-check: `sim/oracle_evolve.py --seed 3 --population 32 --generations 64`
   → champion **bit-identical**, correct 40/40, SSE 4799, fitness 39995201. PASS.
 - notes:
-  - The board reports `gen=64` (ran the full cap) while the host reaches 40/40 at
-    `gen 1`; the final champion is identical. Only difference from ChatGPT's
-    predicted tags is the gen counter in `0xE9` (predicted `0x0128` gen1, observed
-    `0x4028` gen64) — both `correct=40`, expected.
+  - The board reports `gen=64` because after hitting the target the firmware breaks
+    out of the GA loop and enters its steady publish loop using `EHW_GA_GENS` as
+    the replay tag. It does **not** mean the search needed or ran all 64
+    generations. The host reaches 40/40 at `gen 1`; the final champion is
+    identical. Only difference from ChatGPT's predicted tags is this completion
+    replay tag in `0xE9` (predicted `0x0128` gen1, observed `0x4028` gen64) —
+    both `correct=40`, expected.
   - The 4×4 VRC array (`tpu_accel`) computes correctly on silicon: SSE + genome
     match the host model exactly → the register-map driver in `ehw_ga_mbox.c` is
     hardware-verified. The 300000-count settle was sufficient for `rm1_tpu`.
@@ -251,6 +254,20 @@ mechanism runs on silicon, but the LUT-edit result is not yet correct.
   (the host gate used fake fixed-length seqs + a stub eval, so neither the real frame
   format nor `lut_o` was covered). **Next: a debug round on `rtl/xbus_icap.v` data
   handling + the frame format (try DIN bit-reversal) and the `lut_o` readout.**
+
+**Post-run host diagnosis (2026-06-30):** before changing DIN ordering, the generated
+framebank itself was found incomplete. All `cand/seq_*.seq.bin` files targeted only FAR
+`0x00400d22`, but the placed LUT's low INIT bits span two FARs:
+
+```text
+80: bit_00400d23_100_06
+a8: bit_00400d22_100_06, bit_00400d23_100_06, bit_00400d23_100_07
+e8: bit_00400d22_100_06, bit_00400d23_100_06, bit_00400d23_100_07, bit_00400d23_100_14
+```
+
+So the partial result is consistent with a real ICAP write of a truncated phenotype,
+not yet evidence that ICAPE2 DIN ordering is wrong. Fix prepared: 8KB framebank +
+multi-sequence descriptors per candidate; rerun with `scripts/ehw2-build-framebank-from-bits.py`.
 
 ### Gotchas caught on silicon (3, all real)
 1. **Forgot to bake the EHW-2 firmware into IMEM before the Vivado build** → bitstream

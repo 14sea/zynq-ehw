@@ -1,6 +1,6 @@
 # EHW-2 Host Prep — Per-Eval On-Chip ICAPE2 Bitstream Evolution
 
-Status: host-prep complete; board run pending.
+Status: mechanism board-run completed; fidelity debug fix in progress.
 
 ## Scope
 
@@ -20,9 +20,10 @@ The first EHW-2 target is intentionally small:
 - Substrate: one `DONT_TOUCH` LUT6 in `rtl/ehw2_lut_target.v`.
 - Genome: the low 8 INIT bits, interpreted as a 3-input truth table.
 - Fitness: rows matching 3-input majority, target mask `0xe8`, max `8/8`.
-- Population: 4 pre-generated candidate frame sequences: `00`, `80`, `a8`, `e8`.
-- Per-eval action: firmware streams that candidate's sequence through `xbus_icap`,
-  then sweeps rows `0..7` via `0xF4000000` and scores the observed mask.
+- Population: 4 pre-generated candidate INITs: `00`, `80`, `a8`, `e8`.
+- Per-eval action: firmware streams all single-FAR frame sequences for that
+  candidate through `xbus_icap`, then sweeps rows `0..7` via `0xF4000000` and
+  scores the observed mask.
 
 This is constrained evolution over a pre-staged candidate bank, not arbitrary
 runtime synthesis of new frames. The important EHW-2 property is still present:
@@ -47,15 +48,27 @@ That means candidate `0xe8` is observed as `0xe8`, scores `8/8`, and wins.
 
 ## Framebank Format
 
-`scripts/ehw2-framebank-pack.py` packs up to 4 candidate sequences into the 4KB
-framebuf used by `rtl/neorv32_soc_icap.vhd`.
+`scripts/ehw2-build-framebank-from-bits.py` builds the candidate framebank from
+the same-route bitstreams and their prjxray `bitread -y` outputs:
+
+```sh
+python3 scripts/ehw2-build-framebank-from-bits.py --out-dir runs/ehw2_seqs \
+  --bit-template 'vivado/icap_ehw2/build/ehw2_init_{init}.bit' \
+  --bits-template 'vivado/icap_ehw2/ehw2_seqs2/init_{init}.bits' \
+  00 80 a8 e8
+```
+
+Internally, `scripts/ehw2-framebank-pack.py` packs up to 4 candidate INITs into
+the 8KB framebuf used by `rtl/neorv32_soc_icap.vhd`. Each candidate can contain
+0, 1, or 2 single-FAR ICAP sequences; the low 8 INIT bits of this placed LUT span
+two FARs on the current build.
 
 ```sh
 python3 scripts/ehw2-framebank-pack.py --out runs/ehw2/framebank.bin \
-  00:runs/ehw2/seq_00.bin \
-  80:runs/ehw2/seq_80.bin \
-  a8:runs/ehw2/seq_a8.bin \
-  e8:runs/ehw2/seq_e8.bin
+  00:- \
+  80:runs/ehw2/seq_80_d23.bin \
+  a8:runs/ehw2/seq_a8_d22.bin,runs/ehw2/seq_a8_d23.bin \
+  e8:runs/ehw2/seq_e8_d22.bin,runs/ehw2/seq_e8_d23.bin
 ```
 
 Layout:
@@ -63,12 +76,36 @@ Layout:
 - word 0: magic `0x45485732` (`EHW2`), written last by the loader.
 - word 1: candidate count.
 - word 2: descriptor base word offset, currently `4`.
-- word 3: descriptor words per candidate, currently `4`.
-- descriptor: `seq_offset`, `seq_len`, `candidate_init`, reserved.
+- word 3: descriptor words per candidate, currently `6`.
+- descriptor: `candidate_init`, `nseq`, `seq0_offset`, `seq0_len`,
+  `seq1_offset`, `seq1_len`.
 
 Each sequence must be at most 255 words because `xbus_icap` stores the burst
-length in one byte. The M7.5.1 single-frame envelopes are 233 words, so four
-candidates fit in one 1024-word framebuf.
+length in one byte. The M7.5.1 single-frame envelopes are 233 words, so up to
+eight sequences fit in the 2048-word framebuf.
+
+## First Board Result And Diagnosis
+
+First EBAZ4205 EHW-2 run:
+
+- Mechanism: PASS. NEORV32 reached main, read the staged framebank, executed the
+  per-eval `xbus_icap` loop, emitted steady result, and recovered without wedge.
+- Fidelity: FAIL. Steady mailbox was `0xEB020520` (candidate `a8`, fitness `5/8`,
+  observed mask `0x20`) instead of expected `0xEB0308E8`.
+
+Root cause found host-side after the board run: the generated candidate framebank
+contained only one sequence per candidate, always FAR `0x00400d22`, but the target
+INIT diff spans two FARs:
+
+```text
+80: bit_00400d23_100_06
+a8: bit_00400d22_100_06, bit_00400d23_100_06, bit_00400d23_100_07
+e8: bit_00400d22_100_06, bit_00400d23_100_06, bit_00400d23_100_07, bit_00400d23_100_14
+```
+
+So the board was genuinely editing CRAM, but each phenotype was truncated to a
+single FAR before fitness measurement. The next board run should use the multi-seq
+framebank format above before investigating DIN byte/bit ordering.
 
 ## Board Run
 
@@ -90,9 +127,11 @@ vivado -mode batch -source vivado/icap_ehw2/build_ehw2_icap.tcl
    `ehw2_lut_target.l_ehw2` LUT INIT values `00`, `80`, `a8`, `e8`. The build
    helper writes `vivado/icap_ehw2/build/ehw2_init_<init>.bit` from one routed
    design by changing only the target LUT's INIT property.
-3. Use prjxray/RAW-FDRI extraction to create one single-FAR ICAP write sequence
-   per candidate. Reuse the M7.5.1 rule: one sync..DESYNC envelope per frame.
-4. Pack the sequences with `ehw2-framebank-pack.py`.
+3. Use prjxray `bitread -y` on each `ehw2_init_<init>.bit` and run
+   `ehw2-build-framebank-from-bits.py` to create every changed single-FAR ICAP
+   write sequence per candidate. Reuse the M7.5.1 rule: one sync..DESYNC envelope
+   per frame. Do not collapse two FARs into one envelope.
+4. Use the generated `framebank.bin`.
 5. Load the bitstream with baseline INIT `00`, stage the framebank:
 
 ```sh
@@ -124,6 +163,7 @@ mw 0xF8007000 0x4c00e07f
 
 ## Open Gate
 
-This still needs Vivado/prjxray sequence generation and an EBAZ4205 board run.
-The local environment can gate the firmware/oracle/framebank contract, but cannot
-prove `xbus_icap` timing or ICAPE2 ownership without hardware.
+The internal ICAPE2 mechanism has run on EBAZ4205. The open gate is a fidelity
+rerun using the multi-FAR framebank. The local environment can gate the
+firmware/oracle/framebank contract, but only hardware can prove the corrected
+sequence bank lands the intended LUT INIT values.

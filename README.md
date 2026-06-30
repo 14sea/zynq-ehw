@@ -26,16 +26,18 @@ untouched.
 - **EHW-0.3 HW-VERIFIED on EBAZ4205** — `sw/ehw/ehw_ga_mbox.c` runs the GA resident
   on NEORV32 over the 4×4 register-loaded VRC array; on silicon it converged 40/40
   with the champion genome **bit-identical to the host oracle** (`docs/board_results.md`).
-- **EHW-0.4 host comparison done** — `sim/ehw0_4_compare.py`: GA champion 40/40 labels
-  vs the M7.5.3 gradient-trained tile's 37/40 — evolution beats gradient on this INT8
-  net (`docs/ehw0_4_results.md`).
+- **EHW-0.4 host comparison done** — `sim/ehw0_4_compare.py`: on the same 40-sample
+  evaluation set, the GA champion scores 40/40 labels vs the M7.5.3 gradient-trained
+  tile's 37/40 after INT8 quantization (`docs/ehw0_4_results.md`). This is a
+  deployment-set metric, not a holdout generalization claim.
 - **EHW-0.5 HW-VERIFIED on EBAZ4205** — the EHW-0.3 evolved W1 tile was **ICAP-baked
   into the LUT-KCM fabric, live** (PS/NEORV32 never reset); mailbox
   `0x1019391F → 0x80AF7FF2`, bit-exact to the VPU-model golden, attested
   (`sw/ehw/lutkcm_post.c`, `vivado/dfx/build_lutkcm.tcl`).
 - **EHW-1.0 host oracle done** — `sim/oracle_cgp.py` + `tests/compare_cgp_twin.py`:
-  CGP GA evolves a fixed-routing 3×4 LUT4 grid into a 2-bit multiplier, 16/16 rows,
-  Python/C bit-exact.
+  CGP GA evolves the four output LUTs of a fixed pass-through scaffold in a
+  fixed-routing 3×4 LUT4 grid into a 2-bit multiplier, 16/16 rows, Python/C
+  bit-exact.
 - **EHW-1.1 HW-VERIFIED on EBAZ4205 (software-eval)** — `sw/ehw/cgp_ga_mbox.c` runs
   the CGP GA resident on NEORV32 → 2-bit multiplier 16/16, champion bit-identical to
   host. ⚠️ **This evaluates the LUT grid in NEORV32 *software*, not in a fabric VRC
@@ -51,10 +53,12 @@ untouched.
   never reset). mailbox `0xe3000007→0xe3000010` (rows 7→16). The CGP analogue of
   EHW-0.5 (`docs/board_results.md`). Also fixed a real `m75-build-frameseqs.py`
   anchoring bug (duplicate frame start for identical-diff frames).
-- **EHW-2 host prep started** — `rtl/ehw2_lut_target.v` + `sw/ehw/ehw2_icap_micro.c`
-  define the stretch demo: NEORV32 stages each fitness eval by streaming a candidate
-  LUT-INIT frame sequence through `rtl/xbus_icap.v`, then scores the live edited LUT.
-  Host gate is `tests/compare_ehw2_micro.py`; board ICAPE2 run is pending.
+- **EHW-2 stretch partial on EBAZ4205** — `rtl/ehw2_lut_target.v` +
+  `sw/ehw/ehw2_icap_micro.c` define the stretch demo: NEORV32 stages each fitness
+  eval by streaming candidate LUT-INIT frame sequences through `rtl/xbus_icap.v`,
+  then scores the live edited LUT. The internal ICAPE2 mechanism ran on board, but
+  the first framebank truncated multi-FAR candidates and produced `0xEB020520`;
+  multi-sequence candidate descriptors are the next fidelity fix.
 
 ## Layout
 
@@ -99,11 +103,13 @@ untouched.
 - `tests/compare_cgp_twin.py` — builds the CGP C twin and verifies Python/C
   bit-exact CGP curves.
 - `tests/compare_cgp_vrc.py` — builds/runs the CGP VRC RTL host gate and firmware
-  host stub.
+  host stub, plus optional Vivado OOC synth when Vivado is available.
 - `tests/compare_cgp_baked.py` — builds/runs the baked-CGP RTL/firmware host gate
   and optional Vivado OOC synth check.
 - `tests/compare_ehw2_micro.py` — verifies the EHW-2 Python oracle, C host stub,
   and framebank packer contract.
+- `scripts/ehw2-build-framebank-from-bits.py` — builds the EHW-2 multi-FAR
+  candidate framebank from same-route `.bit` files and prjxray `.bits` outputs.
 - `vivado/icap_ehw2/build_ehw2_icap.tcl` — EHW-2 T2.3-style static build and
   same-route INIT bitstreams for frame extraction.
 - `external/` — local snapshots of selected reference files copied from

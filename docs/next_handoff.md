@@ -28,10 +28,10 @@ Status: implemented in `sim/ehw0_4_compare.py`; generated result in
   `sim/oracle_evolve.py` is the gradient-trained tile; the GA champion is the
   evolved one).
 - **Metrics to tabulate:** generations-to-converge (GA) vs epochs (M7 SGD);
-  final label-accuracy (both 40/40? the trained one is 37/40 against labels — note
-  the GA *found a better-than-gradient INT8 solution*, that's the interesting
-  result); SSE; and the INT8-direct advantage (the GA optimises the quantised net
-  directly, no Q8.8 master / QAT needed).
+  final label-accuracy on the same 40-sample evaluation set (the trained one is
+  37/40 against labels); SSE; and the INT8-direct advantage (the GA optimises the
+  quantised net directly, no Q8.8 master / QAT needed). Do not present this as a
+  holdout/generalization win; GA fitness uses the same 40 samples.
 - **Deliverable:** `sim/ehw0_4_compare.py` (deterministic, reproducible) that emits
   a small table + a short `docs/ehw0_4_results.md`. No board needed.
 - **Host gate:** reproducible from a fixed seed; numbers must be regenerable.
@@ -44,8 +44,9 @@ Status: implemented in `sim/oracle_cgp.py` and `sw/ehw/cgp_eval.c`; host gate is
 `tests/compare_cgp_twin.py`; generated result in `docs/ehw1_0_results.md`.
 
 - **Genome** = LUT-INIT truth tables of an `R×C` fixed-routing CGP grid (routing is
-  NOT evolved — contention-safe). Suggested 3×4 grid of LUT4 nodes (~192 genome
-  bits) for a 4-in→4-out 2-bit unsigned multiplier.
+  NOT evolved — contention-safe). The implemented first version is scaffolded:
+  col0/col1 are fixed pass-through LUTs and only the four output LUTs in col2
+  evolve, even though the full 12-word genome is logged/evaluated.
 - **Fitness** = 64-bit Hamming match to the golden truth table (16 rows × 4 outs).
   Optional secondary objective: node count (CGP area minimisation).
 - **Deliverable:** `sim/oracle_cgp.py` (deterministic GA over the grid) + a portable-C twin
@@ -129,24 +130,33 @@ Current scoped experiment:
 
 - `rtl/ehw2_lut_target.v`: one DONT_TOUCH LUT6 with firmware-controlled inputs.
 - `rtl/neorv32_soc_icap.vhd`: `0xF4000000` writes the LUT input row and reads bit0.
-- `rtl/axil_framebuf.vhd`: 1024x32 framebuf, enough for four 233-word ICAP sequences.
+- `rtl/axil_framebuf.vhd`: 2048x32 framebuf, enough for up to eight 233-word ICAP
+  sequences.
 - `sw/ehw/ehw2_icap_micro.c`: evaluates four staged candidates by streaming each
-  sequence through `xbus_icap`, sweeping 8 truth-table rows, and selecting the best.
+  candidate's 0..2 single-FAR sequences through `xbus_icap`, sweeping 8 truth-table
+  rows, and selecting the best.
 - `sim/ehw2_micro_oracle.py` + `tests/compare_ehw2_micro.py`: host gate for the
   3-input majority target (`0xe8`, max 8/8).
 - `scripts/ehw2-framebank-pack.py` / `scripts/ehw2-framebank-load.py`: pack and
   stage the candidate frame sequences.
+- `scripts/ehw2-build-framebank-from-bits.py`: builds the correct multi-FAR
+  candidate framebank from same-route `.bit` files plus prjxray `.bits` outputs.
 - `vivado/icap_ehw2/build_ehw2_icap.tcl`: zynq_ehw-local T2.3-style static build
   and four same-route INIT bitstreams.
 
-Board handoff is in `docs/ehw2_results.md`. PASS target after sequence generation and
-board staging: mailbox `0xEA0308E8` followed by steady `0xEB0308E8`.
+First board run proved the internal ICAPE2 mechanism but failed fidelity with
+`0xEB020520`. Host-side diagnosis found the candidate framebank had truncated each
+candidate to one FAR (`0x00400d22`), while INIT `80/a8/e8` also require FAR
+`0x00400d23`. The current fix is multi-sequence descriptors per candidate; rerun
+before chasing DIN byte/bit ordering. PASS target after new framebank staging:
+mailbox `0xEA0308E8` followed by steady `0xEB0308E8`.
 
 Open board work:
 
 - Build the `neorv32_soc_icap` static with the EHW-2 target and firmware.
-- Generate candidate frame sequences for INIT values `00`, `80`, `a8`, `e8` from one
-  routed design.
+- Generate all changed single-FAR frame sequences for INIT values `00`, `80`, `a8`,
+  `e8` from one routed design; prefer `ehw2-build-framebank-from-bits.py` over
+  manual copying.
 - Stage the framebank, clear `PCAP_PR`, and run the NEORV32 eval loop.
 
 ---

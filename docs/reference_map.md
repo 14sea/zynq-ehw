@@ -11,8 +11,8 @@ Primary source for the hardware-verified EBAZ4205 stack.
 
 - `sim/oracle_m753.py` — M7.5.3-lite 4-4-2 fixed-point classifier oracle. EHW-0
   reuses its task shape, quantization, biases, test vectors, and tile semantics.
-- `sw/m7_train/m753_vectors.h` — generated C constants for the 40 held-out 2x2
-  MNIST 0/1 test samples, labels, trained biases, and trained LUT-KCM weight
+- `sw/m7_train/m753_vectors.h` — generated C constants for the 40-sample 2x2
+  MNIST 0/1 evaluation set, labels, trained biases, and trained LUT-KCM weight
   tiles.
 - `sw/m7_train/m753_infer.c` — board-side folded two-pass LUT-KCM inference and
   mailbox protocol. This is the closest firmware template for EHW-0 board eval.

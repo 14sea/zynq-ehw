@@ -6,6 +6,10 @@ Generated / verified by:
 python3 tests/compare_cgp_vrc.py
 ```
 
+The host gate runs RTL sim + firmware host stub, and now also runs
+`tests/vivado_ooc_cgp_vrc.tcl` automatically when `vivado` is on `PATH`
+(`--skip-ooc` disables it).
+
 ## Substrate
 
 - `rtl/cgp_vrc.v`: register-configured `3 x 4` LUT4 CGP grid.

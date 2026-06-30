@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import shutil
 import subprocess
 import sys
@@ -17,7 +18,19 @@ def run(cmd: list[str]) -> None:
     subprocess.run(cmd, cwd=ROOT, check=True)
 
 
+def run_ooc() -> None:
+    vivado = shutil.which("vivado")
+    if not vivado:
+        print("SKIP: vivado not found; OOC synth gate is available via tests/vivado_ooc_cgp_vrc.tcl")
+        return
+    run([vivado, "-mode", "batch", "-source", "tests/vivado_ooc_cgp_vrc.tcl"])
+
+
 def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--skip-ooc", action="store_true", help="skip Vivado OOC synth even if vivado exists")
+    args = ap.parse_args()
+
     if not shutil.which("iverilog") or not shutil.which("vvp"):
         print("FAIL: iverilog and vvp are required for the CGP VRC RTL gate", file=sys.stderr)
         return 2
@@ -53,6 +66,8 @@ def main() -> int:
         "sw/ehw/cgp_vrc_mbox.c",
     ])
     run([str(fw_exe)])
+    if not args.skip_ooc:
+        run_ooc()
     return 0
 
 

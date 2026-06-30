@@ -194,13 +194,13 @@ and the loop is provably live, not hung.
 | **EHW-0.1** | C twin GA bit-exact to oracle (shared kernel, host-seeded xorshift) | host | ✅ mism=0 via `tests/compare_ehw0_twin.py` |
 | **EHW-0.2** | board: NEORV32 evaluates genomes on VRC array; fitness bit-exact | VRC | bridge started (`sw/ehw/ehw_eval_mbox.c`); superseded by EHW-0.3 (true host-in-loop still awaits a PS→PL command path) |
 | **EHW-0.3** | board-resident GA on NEORV32; full evolution curve via mailbox, bit-exact | VRC, on-board GA | ✅ **HW-VERIFIED** — board 40/40, champion bit-identical to oracle (`docs/board_results.md`) |
-| **EHW-0.4** | **evolution-vs-training** table (GA champion vs M7 SGD, same net) | VRC | ✅ `docs/ehw0_4_results.md` (GA 40/40 > gradient 37/40) |
+| **EHW-0.4** | **evolution-vs-training** table (GA champion vs M7 SGD, same net, same 40-sample evaluation set) | VRC | ✅ `docs/ehw0_4_results.md` (GA 40/40 vs gradient 37/40 on the deployment metric; no holdout claim) |
 | **EHW-0.5** | ICAP-bake GA champion into `lutkcm` tile, classify live, attest | ICAP reveal | ✅ **HW-VERIFIED** — mailbox `0x1019391F→0x80AF7FF2` bit-exact, attested (`docs/board_results.md`) |
-| **EHW-1.0** | CGP GA evolves 2-bit multiplier (truth-table fitness) | — | ✅ 16/16 rows via `tests/compare_cgp_twin.py` |
+| **EHW-1.0** | scaffolded CGP GA evolves the four output LUTs of a 3×4 fixed-routing grid into a 2-bit multiplier | — | ✅ 16/16 rows via `tests/compare_cgp_twin.py` |
 | **EHW-1.1-sw** | board-resident CGP GA on NEORV32, **software** LUT-grid eval | on-board GA, SW eval | ✅ **HW-VERIFIED** — 2-bit multiplier 16/16, champion bit-identical (`sw/ehw/cgp_ga_mbox.c`, `docs/board_results.md`) |
 | **EHW-1.1-fabric** | `rtl/cgp_vrc.v` = CGP grid as real config-loaded **fabric LUTs**; board evolves the multiplier on the VRC | VRC (fabric) | ✅ **HW-VERIFIED** — board TT 16/16, champion bit-identical (`docs/board_results.md`) |
 | **EHW-1.2** | ICAP-rewrite the evolved multiplier's LUT-INITs, run live, attest | ICAP reveal | ✅ **HW-VERIFIED** — ICAP rewrote n8..n11 → broken 7/16 multiplier became perfect 16/16, live (`docs/board_results.md`) |
-| **EHW-2** *(stretch)* | small run with **per-eval on-chip ICAPE2** edits (authentic bitstream evolution) | true-ICAP | host-prep: 4-candidate LUT-INIT framebank + NEORV32 fitness; board run pending |
+| **EHW-2** *(stretch)* | small run with **per-eval on-chip ICAPE2** edits (authentic bitstream evolution) | true-ICAP | partial board run: mechanism works; fidelity rerun pending with multi-FAR framebank |
 
 > **NB (EHW-1.1 distinction):** EHW-1.1-sw (DONE) runs the GA *and* evaluates the LUT
 > grid in NEORV32 software — proves on-chip evolution of a logic circuit, but the grid

@@ -1,6 +1,6 @@
-# EHW-1.2 Host Prep — ICAP-Baked CGP Multiplier
+# EHW-1.2 HW-VERIFIED — ICAP-Baked CGP Multiplier
 
-Generated / verified by:
+Host gate:
 
 ```bash
 python3 tests/compare_cgp_baked.py
@@ -50,7 +50,7 @@ to change output LUTs `n8..n11`.
 
 ## Board Flow
 
-Expected board-side sequence:
+Board-side sequence used for the verified run:
 
 ```bash
 vivado -mode batch -source vivado/dfx/build_cgp_baked.tcl
@@ -79,4 +79,15 @@ frame sequences uninterrupted through `hwicap-uart.py writeseq`, and observe the
 same firmware report champion (`16/16`, `64/64`). Re-attest `IDCODE=0x13722093`
 and restore `PCAP_PR`.
 
-Current status: host prep complete; board ICAP run pending.
+## Board Result
+
+Status: **PASS — HW-VERIFIED on EBAZ4205 (2026-06-29)**.
+
+- Baseline mailbox: rows `0xe3000007`, fitness `0xe4000032`, marker `0xe5475030`
+  (`CGP0`).
+- After ICAP rewrite of the four output LUTs `n8..n11`: rows `0xe3000010`,
+  fitness `0xe4000040`, marker stayed `0xe5475030`.
+- Interpretation: the live routed baseline CGP circuit changed from a broken
+  `7/16` multiplier to the champion `16/16` multiplier without resetting PS or
+  NEORV32. See `docs/board_results.md` for the full log and the frame anchoring
+  bug/fix.

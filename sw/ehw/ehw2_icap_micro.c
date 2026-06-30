@@ -2,7 +2,7 @@
  *
  * The PS stages a small bank of candidate frame-write sequences into the framebuf
  * once, then grants ICAP ownership (PCAP_PR=0). NEORV32 evaluates each candidate by:
- *   1. streaming that candidate's frame sequence to rtl/xbus_icap.v,
+ *   1. streaming all frame sequences for that candidate to rtl/xbus_icap.v,
  *   2. sweeping the editable LUT target's 8 input rows,
  *   3. scoring the observed truth table against 3-input majority (0xe8).
  *
@@ -33,8 +33,9 @@
 
 #define EHW2_MAGIC       0x45485732u /* "EHW2" */
 #define EHW2_DESC_BASE   4u
-#define EHW2_DESC_WORDS  4u
+#define EHW2_DESC_WORDS  6u
 #define EHW2_MAX_CAND    4u
+#define EHW2_MAX_SEQ_PER_CAND 2u
 #define EHW2_TARGET_INIT 0xE8u
 #define EHW2_SW_MODE     1u
 
@@ -135,14 +136,23 @@ static eval_t evaluate_candidate(uint32_t idx) {
     e.observed = eval_candidate_init(e.init);
 #else
     uint32_t desc = EHW2_DESC_BASE + idx * EHW2_DESC_WORDS;
-    uint32_t seq_off = fb_read(desc + 0u);
-    uint32_t seq_len = fb_read(desc + 1u);
-    e.init = (uint8_t)(fb_read(desc + 2u) & 0xffu);
-    if (icap_write_seq(seq_off, seq_len) != 0) {
-        publish(0xEF000000u | ((idx & 0xffu) << 8) | 0x01u);
+    e.init = (uint8_t)(fb_read(desc + 0u) & 0xffu);
+    uint32_t nseq = fb_read(desc + 1u);
+    if (nseq > EHW2_MAX_SEQ_PER_CAND) {
+        publish(0xEF000000u | ((idx & 0xffu) << 8) | 0x02u);
         e.observed = 0;
         e.fitness = 0;
         return e;
+    }
+    for (uint32_t s = 0; s < nseq; s++) {
+        uint32_t seq_off = fb_read(desc + 2u + s * 2u);
+        uint32_t seq_len = fb_read(desc + 3u + s * 2u);
+        if (icap_write_seq(seq_off, seq_len) != 0) {
+            publish(0xEF000000u | ((idx & 0xffu) << 8) | (0x10u + s));
+            e.observed = 0;
+            e.fitness = 0;
+            return e;
+        }
     }
     e.observed = eval_candidate_hw();
 #endif
