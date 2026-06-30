@@ -221,3 +221,45 @@ reset. The CGP analogue of EHW-0.5.
   a `Ctrl-C` to clear a stuck `loady`). **Lesson: the M7.5.1 pattern-anchor is unsafe
   for small diffs where multiple frames share an identical bit-pattern; the monotonic-
   start fix makes it robust. Verify distinct per-FAR starts host-side before baking.**
+
+---
+
+## EHW-2: per-eval on-chip ICAPE2 LUT-INIT evolution — PARTIAL (mechanism runs; fidelity TBD) (2026-06-30)
+
+**The hardest path: NEORV32 drives the fabric `xbus_icap` (ICAPE2) to rewrite a live
+LUT-INIT every fitness eval — authentic Thompson live-bitstream evolution.** The
+mechanism runs on silicon, but the LUT-edit result is not yet correct.
+
+- Built PS7 + `neorv32_soc_icap` (`build_ehw2_icap.tcl`); 4 same-route INIT bitstreams
+  (00/80/a8/e8). Firmware `sw/ehw/ehw2_icap_micro.c` reads a framebank from the AXI
+  framebuf, streams each candidate's frame through `xbus_icap` (ICAP_FILL/WBURST),
+  reads `lut_o`, scores vs target `0xe8`. Mailbox is on **AXI-GPIO ch2 = `0x41200008`**
+  (`mbox_o`); ch1 `0x41200000` = `lut_o`.
+- Frames: 4 candidate single-FAR envelopes extracted at FAR `0x00400d22` (the target
+  LUT moved from `0x0040121a` to `0x00400d22` when the firmware IMEM changed → had to
+  re-extract from the rebuilt bitstreams).
+- Board: loadb → firmware `0xe8000000` (waiting) → PCAP_PR=0 → stage framebank
+  (`ehw2-framebank-load.py`, magic word0 last) → firmware ran the per-eval ICAP loop →
+  steady **`0xeb020520`** (best candidate 2=a8, fitness 5/8, observed mask `0x20`).
+  **Expected `0xeb0308e8`** (candidate 3=e8, 8/8, mask `0xe8`). No wedge; board stayed
+  responsive; PCAP_PR restored.
+- **Diagnosis:** observed masks don't match the candidate INITs (different candidates
+  give different masks, so the ICAP writes have *some* effect but don't land the INIT
+  correctly). Almost certainly the known internal-ICAPE2 gotcha: DIN bit/byte ordering
+  for ICAPE2-from-fabric differs from the PS-HWICAP `writeseq` envelope (raw-FDRI,
+  no-GRESTORE), OR the `lut_o` 8-combo readout in firmware is off. Both are board-only
+  (the host gate used fake fixed-length seqs + a stub eval, so neither the real frame
+  format nor `lut_o` was covered). **Next: a debug round on `rtl/xbus_icap.v` data
+  handling + the frame format (try DIN bit-reversal) and the `lut_o` readout.**
+
+### Gotchas caught on silicon (3, all real)
+1. **Forgot to bake the EHW-2 firmware into IMEM before the Vivado build** → bitstream
+   ran the stale EHW-1.2 firmware. Fix = build `ehw2_icap_micro.c` → IMEM, rebuild.
+2. **Mailbox was on a different GPIO channel** (`0x41200008`, not `0x41200000`) in this
+   BD — read the wrong address for a while (saw all-zero `lut_o`).
+3. **A mistaken PS-side `hwicap-uart readreg` (no PS HWICAP exists in the EHW-2 SoC)
+   wrote to an unmapped AXI addr → wedged the PL-AXI interconnect** (later `md` data-
+   aborted; SLCR-reset's openocd halt also failed). **Only a physical Type-C power-cycle
+   recovered** (the one time this whole project needed it). After power-cycle: JTAG/DAP
+   back, SLCR-reset → U-Boot, clean retry ran without wedge. **Lesson: do NOT poke the
+   PS HWICAP path in an internal-ICAPE2 build; it has no PS HWICAP.**
