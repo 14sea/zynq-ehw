@@ -2,7 +2,8 @@
 
 Status: **OPTIONAL NEXT LINE**. EHW-0 through EHW-2 remain the completed,
 board-verified baseline. EHW-3.0/EHW-3.1 are host-only complete, EHW-3.2 is
-board-verified, and EHW-3.3 is host-prepped for board ICAP repair.
+board-verified, EHW-3.3 is board-verified, and EHW-3.4 is host-prepped for board
+ICAPE2 evaluation.
 
 ## Goal
 
@@ -204,7 +205,7 @@ Board gate:
 - ICAP update changes only intended INIT/select bits;
 - repaired island reports target fitness without PS/NEORV32 reset.
 
-Implemented host-prep deliverables in `rtl/spare_route_baked.v`,
+Implemented in `rtl/spare_route_baked.v`,
 `rtl/dfx/tpu_rp_rm_spare_route_baked_base.v`,
 `rtl/dfx/tpu_rp_rm_spare_route_baked_repair.v`,
 `sw/ehw/spare_route_baked_post.c`, `tests/compare_spare_route_baked.py`,
@@ -212,10 +213,11 @@ Implemented host-prep deliverables in `rtl/spare_route_baked.v`,
 and `vivado/dfx/spare_route_baked_edit_repair.tcl`. The host gate proves the
 baseline hard-fault phenotype is `mask=c8`, `7/8`, the repaired phenotype is
 `mask=e8`, `8/8`, and only the intended g0/g1/g2/g3/g4/g5/g7/g8/g11/g13/g14
-LUT/select INITs differ. Board ICAP frame extraction and mailbox evidence remain
-pending; see `docs/ehw3_3_results.md`.
+LUT/select INITs differ. **BOARD-VERIFIED on the EBAZ4205 (2026-07-01):** 8 FAR
+envelopes rewrote live `SRB0` from `mask=c8`, `7/8` to `mask=e8`, `8/8` without
+PS/NEORV32 reset; see `docs/board_results.md` and `docs/ehw3_3_results.md`.
 
-### EHW-3.4 — Per-Eval ICAPE2 Spare-Routing Evolution
+### EHW-3.4 — Per-Eval ICAPE2 Spare-Routing Evolution — HOST PREP COMPLETE
 
 Optional stretch: combine EHW-2's per-eval ICAPE2 loop with the spare-routing
 genome. Each candidate evaluation writes the candidate's logic and local route
@@ -223,6 +225,15 @@ config through `rtl/xbus_icap.v`, then scores the live island.
 
 This should only start after EHW-3.3 is hardware-verified. It multiplies the
 framebank complexity and should reuse the generalized EHW-2 framebank generator.
+
+Implemented host-prep deliverables in `sim/ehw34_icap_oracle.py`,
+`sw/ehw/ehw34_icap_spare_route.c`, `rtl/ehw34_spare_route_target.v`,
+`rtl/neorv32_soc_icap_sr.vhd`, `scripts/ehw34-framebank-pack.py`,
+`scripts/ehw34-build-framebank-from-bits.py`, `tests/compare_ehw34_icap.py`, and
+`vivado/icap_ehw34/build_ehw34_icap.tcl`. The host gate proves the four-candidate
+bank reaches the repaired phenotype (`mask=e8`, `8/8`) and validates the 16-byte
+genome framebank descriptor. Board ICAPE2 evidence remains pending. This substrate
+has no PS-HWICAP; PS only stages the framebank and reads GPIO mailboxes.
 
 ## Suggested First Target
 

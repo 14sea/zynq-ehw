@@ -89,6 +89,12 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   rewrote the island from broken (`mask=0xc8`, `7/8`) to repaired (`mask=0xe8`, `8/8`)
   with the marker staying `SRB0` and no PS/NEORV32 reset — the CGP-analogue of EHW-1.2
   for the spare-routing island (`docs/board_results.md`, `docs/ehw3_3_results.md`).
+- **EHW-3.4 host prep done** — stretch flow combining EHW-2's internal-ICAPE2
+  per-eval loop with the EHW-3 spare-routing genome. `sw/ehw/ehw34_icap_spare_route.c`
+  streams a staged candidate framebank through `rtl/xbus_icap.v`, then scores the
+  live `rtl/ehw34_spare_route_target.v` island. Host oracle + C stub + RTL target
+  sim + generalized framebank packer pass; board ICAPE2 run is pending
+  (`docs/ehw3_4_results.md`). This build intentionally has **no PS-HWICAP**.
 
 ## Dependencies & reproduction environment
 
@@ -112,7 +118,7 @@ Two large dependencies are kept **out of the repo** (gitignored, regenerable): t
 ## Host tests (no board, no Vivado)
 
 ```sh
-tests/run_host_gates.sh      # runs all 8 host gates: oracle<->C-twin bit-exact + RTL sims
+tests/run_host_gates.sh      # runs all 9 host gates: oracle<->C-twin bit-exact + RTL sims
 ```
 Every board-bound deliverable ships with a host self-proof; this is the gate that must be green before any board run (see `docs/workflow.md`). Board reproduction (build → ICAP/load → mailbox) is in `docs/BOARD_REPRO.md`.
 
@@ -149,8 +155,10 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   spare-routing island.
 - `docs/ehw3_2_results.md` — EHW-3.2 host-gated fabric VRC result; board run
   result.
-- `docs/ehw3_3_results.md` — EHW-3.3 host-prep result for ICAP-baked spare-route
-  repair; board run pending.
+- `docs/ehw3_3_results.md` — EHW-3.3 host + board result for ICAP-baked
+  spare-route repair.
+- `docs/ehw3_4_results.md` — EHW-3.4 host-prep result for per-eval internal-ICAPE2
+  spare-route evolution; board run pending.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
@@ -161,6 +169,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `rtl/cgp_baked.v` — EHW-1.2 hardwired LUT4 CGP grid for ICAP INIT edits.
 - `rtl/spare_route_baked.v` — EHW-3.3 hardwired spare-route island for ICAP INIT
   repair of LUT logic and safe local path-select LUTs.
+- `rtl/ehw34_spare_route_target.v` / `rtl/neorv32_soc_icap_sr.vhd` — EHW-3.4
+  internal-ICAPE2 spare-route substrate and no-PS-HWICAP NEORV32 SoC.
 - `rtl/ehw2_lut_target.v` / `rtl/neorv32_soc_icap.vhd` / `rtl/xbus_icap.v` —
   EHW-2 stretch substrate for in-fabric ICAPE2 LUT-INIT edits.
 - `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and
@@ -171,7 +181,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   EHW-1.1-fabric board-resident fabric-eval CGP GA, `cgp_baked_post.c` for the
   EHW-1.2 baked-CGP POST, `ehw2_icap_micro.c` for the EHW-2 per-eval ICAPE2
   stretch, `lutkcm_post.c` for the EHW-0.5 ICAP-bake POST, and
-  `spare_route_baked_post.c` for the EHW-3.3 baked spare-route POST.
+  `spare_route_baked_post.c` for the EHW-3.3 baked spare-route POST, and
+  `ehw34_icap_spare_route.c` for the EHW-3.4 per-eval ICAPE2 spare-route loop.
 - `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
 - `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
   bit-exact CSV curves plus the M7.5.3 golden bitmap guard.
@@ -192,8 +203,12 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `tests/compare_spare_route_baked.py` — verifies the EHW-3.3 baked spare-route
   RTL sim, firmware host stub, wrapper compile, target INIT diff, and optional
   Vivado OOC synth.
+- `tests/compare_ehw34_icap.py` — verifies the EHW-3.4 Python oracle, C firmware
+  stub, RTL target, generalized framebank packer, and optional Vivado OOC synth.
 - `scripts/ehw2-build-framebank-from-bits.py` — builds the EHW-2 multi-FAR
   candidate framebank from same-route `.bit` files and prjxray `.bits` outputs.
+- `scripts/ehw34-framebank-pack.py` / `scripts/ehw34-build-framebank-from-bits.py`
+  — generalized EHW-3.4 16-byte-genome framebank tooling.
 - `vivado/icap_ehw2/build_ehw2_icap.tcl` — EHW-2 T2.3-style static build and
   same-route INIT bitstreams for frame extraction.
 - `external/` — local snapshots of selected reference files copied from

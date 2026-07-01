@@ -1,4 +1,4 @@
-# EHW-3.3 Results — ICAP-Baked Spare-Route Repair Host Prep
+# EHW-3.3 Results — ICAP-Baked Spare-Route Repair
 
 Generated / verified by:
 
@@ -135,5 +135,5 @@ Board acceptance:
 - repaired live island publishes marker still `SRB0`, then `E33200e8`,
   `E3330008`.
 
-Only after those mailbox words are captured should EHW-3.3 be marked
-hardware-verified in `docs/board_results.md`.
+Those mailbox words have been captured on the EBAZ4205; the hardware evidence is
+recorded in `docs/board_results.md`.

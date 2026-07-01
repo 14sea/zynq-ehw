@@ -219,9 +219,11 @@ EHW-3.3 is **BOARD-VERIFIED** on the EBAZ4205 (2026-07-01): the baked island's
 the marker unchanged and no PS/NEORV32 reset (`docs/board_results.md`). The full
 EHW-3 ladder EHW-3.0→3.3 is now board-verified.
 
-Next optional rung is **EHW-3.4 (per-eval ICAPE2 spare-routing evolution, stretch)**:
-combine EHW-2's per-eval on-chip ICAPE2 loop with the spare-routing genome — each
-candidate evaluation writes its logic + local-route config through `rtl/xbus_icap.v`,
-then scores the live island. Reuse the generalized EHW-2 framebank generator; start
-only after 3.3 (done). This multiplies framebank complexity, so keep the island tiny
-and remember the internal-ICAPE2 build has NO PS HWICAP (don't poke it → PL-AXI wedge).
+EHW-3.4 host prep is complete: `sim/ehw34_icap_oracle.py`,
+`sw/ehw/ehw34_icap_spare_route.c`, `rtl/ehw34_spare_route_target.v`,
+`rtl/neorv32_soc_icap_sr.vhd`, `scripts/ehw34-framebank-pack.py`,
+`scripts/ehw34-build-framebank-from-bits.py`, `tests/compare_ehw34_icap.py`, and
+`vivado/icap_ehw34/build_ehw34_icap.tcl`. This is the per-eval internal-ICAPE2
+spare-route stretch: staged candidates base/logic/route/repair, expected best
+`0xEA0308E8` and steady `0xEC0308E8`. The build intentionally has no PS-HWICAP;
+do not poke PS-HWICAP registers on this bitstream.

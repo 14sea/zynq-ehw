@@ -101,7 +101,7 @@ PASS: steady mailbox sequence `0xe32100e8`, `0xe3220008`, `0xe32300c8`,
 This proves no-fault majority `8/8`, disabled-A1 degradation `7/8`, and repaired
 spare-AS recovery `8/8`.
 
-## EHW-3.3 — ICAP-baked spare-route repair (pending board run)
+## EHW-3.3 — ICAP-baked spare-route repair
 
 ```sh
 cp sw/ehw/Makefile sw/ehw/spare_route_kernel.h sw/ehw/spare_route_baked_post.c sw_src/sr_build/
@@ -119,3 +119,33 @@ vivado -mode batch -source spare_route_baked_edit_repair.tcl    # same-route rep
 Expected acceptance: marker remains `SRB0` after ICAP because the edit changes
 only target LUT/select INITs; mailbox should move from `E33200c8`/`E3330007` to
 `E33200e8`/`E3330008` without PS/NEORV32 reset.
+
+PASS: observed live ICAP repair moved `SRB0` from `c8/7` to `e8/8` with no
+PS/NEORV32 reset; exact board evidence is in `docs/board_results.md`.
+
+## EHW-3.4 — per-eval internal-ICAPE2 spare-route evolution (pending board run)
+
+```sh
+cp sw/ehw/Makefile sw/ehw/spare_route_kernel.h sw/ehw/ehw34_icap_spare_route.c sw_src/sr_build/
+cd sw_src/sr_build && make NEORV32_HOME=../../rtl_src/neorv32_tpu/neorv32 \
+    RISCV_PREFIX=riscv64-unknown-elf- USER_FLAGS+="-specs=picolibc.specs" \
+    APP_SRC=ehw34_icap_spare_route.c clean install
+cd ../../vivado/icap_ehw34
+vivado -mode batch -source build_ehw34_icap.tcl       # writes ehw34_base/logic/route/repair.bit
+# bitread the four bitstreams, then:
+cd ../..
+python3 scripts/ehw34-build-framebank-from-bits.py --out-dir runs/ehw34_seqs \
+    --base-label base \
+    --bit-template 'vivado/icap_ehw34/build/ehw34_{label}.bit' \
+    --bits-template 'runs/ehw34_bits/{label}.bits' \
+    --candidate base=0a08010f320104000202000401010200 \
+    --candidate logic=0b090903b10104000202000401010200 \
+    --candidate route=0a08010f320004040102000001020300 \
+    --candidate repair=0b090903b10004040102000001020300
+# loadb base design -> PCAP_PR=0 -> stage framebank word0 last:
+python3 scripts/ehw2-framebank-load.py runs/ehw34_seqs/framebank.bin 0x40000000
+```
+
+Expected acceptance: candidate loop emits `E900..` rows and converges to
+`0xEA0308E8`, then steady `0xEC0308E8`. This internal-ICAPE2 build has **no
+PS-HWICAP**; do not run PS-HWICAP readreg/writeseq commands or it can wedge PL-AXI.
