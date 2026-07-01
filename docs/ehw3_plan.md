@@ -124,7 +124,7 @@ Implemented first target: 3-input majority `0xe8`. The no-fault run reaches
 run with the fault active recovers `8/8` using spare `AS` / local rerouting. See
 `docs/ehw3_0_results.md`.
 
-### EHW-3.1 — Portable-C Twin And Firmware Stub
+### EHW-3.1 — Portable-C Twin And Firmware Stub — DONE (HOST-ONLY)
 
 Port the island evaluator and GA contract to C.
 
@@ -139,6 +139,11 @@ Host gate:
 - Python vs C bit-exact generation curve;
 - identical champion genome and repaired truth-table mask;
 - fault injection contract tested in both implementations.
+
+Implemented in `sw/ehw/spare_route_kernel.h`, `sw/ehw/spare_route_eval.c`, and
+`tests/compare_spare_route_twin.py`. The gate compares both the no-fault and
+post-fault recovery GA curves byte-for-byte, including direct fault-model masks.
+See `docs/ehw3_1_results.md`.
 
 ### EHW-3.2 — Fabric VRC Island
 

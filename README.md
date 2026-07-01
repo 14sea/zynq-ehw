@@ -71,6 +71,11 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   `FAULT_DISABLE_NODE(A1)`: no-fault majority `8/8`, degraded `6/8`, repaired
   `8/8` using spare `AS` / local rerouting (`docs/ehw3_0_results.md`). No board
   claim is made for EHW-3 yet.
+- **EHW-3.1 host twin done** — `sw/ehw/spare_route_kernel.h` and
+  `sw/ehw/spare_route_eval.c` mirror the EHW-3.0 Python oracle. The host gate
+  compares Python and C no-fault/recovery GA curves byte-for-byte, including the
+  repaired genome and direct fault-model masks (`tests/compare_spare_route_twin.py`,
+  `docs/ehw3_1_results.md`).
 
 ## Dependencies & reproduction environment
 
@@ -94,7 +99,7 @@ Two large dependencies are kept **out of the repo** (gitignored, regenerable): t
 ## Host tests (no board, no Vivado)
 
 ```sh
-tests/run_host_gates.sh      # runs all 5 host gates: oracle<->C-twin bit-exact + RTL sims
+tests/run_host_gates.sh      # runs all 6 host gates: oracle<->C-twin bit-exact + RTL sims
 ```
 Every board-bound deliverable ships with a host self-proof; this is the gate that must be green before any board run (see `docs/workflow.md`). Board reproduction (build → ICAP/load → mailbox) is in `docs/BOARD_REPRO.md`.
 
@@ -127,6 +132,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   mutating raw Xilinx routing bits.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
+- `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
+  spare-routing island.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
@@ -156,6 +163,9 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   and optional Vivado OOC synth check.
 - `tests/compare_ehw2_micro.py` — verifies the EHW-2 Python oracle, C host stub,
   and framebank packer contract.
+- `tests/compare_spare_route_twin.py` — verifies the EHW-3 spare-routing island
+  Python oracle and portable-C twin are bit-exact for no-fault and post-fault
+  recovery curves.
 - `scripts/ehw2-build-framebank-from-bits.py` — builds the EHW-2 multi-FAR
   candidate framebank from same-route `.bit` files and prjxray `.bits` outputs.
 - `vivado/icap_ehw2/build_ehw2_icap.tcl` — EHW-2 T2.3-style static build and

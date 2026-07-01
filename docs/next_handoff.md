@@ -204,5 +204,9 @@ bits and LUT truth tables are evolved. The intended claim is **spare-route selec
 inside a fixed-route island**, not arbitrary vendor routing-bit mutation.
 
 Status: EHW-3.0 host oracle is complete in `sim/oracle_spare_routing.py`.
-EHW-3.1 should add the portable-C twin and a bit-exact Py↔C host gate while
-preserving the frozen 16-byte genome contract documented at the top of the oracle.
+EHW-3.1 Python/C twin is complete in `sw/ehw/spare_route_kernel.h`,
+`sw/ehw/spare_route_eval.c`, and `tests/compare_spare_route_twin.py`.
+
+Next optional step is EHW-3.2: implement the same frozen 16-byte contract in an
+RTL fabric VRC island and keep `tests/compare_spare_route_twin.py` as the
+pre-board gate.

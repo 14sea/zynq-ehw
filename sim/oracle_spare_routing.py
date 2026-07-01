@@ -38,8 +38,10 @@ Validity layer:
 from __future__ import annotations
 
 import argparse
+import csv
 from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 
 
 TARGET_MASK = 0xE8
@@ -275,6 +277,37 @@ def run_ga(
     sel_mutation_ppm: int,
     injected: list[list[int]] | None,
 ) -> tuple[list[int], int, int]:
+    trace = run_ga_trace(
+        seed=seed,
+        fault=fault,
+        population=population,
+        generations=generations,
+        elites=elites,
+        tournament_k=tournament_k,
+        crossover_ppm=crossover_ppm,
+        init_mutation_ppm=init_mutation_ppm,
+        sel_mutation_ppm=sel_mutation_ppm,
+        injected=injected,
+    )
+    if not trace:
+        raise RuntimeError("empty GA trace")
+    last = trace[-1]
+    return parse_genome_hex(last["genome"]), int(last["best_fitness"]), int(last["best_gen"])
+
+
+def run_ga_trace(
+    *,
+    seed: int,
+    fault: Fault,
+    population: int,
+    generations: int,
+    elites: int,
+    tournament_k: int,
+    crossover_ppm: int,
+    init_mutation_ppm: int,
+    sel_mutation_ppm: int,
+    injected: list[list[int]] | None,
+) -> list[dict[str, str]]:
     rng = XorShift32(seed)
     pop: list[list[int]] = []
     for _ in range(16):
@@ -290,6 +323,7 @@ def run_ga(
     best = pop[0][:]
     best_key = (-1, -1, -1)
     best_gen = 0
+    trace: list[dict[str, str]] = []
 
     for gen in range(generations + 1):
         scored = sorted(((score_key(g, fault), g) for g in pop), key=lambda item: (item[0], item[1]), reverse=True)
@@ -298,16 +332,32 @@ def run_ga(
             best = scored[0][1][:]
             best_gen = gen
 
+        current_fit = fitness(best, fault)
+        current_mask = truth_mask(best, fault)
+        no_fault_mask = truth_mask(best, FAULT_NONE)
+        disable_a1_fit = fitness(best, FAULT_DISABLE_A1)
         if fault.kind is FaultKind.NONE:
-            accepted = fitness(best, fault) == FITNESS_MAX and fitness(best, FAULT_DISABLE_A1) < FITNESS_MAX
+            accepted = current_fit == FITNESS_MAX and disable_a1_fit < FITNESS_MAX
         else:
             accepted = (
-                fitness(best, fault) == FITNESS_MAX
+                current_fit == FITNESS_MAX
                 and out_uses_spare(best)
                 and not out_uses_node(best, 1)
             )
+        trace.append({
+            "gen": str(gen),
+            "best_gen": str(best_gen),
+            "best_fitness": str(current_fit),
+            "mask": f"{current_mask:02x}",
+            "no_fault_mask": f"{no_fault_mask:02x}",
+            "disable_a1_fitness": str(disable_a1_fit),
+            "uses_a1": str(int(out_uses_node(best, 1))),
+            "uses_as": str(int(out_uses_spare(best))),
+            "accepted": str(int(accepted)),
+            "genome": genome_hex(best),
+        })
         if accepted:
-            return best, fitness(best, fault), best_gen
+            return trace
 
         next_pop = [g[:] for _, g in scored[:elites]]
         while len(next_pop) < population:
@@ -319,7 +369,27 @@ def run_ga(
             next_pop.append(mutate(child, rng, init_mutation_ppm, sel_mutation_ppm))
         pop = next_pop
 
-    return best, fitness(best, fault), best_gen
+    return trace
+
+
+def write_trace_csv(path: Path, trace: list[dict[str, str]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fields = [
+        "gen",
+        "best_gen",
+        "best_fitness",
+        "mask",
+        "no_fault_mask",
+        "disable_a1_fitness",
+        "uses_a1",
+        "uses_as",
+        "accepted",
+        "genome",
+    ]
+    with path.open("w", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fields, lineterminator="\n")
+        writer.writeheader()
+        writer.writerows(trace)
 
 
 def field_value_text(index: int, value: int) -> str:
@@ -466,4 +536,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

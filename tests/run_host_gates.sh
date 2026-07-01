@@ -22,6 +22,7 @@ gates=(
   "compare_cgp_vrc.py --skip-ooc"        # EHW-1.1-fabric: cgp_vrc RTL sim + firmware stub
   "compare_cgp_baked.py --skip-ooc"      # EHW-1.2: baked-CGP RTL/firmware host gate
   "compare_ehw2_micro.py"                # EHW-2: ICAPE2 micro oracle + framebank pack contract
+  "compare_spare_route_twin.py"          # EHW-3.1: spare-route island Py<->C bit-exact
 )
 
 fail=0

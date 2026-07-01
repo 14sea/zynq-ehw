@@ -113,7 +113,5 @@ The recovery run keeps the fault active and evolves a new genome that reaches
 one of the three inputs, so the repair uses the spare node and local rerouting
 inside the fixed-route island.
 
-This rung establishes the host-side decode contract for EHW-3.1. There is no
-external golden cross-check yet because the spare-routing island is a new
-substrate; the next rung must add the Python/C bit-exact twin.
-
+This rung established the host-side decode contract for EHW-3.1. The Python/C
+bit-exact twin has since been added in `docs/ehw3_1_results.md`.
