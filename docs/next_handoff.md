@@ -214,12 +214,14 @@ mailbox `0xe321..0xe328`: no-fault 8/8 mask `0xe8`, degraded 7/8 mask `0xc8`,
 repaired 8/8 mask `0xe8` using spare AS (`docs/board_results.md`). POP=128, firmware
 `bss=6176` (fits 16k DMEM).
 
-EHW-3.3 host prep is complete: `rtl/spare_route_baked.v`,
-`sw/ehw/spare_route_baked_post.c`, `tests/compare_spare_route_baked.py`, and
-`vivado/dfx/build_spare_route_baked.tcl` / `spare_route_baked_edit_repair.tcl`
-prepare the ICAP-baked repair flow. Host gate proves baseline hard-fault mask
-`0xc8` (`7/8`), repaired mask `0xe8` (`8/8`), and an exact target INIT diff set
-g0/g1/g2/g3/g4/g5/g7/g8/g11/g13/g14. Board work remains: build fresh baseline,
-edit same routed DCP, bitread/diff, make one envelope per FAR via
-`scripts/m75-build-frameseqs.py`, then ICAP-rewrite live `SRB0` from `c8/7` to
-`e8/8` without PS/NEORV32 reset.
+EHW-3.3 is **BOARD-VERIFIED** on the EBAZ4205 (2026-07-01): the baked island's
+8-FAR frame diff was ICAP-rewritten live, moving `SRB0` from `c8/7` to `e8/8` with
+the marker unchanged and no PS/NEORV32 reset (`docs/board_results.md`). The full
+EHW-3 ladder EHW-3.0→3.3 is now board-verified.
+
+Next optional rung is **EHW-3.4 (per-eval ICAPE2 spare-routing evolution, stretch)**:
+combine EHW-2's per-eval on-chip ICAPE2 loop with the spare-routing genome — each
+candidate evaluation writes its logic + local-route config through `rtl/xbus_icap.v`,
+then scores the live island. Reuse the generalized EHW-2 framebank generator; start
+only after 3.3 (done). This multiplies framebank complexity, so keep the island tiny
+and remember the internal-ICAPE2 build has NO PS HWICAP (don't poke it → PL-AXI wedge).

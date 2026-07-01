@@ -83,12 +83,12 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   majority `8/8` mask `0xe8`, injected `FAULT_DISABLE_NODE(A1)` degrades to `7/8` mask
   `0xc8`, on-board-evolved repair recovers `8/8` mask `0xe8` routing the spare node AS
   (`docs/board_results.md`, `docs/ehw3_2_results.md`).
-- **EHW-3.3 host prep done** — `rtl/spare_route_baked.v` bakes the EHW-3 spare-route
-  island into explicit LUT/select INITs with a hard disabled-A1 fault. The host gate
-  proves the baseline phenotype is degraded (`mask=0xc8`, `7/8`), the repaired baked
-  phenotype is correct (`mask=0xe8`, `8/8`), and only the intended g0/g1/g2/g3/g4/g5/
-  g7/g8/g11/g13/g14 LUT/select INITs differ. Vivado build/edit scripts are in
-  `vivado/dfx/`; board ICAP repair is pending (`docs/ehw3_3_results.md`).
+- **EHW-3.3 board-verified** — `rtl/spare_route_baked.v` bakes the EHW-3 spare-route
+  island into explicit LUT/select INITs with a hard disabled-A1 fault. On the EBAZ4205,
+  a live ICAP LUT-INIT edit of 8 frames (only the intended g0-g5/g7/g8/g11/g13/g14 INITs)
+  rewrote the island from broken (`mask=0xc8`, `7/8`) to repaired (`mask=0xe8`, `8/8`)
+  with the marker staying `SRB0` and no PS/NEORV32 reset — the CGP-analogue of EHW-1.2
+  for the spare-routing island (`docs/board_results.md`, `docs/ehw3_3_results.md`).
 
 ## Dependencies & reproduction environment
 

@@ -6,10 +6,14 @@ Generated / verified by:
 python3 tests/compare_spare_route_baked.py
 ```
 
-Status: **HOST PREP COMPLETE / BOARD ICAP RUN PENDING.** This rung is the EHW-3
-analogue of EHW-1.2: the island is no longer register-configured at runtime; the
-logic and local path-select fields are baked into real LUT INITs, then a same-route
-Vivado checkpoint edit produces the repaired bitstream for frame diff extraction.
+Status: **BOARD-VERIFIED on the EBAZ4205 (2026-07-01).** Live ICAP LUT-INIT edit of
+8 frames rewrote the baked island from broken (`mask=c8`, `7/8`) to repaired
+(`mask=e8`, `8/8`) with the marker staying `SRB0` and no PS/NEORV32 reset — exact
+mailbox words and the frame-extraction details are in `docs/board_results.md`. This
+rung is the EHW-3 analogue of EHW-1.2: the island is no longer register-configured at
+runtime; the logic and local path-select fields are baked into real LUT INITs, then a
+same-route Vivado checkpoint edit produces the repaired bitstream for frame diff
+extraction.
 
 ## Deliverables
 

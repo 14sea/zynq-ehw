@@ -334,3 +334,38 @@ uncatchable by slow `md` polling).
 
 No wedge; DEVCFG healthy; JTAG/UART stable throughout. `zynq_xpart`/`zynq_agentctl`
 untouched.
+
+## EHW-3.3 — ICAP-baked spare-route repair (2026-07-01)
+
+Firmware: `sw/ehw/spare_route_baked_post.c` (POST loop, re-reads the baked island and
+publishes marker/mask/fitness), IMEM baked before the build. Bitstream:
+`vivado/dfx/build_spare_route_baked.tcl` → impl_33 static + `rm_spare_route_baked_base`
+(SRB0, timing met / DRC 0-err / bitgen OK). Same-route repaired bitstream:
+`vivado/dfx/spare_route_baked_edit_repair.tcl` edited only the 11 target LUT/select INITs
+(g0-g5,g7,g8,g11,g13,g14) on the routed baseline DCP — the marker register is intentionally
+NOT edited.
+
+Frame extraction (fresh bitstreams, prjxray part `xc7z010clg400-1`): `bitread -y` of
+baseline vs repair → 144 set + 112 clr bits across **8 FARs** (0x40149a-0x40149d,
+0x4014a0-0x4014a3) → `scripts/m75-build-frameseqs.py` → **8 envelopes, 8/8 self-checked**,
+monotonic starts (341023 … 341932), one sync..DESYNC envelope per FAR.
+
+Board: reset-to-U-Boot → `fpga loadb` baseline → set `PCAP_PR=0` (`mw 0xF8007000
+0x4400e07f`) → `hwicap-uart.py readreg 12` = `0x13722093` (ICAP healthy) → **background**
+`writeseq` of all 8 envelopes (each 233 words, SR=0x5 / CR=0, clean) → restore `PCAP_PR=1`
+(`mw 0xF8007000 0x4c00e07f`). No PS/NEORV32 reset at any point.
+
+Observed mailbox (`0xE331` marker-low24 / `0xE332` mask / `0xE333` fitness), steady, two
+polls each:
+
+| stage | marker word | mask word | fitness word | decode |
+|---|---|---|---|---|
+| baseline (broken) | `0xe3734230` | `0xe33200c8` | `0xe3330007` | SRB0, mask c8, **7/8** |
+| after ICAP (repaired) | `0xe3734230` | `0xe33200e8` | `0xe3330008` | **SRB0 (unchanged)**, mask e8, **8/8** |
+
+**Result: the live baked spare-route island was rewritten from the fault-degraded
+phenotype (mask c8, 7/8) to the repaired phenotype (mask e8, 8/8) by an ICAP LUT-INIT
+edit of only the 11 target INITs — the marker stayed `SRB0`, proving no RM reload, and
+there was no PS/NEORV32 reset. This is the CGP-analogue of EHW-1.2 for the spare-routing
+island: live ICAP self-repair of a fixed-route island, confirmed on silicon.** No DEVCFG
+wedge; all 8 frames baked cleanly in the background; sibling projects untouched.

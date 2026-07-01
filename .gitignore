@@ -38,3 +38,4 @@ vivado/dfx/spare_route_icap/
 vivado/**/hd_visual/
 vivado/icap_ehw2/ehw2_seqs*/
 vivado/**/cgp_icap/
+hd_visual/

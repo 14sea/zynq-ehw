@@ -180,7 +180,7 @@ injected `FAULT_DISABLE_NODE(A1)` degrades it (`0xc8`, 7/8), and the on-board-ev
 repair recovers (`0xe8`, 8/8) using the spare node AS. Exact mailbox words in
 `docs/board_results.md`; see `docs/ehw3_2_results.md`.
 
-### EHW-3.3 — ICAP-Baked Repair — HOST PREP COMPLETE
+### EHW-3.3 — ICAP-Baked Repair — BOARD-VERIFIED
 
 Bake the evolved repair into LUT INITs and local select LUTs, then use ICAP to
 change the live island from broken to repaired.
