@@ -17,7 +17,8 @@ rebut it from source; you own the Python implementation and may refine anything 
 
 ## Fixed-route island (physical wires fixed; only INITs + selects evolve)
 
-Two logic columns, one spare, one output node. All nodes are **2-input LUTs (4-bit INIT)**.
+Two logic columns, one spare, one output node. The **C1 nodes are 2-input LUTs (4-bit INIT)**;
+the **output node O is a 3-input LUT (8-bit INIT)** — see the representability note below.
 
 ```
 inputs:  x0 x1 x2
@@ -27,28 +28,41 @@ column C1 (logic):  A0  A1  A2   + spare AS      (4 nodes)
   each node = 2-input LUT4(INIT) with two input muxes, each mux selects from P
 
 column C2 (output): O                             (1 node)
-  O = 2-input LUT4(INIT) with two input muxes, each mux selects from {A0,A1,A2,AS}
+  O = 3-input LUT8(INIT) with three input muxes, each mux selects from {A0,A1,A2,AS}
 
 output = O
 ```
 
-Rationale: a 3-node majority needs ~3 logic nodes; the spare `AS` + the output mux over
-`{A0,A1,A2,AS}` is exactly the spare capacity that makes fault-recovery non-trivial but
-still small enough to brute-force all 8 rows per eval.
+Rationale: a 3-node majority needs ~3 logic nodes; the spare `AS` + O's **3-of-4** output
+select over `{A0,A1,A2,AS}` is exactly the spare capacity that makes fault-recovery
+non-trivial but still small enough to brute-force all 8 rows per eval.
+
+### Representability (verified — this is why O is a LUT8, not a LUT4)
+
+The original draft made O a **2-input LUT4**. That substrate **cannot** represent 3-input
+majority `0xe8`: a 2-input output LUT reads only two C1 signals, and MAJ(x0,x1,x2) depends
+symmetrically on all three, so no genome reaches 8/8 (exhaustive enumeration: 0 solutions,
+fitness capped at **7/8**; the spare `AS` does not help because O still only reads two of the
+four C1 outputs). This was caught before any oracle was written. Fix: O reads **three** of the
+four C1 outputs through a 3-input LUT8 — verified representable (8/8 solutions exist by
+exhaustive search). **Keep the target `0xe8`; do not weaken it to a 2-input-representable mask.**
 
 ## Genome (frozen byte contract — C/RTL must match exactly)
 
 ```text
-logic_init[0..3] : 4-bit INIT for A0, A1, A2, AS   (LUT4 lower nibble; upper nibble unused=0)
-init_out         : 4-bit INIT for O
+logic_init[0..3] : 4-bit INIT for A0, A1, A2, AS   (LUT4, 4 valid rows; upper bits unused=0)
+init_out         : 8-bit INIT for O                (3-input LUT8)
 node_sel[i][m]   : source select for node i (0..3), input m (0..1)  -> index into P (0..4)
-out_sel[m]       : source select for O, input m (0..1)              -> index into {A0,A1,A2,AS} (0..3)
+out_sel[m]       : source select for O, input m (0..2)              -> index into {A0,A1,A2,AS} (0..3)
 ```
 
 - Choose a concrete packed byte layout and document it at the top of `oracle_spare_routing.py`
   as the canonical contract *(your call — document it; C/RTL will copy it verbatim)*.
-- LUT INIT convention: `out = (INIT >> (in1<<1 | in0)) & 1`. State it explicitly so the C
-  twin and `rtl/spare_route_vrc.v` decode identically. (Fix the in0/in1 ordering now.)
+- LUT INIT convention, fix the input ordering now so C twin and `rtl/spare_route_vrc.v`
+  decode identically:
+  - C1 nodes (2-input): `out = (INIT >> (in1<<1 | in0)) & 1`
+  - O (3-input):        `out = (INIT >> (in2<<2 | in1<<1 | in0)) & 1`
+  where `in0/in1/in2` are the values selected by `*_sel[0]/[1]/[2]`.
 
 ## Validity layer (this is the contention-safety guarantee — do not skip)
 
