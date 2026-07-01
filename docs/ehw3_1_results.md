@@ -6,7 +6,9 @@ Generated / verified by:
 python3 tests/compare_spare_route_twin.py
 ```
 
-Status: **PASS — host-only**. No board claim is made for this rung.
+Status: **PASS — host-only**. No board claim is made for this rung. Current
+default population is `128`, chosen so the EHW-3.2 NEORV32 firmware fits the
+fixed 16 KiB DMEM.
 
 ## Deliverables
 
@@ -36,14 +38,14 @@ The gate checks:
 PASS: spare-routing Python oracle and C twin are bit-exact
 fault masks:
 FAULT_NONE,e8,8
-FAULT_STUCK0(A1),88,6
-FAULT_STUCK1(A1),ee,6
-FAULT_DISABLE_NODE(A1),88,6
-FAULT_DISABLE_ROUTE(O.in1),cc,6
-FAULT_DISABLE_ROUTE(A1.in0),88,6
-no-fault last: 16,16,8,e8,e8,6,1,1,1,0e 0a 0c 04 e8 01 03 02 02 02 03 03 00 03 01 00
-recovery last: 19,19,8,e8,e8,8,0,1,1,0e 06 0e 01 68 00 01 04 01 02 00 01 02 00 03 02
-repaired genome: 0e 06 0e 01 68 00 01 04 01 02 00 01 02 00 03 02
+FAULT_STUCK0(A1),c8,7
+FAULT_STUCK1(A1),fa,6
+FAULT_DISABLE_NODE(A1),c8,7
+FAULT_DISABLE_ROUTE(O.in1),20,5
+FAULT_DISABLE_ROUTE(A1.in0),c8,7
+no-fault last: 21,21,8,e8,e8,7,1,0,1,0a 08 01 0f 32 01 04 00 02 02 00 04 01 01 02 00
+recovery last: 17,17,8,e8,e8,8,0,1,1,0b 09 09 03 b1 00 04 04 01 02 00 00 01 02 03 00
+repaired genome: 0b 09 09 03 b1 00 04 04 01 02 00 00 01 02 03 00
 ```
 
 ## Interpretation
@@ -53,4 +55,3 @@ independent host implementations before moving toward RTL or board work. Since
 this spare-routing island is new and has no `zynq_xpart` golden oracle, the
 golden cross-check for this rung is the bit-exact Python/C double implementation:
 same decode, same fault model, same RNG, same GA curve, same repaired genome.
-

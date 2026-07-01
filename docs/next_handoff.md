@@ -210,6 +210,6 @@ EHW-3.1 Python/C twin is complete in `sw/ehw/spare_route_kernel.h`,
 EHW-3.2 host prep is complete in `rtl/spare_route_vrc.v`,
 `rtl/dfx/tpu_rp_rm_spare_route_vrc.v`, `sw/ehw/spare_route_vrc_mbox.c`, and
 `tests/compare_spare_route_vrc.py`; result doc is `docs/ehw3_2_results.md`.
-Before board, run the Vivado OOC gate from `tests/vivado_ooc_spare_route_vrc.tcl`
-in a Vivado environment, then build/load the RM and log exact mailbox words in
-`docs/board_results.md`.
+Vivado OOC synth and firmware link are now green with `POP=128`; the firmware
+link size is `text=2460 data=0 bss=6176`. Next step is board build/load of the
+spare-route VRC RM and exact mailbox logging in `docs/board_results.md`.

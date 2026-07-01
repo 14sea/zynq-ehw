@@ -43,7 +43,7 @@ static uint32_t MBOX_STUB;
 #define SR_USES      0x01CU
 #define SR_GEN_BASE  0x040U
 
-#define POP          256
+#define POP          128
 #define GENS         1000
 #define ELITES       4
 #define TOURNAMENT   3
@@ -382,6 +382,11 @@ int main(void) {
     int repair_fit = sr_vrc_fitness(repair_best, &SR_FAULT_DISABLE_A1);
     uint32_t uses = sr_vrc_uses(repair_best);
 
+#ifndef SR_HOST_STUB
+    (void)gen0;
+    (void)gen1;
+#endif
+
     publish(0xE3210000u | nofault_mask);
     publish(0xE3220000u | (uint32_t)nofault_fit);
     publish(0xE3230000u | degraded_mask);
@@ -410,4 +415,3 @@ int main(void) {
     }
 #endif
 }
-

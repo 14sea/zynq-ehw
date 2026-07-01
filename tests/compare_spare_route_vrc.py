@@ -86,10 +86,10 @@ def main() -> int:
     ])
     fw_out = run_capture([str(fw_exe)])
     print(fw_out, end="")
-    if "fit=8/8 mask=e8" not in fw_out or "degraded_fit=6/8" not in fw_out:
+    if "fit=8/8 mask=e8" not in fw_out or "degraded_fit=7/8" not in fw_out:
         print("FAIL: firmware host stub did not match expected no-fault/degraded result", file=sys.stderr)
         return 1
-    if "repair gen=19 fit=8/8 mask=e8 uses=2" not in fw_out:
+    if "repair gen=17 fit=8/8 mask=e8 uses=2" not in fw_out:
         print("FAIL: firmware host stub did not match expected repaired result", file=sys.stderr)
         return 1
 

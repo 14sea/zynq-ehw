@@ -204,7 +204,7 @@ static int accepted(const uint8_t best[SR_GENOME_LEN], const sr_fault_t *fault) 
 static void defaults(options_t *opt) {
     memset(opt, 0, sizeof(*opt));
     opt->seed = 3;
-    opt->population = 256;
+    opt->population = 128;
     opt->generations = 1000;
     opt->elites = 4;
     opt->tournament = 3;

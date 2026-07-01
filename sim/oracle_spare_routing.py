@@ -463,7 +463,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--seed", type=int, default=3)
     ap.add_argument("--recovery-seed", type=int, default=4)
-    ap.add_argument("--population", type=int, default=256)
+    ap.add_argument("--population", type=int, default=128)
     ap.add_argument("--generations", type=int, default=1000)
     ap.add_argument("--elites", type=int, default=4)
     ap.add_argument("--tournament", type=int, default=3)

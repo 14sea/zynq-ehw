@@ -7,7 +7,8 @@ python3 tests/compare_spare_route_vrc.py
 ```
 
 Status: **HOST GATE PASS — board run pending**. No board claim is made in this
-document.
+document. Current default population is `128`, chosen so the NEORV32 firmware
+fits the fixed 16 KiB DMEM used by the shared static SoC.
 
 ## Deliverables
 
@@ -48,16 +49,16 @@ Register map:
 
 ```text
 PASS: spare_route_vrc config/fault/sweep recovery checks passed
-SPARE_ROUTE_VRC nofault gen=16 fit=8/8 mask=e8 degraded_fit=6/8 degraded_mask=88
-SPARE_ROUTE_VRC repair gen=19 fit=8/8 mask=e8 uses=2 genome=0e 06 0e 01 68 00 01 04 01 02 00 01 02 00 03 02
+SPARE_ROUTE_VRC nofault gen=21 fit=8/8 mask=e8 degraded_fit=7/8 degraded_mask=c8
+SPARE_ROUTE_VRC repair gen=17 fit=8/8 mask=e8 uses=2 genome=0b 09 09 03 b1 00 04 04 01 02 00 00 01 02 03 00
 PASS: spare-routing Python oracle and C twin are bit-exact
 fault masks:
 FAULT_NONE,e8,8
-FAULT_STUCK0(A1),88,6
-FAULT_STUCK1(A1),ee,6
-FAULT_DISABLE_NODE(A1),88,6
-FAULT_DISABLE_ROUTE(O.in1),cc,6
-FAULT_DISABLE_ROUTE(A1.in0),88,6
+FAULT_STUCK0(A1),c8,7
+FAULT_STUCK1(A1),fa,6
+FAULT_DISABLE_NODE(A1),c8,7
+FAULT_DISABLE_ROUTE(O.in1),20,5
+FAULT_DISABLE_ROUTE(A1.in0),c8,7
 ```
 
 Vivado is not on the PATH used by `tests/compare_spare_route_vrc.py`, so the
@@ -82,17 +83,38 @@ no-input-function synth error); the `input dummy` arguments on `fitness_count` /
 `pack_fault` are what keep this island synthesizable. Board mailbox evidence is
 still the remaining gate for an EHW-3.2 board claim.
 
+## Firmware Link Gate
+
+The board firmware uses `POP=128` so the GA buffers fit the fixed 16 KiB NEORV32
+DMEM used by the shared static SoC. The exact board-build command now links:
+
+```bash
+cd sw_src/sr_build
+make NEORV32_HOME=../../rtl_src/neorv32_tpu/neorv32 \
+  RISCV_PREFIX=riscv64-unknown-elf- USER_FLAGS+="-specs=picolibc.specs" \
+  APP_SRC=spare_route_vrc_mbox.c clean install
+```
+
+Linked size:
+
+```text
+text=2460 data=0 bss=6176 dec=8636 hex=21bc
+```
+
+Static `.bss` headroom relative to the 16 KiB DMEM cap is `16384 - 6176 =
+10208` bytes. This resolves the earlier POP=256 `.bss` overflow.
+
 ## Interpretation
 
 The RTL VRC loads the exact host-discovered no-fault and repaired genomes into
 fabric registers and computes the same masks as the Python/C oracle:
 
 - no fault: `mask=e8`, `fitness=8/8`
-- injected `DISABLE_NODE(A1)`: `mask=88`, `fitness=6/8`
-- injected `DISABLE_ROUTE(O.in1)`: `mask=cc`, `fitness=6/8`
+- injected `DISABLE_NODE(A1)`: `mask=c8`, `fitness=7/8`
+- injected `DISABLE_ROUTE(O.in1)`: `mask=20`, `fitness=5/8`
 - repaired genome under `DISABLE_NODE(A1)`: `mask=e8`, `fitness=8/8`
 
 The firmware host stub runs the same no-fault and recovery GA, but all fitness
 measurements go through the VRC register protocol. This is the pre-board proof
-for EHW-3.2; the next gate is Vivado OOC synth and then board mailbox evidence.
-
+for EHW-3.2; Vivado OOC synth and firmware link have passed, and the next gate
+is board mailbox evidence.
