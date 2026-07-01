@@ -6,9 +6,12 @@ Generated / verified by:
 python3 tests/compare_spare_route_vrc.py
 ```
 
-Status: **HOST GATE PASS — board run pending**. No board claim is made in this
-document. Current default population is `128`, chosen so the NEORV32 firmware
-fits the fixed 16 KiB DMEM used by the shared static SoC.
+Status: **BOARD-VERIFIED on the EBAZ4205 (2026-07-01).** Host gates + Vivado OOC
+synth + firmware link all pass, and the complete fault→recovery narrative was
+captured on real silicon — see `docs/board_results.md` (mailbox `0xe321..0xe328`:
+no-fault 8/8 mask e8, degraded 7/8 mask c8, repaired 8/8 mask e8 using spare AS).
+Current default population is `128`, chosen so the NEORV32 firmware fits the fixed
+16 KiB DMEM used by the shared static SoC.
 
 ## Deliverables
 

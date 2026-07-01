@@ -305,31 +305,32 @@ Board bring-up: reset-to-U-Boot (SLCR `0xF8000008=0xDF0D` + `0xF8000200=1` while
 mailbox at PS `0x41200000` with `host/ehw_watch.py` (firmware writes PL `0xF1000000`
 → AXI-GPIO → PS `0x41200000`).
 
-Observed mailbox words (steady, two polls, identical), decoded against the firmware's
-tag scheme `0xE3<tag>0000 | value`:
+The firmware republish loop was extended (board-instrumentation change) to emit the
+FULL result set in steady state, so a slow U-Boot `md` poll captures the whole
+fault→recovery narrative, not just the repair endpoint. Observed mailbox words (steady,
+two polls, identical), decoded against the firmware tag scheme `0xE3<tag>0000 | value`:
 
 | word | tag | decode |
 |---|---|---|
-| `0xe32500e8` | E325 repair_mask | `0xe8` = target 3-input majority |
-| `0xe3260008` | E326 repair_fit  | `8` → **8/8** |
-| `0xe3270002` | E327 uses        | `2` (bit1=AS) → output routes the **spare node AS** |
-| `0xe3280001` | E328 heartbeat   | republish loop alive |
+| `0xe32100e8` | E321 nofault_mask | `0xe8` = target 3-input majority |
+| `0xe3220008` | E322 nofault_fit  | `8` → **8/8** (no fault) |
+| `0xe32300c8` | E323 degraded_mask| `0xc8` under injected `FAULT_DISABLE_NODE(A1)` |
+| `0xe3240007` | E324 degraded_fit | `7` → **7/8** — the fault genuinely degrades it |
+| `0xe32500e8` | E325 repair_mask  | `0xe8` = target, recovered |
+| `0xe3260008` | E326 repair_fit   | `8` → **8/8** |
+| `0xe3270002` | E327 uses         | `2` (bit1=AS) → output routes the **spare node AS** |
+| `0xe3280001` | E328 heartbeat    | republish loop alive |
 
-**Result: the repaired genome — evolved on-board under injected `FAULT_DISABLE_NODE(A1)`
-— evaluates on the REAL register-configured fabric VRC island to mask `0xe8`, fitness
-`8/8`, with the output mux using the spare node AS. Spare-route fault recovery is
-confirmed on silicon.** The board masks match the POP=128 host/RTL model exactly
-(`docs/ehw3_2_results.md`).
+**Result: on the REAL register-configured fabric VRC island, no-fault majority evaluates
+to `0xe8` = 8/8; injecting `FAULT_DISABLE_NODE(A1)` degrades it to `0xc8` = 7/8; the
+on-board-evolved repaired genome recovers `0xe8` = 8/8 with the output mux routing the
+spare node AS. The complete fault→recovery narrative is confirmed on silicon and matches
+the POP=128 host/RTL model exactly** (`docs/ehw3_2_results.md`).
 
-### Honest limitation (evidence scope)
-The firmware publishes the full detail — no-fault (`8/8`, mask `0xe8`) and degraded
-(`7/8`, mask `0xc8`) and both genomes — **once** at startup, then loops republishing
-only the repair endpoint (E325/E326/E327/E328). Those one-shot words are separated by
-~40 µs and are **not capturable by slow U-Boot `md` polling**, so the board steady-state
-evidence covers the recovery endpoint only; the no-fault and degraded values are proven
-by the host gates (oracle + C twin + RTL sim + firmware host stub), not re-captured on
-board. To capture the whole fault→recovery narrative in steady state, the firmware loop
-should republish nofault_mask/fit and degraded_mask/fit too (small change, follow-up run).
+The no-fault, degraded, and repair values are all captured in steady state because the
+board republish loop now re-emits E321–E327 (not just the repair endpoint); the earlier
+run had only the repair endpoint in the loop (the one-shot startup detail is ~40 µs/word,
+uncatchable by slow `md` polling).
 
 No wedge; DEVCFG healthy; JTAG/UART stable throughout. `zynq_xpart`/`zynq_agentctl`
 untouched.

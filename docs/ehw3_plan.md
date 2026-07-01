@@ -145,7 +145,7 @@ Implemented in `sw/ehw/spare_route_kernel.h`, `sw/ehw/spare_route_eval.c`, and
 post-fault recovery GA curves byte-for-byte, including direct fault-model masks.
 See `docs/ehw3_1_results.md`.
 
-### EHW-3.2 — Fabric VRC Island — HOST GATE PASS, BOARD PENDING
+### EHW-3.2 — Fabric VRC Island — BOARD-VERIFIED
 
 Implement the island as register-configured fabric logic, analogous to
 `rtl/cgp_vrc.v`, but with evolved local path selection.
@@ -171,11 +171,14 @@ Board gate:
 - with injected fault: GA recovers the target using spare route/logic choices;
 - exact mailbox words logged in `docs/board_results.md`.
 
-Host prep is implemented in `rtl/spare_route_vrc.v`,
-`rtl/dfx/tpu_rp_rm_spare_route_vrc.v`, `sw/ehw/spare_route_vrc_mbox.c`, and
-`tests/compare_spare_route_vrc.py`. RTL sim + firmware host stub + Py/C oracle
-gate pass; Vivado OOC hook exists in `tests/vivado_ooc_spare_route_vrc.tcl`.
-Board verification is still pending. See `docs/ehw3_2_results.md`.
+Implemented in `rtl/spare_route_vrc.v`, `rtl/dfx/tpu_rp_rm_spare_route_vrc.v`,
+`sw/ehw/spare_route_vrc_mbox.c`, and `tests/compare_spare_route_vrc.py`; built by
+`vivado/dfx/build_spare_route_vrc.tcl`. RTL sim + firmware host stub + Py/C oracle
+gate pass; Vivado OOC synth passes (0 errors). **BOARD-VERIFIED on the EBAZ4205
+(2026-07-01):** the full board gate is met — no-fault target passes (`0xe8`, 8/8),
+injected `FAULT_DISABLE_NODE(A1)` degrades it (`0xc8`, 7/8), and the on-board-evolved
+repair recovers (`0xe8`, 8/8) using the spare node AS. Exact mailbox words in
+`docs/board_results.md`; see `docs/ehw3_2_results.md`.
 
 ### EHW-3.3 — ICAP-Baked Repair
 

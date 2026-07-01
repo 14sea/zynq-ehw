@@ -76,13 +76,13 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   compares Python and C no-fault/recovery GA curves byte-for-byte, including the
   repaired genome and direct fault-model masks (`tests/compare_spare_route_twin.py`,
   `docs/ehw3_1_results.md`).
-- **EHW-3.2 host gate done; board pending** — `rtl/spare_route_vrc.v` implements the
-  spare-routing island as a register-configured fabric VRC with evolved local
-  path-select fields. RTL sim verifies config load, fault injection, 8-row sweep,
-  and repaired phenotype; firmware host stub measures GA fitness through the VRC
-  register protocol. Vivado OOC synth (`tests/vivado_ooc_spare_route_vrc.tcl`,
-  `xc7z010clg400-1`) passed with 0 errors; board mailbox evidence is still pending
-  (`docs/ehw3_2_results.md`).
+- **EHW-3.2 board-verified** — `rtl/spare_route_vrc.v` implements the spare-routing
+  island as a register-configured fabric VRC with evolved local path-select fields.
+  RTL sim + firmware host stub + Py/C oracle + Vivado OOC synth (0 errors) all pass,
+  and the full fault→recovery narrative was captured on the EBAZ4205 (XC7Z010): no-fault
+  majority `8/8` mask `0xe8`, injected `FAULT_DISABLE_NODE(A1)` degrades to `7/8` mask
+  `0xc8`, on-board-evolved repair recovers `8/8` mask `0xe8` routing the spare node AS
+  (`docs/board_results.md`, `docs/ehw3_2_results.md`).
 
 ## Dependencies & reproduction environment
 

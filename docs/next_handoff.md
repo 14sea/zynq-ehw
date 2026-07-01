@@ -207,9 +207,15 @@ Status: EHW-3.0 host oracle is complete in `sim/oracle_spare_routing.py`.
 EHW-3.1 Python/C twin is complete in `sw/ehw/spare_route_kernel.h`,
 `sw/ehw/spare_route_eval.c`, and `tests/compare_spare_route_twin.py`.
 
-EHW-3.2 host prep is complete in `rtl/spare_route_vrc.v`,
-`rtl/dfx/tpu_rp_rm_spare_route_vrc.v`, `sw/ehw/spare_route_vrc_mbox.c`, and
-`tests/compare_spare_route_vrc.py`; result doc is `docs/ehw3_2_results.md`.
-Vivado OOC synth and firmware link are now green with `POP=128`; the firmware
-link size is `text=2460 data=0 bss=6176`. Next step is board build/load of the
-spare-route VRC RM and exact mailbox logging in `docs/board_results.md`.
+EHW-3.2 is **BOARD-VERIFIED** on the EBAZ4205 (2026-07-01): built by
+`vivado/dfx/build_spare_route_vrc.tcl` (static + `rm_spare_route_vrc`), loaded via
+U-Boot `fpga loadb`, and the full fault→recovery narrative captured on silicon —
+mailbox `0xe321..0xe328`: no-fault 8/8 mask `0xe8`, degraded 7/8 mask `0xc8`,
+repaired 8/8 mask `0xe8` using spare AS (`docs/board_results.md`). POP=128, firmware
+`bss=6176` (fits 16k DMEM).
+
+Next optional rung is **EHW-3.3 (ICAP-baked repair)**: bake the broken vs repaired
+island LUT/select INITs into two same-route builds, diff the frames, and ICAP-rewrite
+the live island from the degraded phenotype to the repaired one without a PS/NEORV32
+reset — the CGP-analogue of EHW-1.2/EHW-0.5, reusing the m75 framebank tooling. Keep
+the frozen 16-byte contract and re-extract frames from the fresh routed build.

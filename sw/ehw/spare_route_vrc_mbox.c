@@ -407,8 +407,16 @@ int main(void) {
     return (nofault_fit == 8 && degraded_fit < 8 && repair_fit == 8 &&
             repair_mask == SR_TARGET_MASK && uses == 2u) ? 0 : 1;
 #else
+    /* Republish the FULL fault->recovery result set (same tags as the one-shot
+       startup publishes) so a slow U-Boot `md` poll can capture the whole story in
+       steady state, not just the repair endpoint. Board-instrumentation only —
+       does not touch the GA/decode/host path. */
     for (;;) {
         publish(0xE3280001u);
+        publish(0xE3210000u | nofault_mask);
+        publish(0xE3220000u | (uint32_t)nofault_fit);
+        publish(0xE3230000u | degraded_mask);
+        publish(0xE3240000u | (uint32_t)degraded_fit);
         publish(0xE3250000u | repair_mask);
         publish(0xE3260000u | (uint32_t)repair_fit);
         publish(0xE3270000u | uses);
