@@ -33,6 +33,8 @@ rtl_src/
 sw_src/
 vivado/dfx/build/
 vivado/dfx/build_sr/
+vivado/dfx/build_srb/
+vivado/dfx/spare_route_icap/
 vivado/**/hd_visual/
 vivado/icap_ehw2/ehw2_seqs*/
 vivado/**/cgp_icap/

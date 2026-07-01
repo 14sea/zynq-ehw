@@ -1,8 +1,8 @@
 # EHW-3 Plan — Evolved Spare-Routing Island
 
 Status: **OPTIONAL NEXT LINE**. EHW-0 through EHW-2 remain the completed,
-board-verified baseline. EHW-3.0 is host-only complete; later EHW-3 rungs are
-planned, not board-verified.
+board-verified baseline. EHW-3.0/EHW-3.1 are host-only complete, EHW-3.2 is
+board-verified, and EHW-3.3 is host-prepped for board ICAP repair.
 
 ## Goal
 
@@ -180,7 +180,7 @@ injected `FAULT_DISABLE_NODE(A1)` degrades it (`0xc8`, 7/8), and the on-board-ev
 repair recovers (`0xe8`, 8/8) using the spare node AS. Exact mailbox words in
 `docs/board_results.md`; see `docs/ehw3_2_results.md`.
 
-### EHW-3.3 — ICAP-Baked Repair
+### EHW-3.3 — ICAP-Baked Repair — HOST PREP COMPLETE
 
 Bake the evolved repair into LUT INITs and local select LUTs, then use ICAP to
 change the live island from broken to repaired.
@@ -203,6 +203,17 @@ Board gate:
 - baseline island reports broken fitness under injected or baked fault;
 - ICAP update changes only intended INIT/select bits;
 - repaired island reports target fitness without PS/NEORV32 reset.
+
+Implemented host-prep deliverables in `rtl/spare_route_baked.v`,
+`rtl/dfx/tpu_rp_rm_spare_route_baked_base.v`,
+`rtl/dfx/tpu_rp_rm_spare_route_baked_repair.v`,
+`sw/ehw/spare_route_baked_post.c`, `tests/compare_spare_route_baked.py`,
+`tests/vivado_ooc_spare_route_baked.tcl`, `vivado/dfx/build_spare_route_baked.tcl`,
+and `vivado/dfx/spare_route_baked_edit_repair.tcl`. The host gate proves the
+baseline hard-fault phenotype is `mask=c8`, `7/8`, the repaired phenotype is
+`mask=e8`, `8/8`, and only the intended g0/g1/g2/g3/g4/g5/g7/g8/g11/g13/g14
+LUT/select INITs differ. Board ICAP frame extraction and mailbox evidence remain
+pending; see `docs/ehw3_3_results.md`.
 
 ### EHW-3.4 — Per-Eval ICAPE2 Spare-Routing Evolution
 

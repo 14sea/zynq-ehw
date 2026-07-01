@@ -83,6 +83,12 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   majority `8/8` mask `0xe8`, injected `FAULT_DISABLE_NODE(A1)` degrades to `7/8` mask
   `0xc8`, on-board-evolved repair recovers `8/8` mask `0xe8` routing the spare node AS
   (`docs/board_results.md`, `docs/ehw3_2_results.md`).
+- **EHW-3.3 host prep done** — `rtl/spare_route_baked.v` bakes the EHW-3 spare-route
+  island into explicit LUT/select INITs with a hard disabled-A1 fault. The host gate
+  proves the baseline phenotype is degraded (`mask=0xc8`, `7/8`), the repaired baked
+  phenotype is correct (`mask=0xe8`, `8/8`), and only the intended g0/g1/g2/g3/g4/g5/
+  g7/g8/g11/g13/g14 LUT/select INITs differ. Vivado build/edit scripts are in
+  `vivado/dfx/`; board ICAP repair is pending (`docs/ehw3_3_results.md`).
 
 ## Dependencies & reproduction environment
 
@@ -106,7 +112,7 @@ Two large dependencies are kept **out of the repo** (gitignored, regenerable): t
 ## Host tests (no board, no Vivado)
 
 ```sh
-tests/run_host_gates.sh      # runs all 7 host gates: oracle<->C-twin bit-exact + RTL sims
+tests/run_host_gates.sh      # runs all 8 host gates: oracle<->C-twin bit-exact + RTL sims
 ```
 Every board-bound deliverable ships with a host self-proof; this is the gate that must be green before any board run (see `docs/workflow.md`). Board reproduction (build → ICAP/load → mailbox) is in `docs/BOARD_REPRO.md`.
 
@@ -142,7 +148,9 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
   spare-routing island.
 - `docs/ehw3_2_results.md` — EHW-3.2 host-gated fabric VRC result; board run
-  pending.
+  result.
+- `docs/ehw3_3_results.md` — EHW-3.3 host-prep result for ICAP-baked spare-route
+  repair; board run pending.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
@@ -151,6 +159,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `rtl/dfx/tpu_rp_rm_cgp_vrc.v` — DFX RM wrapper exposing the CGP VRC in the existing
   `0xF0000000` NEORV32 peripheral window.
 - `rtl/cgp_baked.v` — EHW-1.2 hardwired LUT4 CGP grid for ICAP INIT edits.
+- `rtl/spare_route_baked.v` — EHW-3.3 hardwired spare-route island for ICAP INIT
+  repair of LUT logic and safe local path-select LUTs.
 - `rtl/ehw2_lut_target.v` / `rtl/neorv32_soc_icap.vhd` / `rtl/xbus_icap.v` —
   EHW-2 stretch substrate for in-fabric ICAPE2 LUT-INIT edits.
 - `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and
@@ -160,7 +170,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   EHW-1.1-sw board-resident software-eval CGP GA, `cgp_vrc_mbox.c` for the
   EHW-1.1-fabric board-resident fabric-eval CGP GA, `cgp_baked_post.c` for the
   EHW-1.2 baked-CGP POST, `ehw2_icap_micro.c` for the EHW-2 per-eval ICAPE2
-  stretch, and `lutkcm_post.c` for the EHW-0.5 ICAP-bake POST.
+  stretch, `lutkcm_post.c` for the EHW-0.5 ICAP-bake POST, and
+  `spare_route_baked_post.c` for the EHW-3.3 baked spare-route POST.
 - `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
 - `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
   bit-exact CSV curves plus the M7.5.3 golden bitmap guard.
@@ -177,6 +188,9 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   recovery curves.
 - `tests/compare_spare_route_vrc.py` — verifies the EHW-3.2 spare-routing fabric
   VRC RTL sim, firmware host stub, wrapper compile, Py/C oracle gate, and optional
+  Vivado OOC synth.
+- `tests/compare_spare_route_baked.py` — verifies the EHW-3.3 baked spare-route
+  RTL sim, firmware host stub, wrapper compile, target INIT diff, and optional
   Vivado OOC synth.
 - `scripts/ehw2-build-framebank-from-bits.py` — builds the EHW-2 multi-FAR
   candidate framebank from same-route `.bit` files and prjxray `.bits` outputs.

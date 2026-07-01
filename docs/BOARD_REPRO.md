@@ -84,3 +84,38 @@ python3 scripts/ehw2-framebank-load.py <d>/framebank.bin 0x40000000
 ```
 PASS: mailbox `0x41200008` → steady `0xeb0308e8` (candidate e8, fitness 8/8, mask 0xe8). Restore `PCAP_PR=1`.
 The candidate INIT spans **two** config FARs → each candidate needs **two** envelopes (the multi-FAR framebank); a single envelope leaves the 2nd frame as a non-committed FDRI pad (truncated phenotype → wrong result).
+
+## EHW-3.2 — spare-routing fabric VRC island
+
+```sh
+cp sw/ehw/Makefile sw/ehw/spare_route_kernel.h sw/ehw/spare_route_vrc_mbox.c sw_src/sr_build/
+cd sw_src/sr_build && make NEORV32_HOME=../../rtl_src/neorv32_tpu/neorv32 \
+    RISCV_PREFIX=riscv64-unknown-elf- USER_FLAGS+="-specs=picolibc.specs" \
+    APP_SRC=spare_route_vrc_mbox.c clean install
+cd ../../vivado/dfx && vivado -mode batch -source build_spare_route_vrc.tcl
+# loadb build_sr/dfx.runs/impl_2/dfx_top.bit -> poll mailbox 0x41200000
+```
+
+PASS: steady mailbox sequence `0xe32100e8`, `0xe3220008`, `0xe32300c8`,
+`0xe3240007`, `0xe32500e8`, `0xe3260008`, `0xe3270002`, `0xe3280001`.
+This proves no-fault majority `8/8`, disabled-A1 degradation `7/8`, and repaired
+spare-AS recovery `8/8`.
+
+## EHW-3.3 — ICAP-baked spare-route repair (pending board run)
+
+```sh
+cp sw/ehw/Makefile sw/ehw/spare_route_kernel.h sw/ehw/spare_route_baked_post.c sw_src/sr_build/
+cd sw_src/sr_build && make NEORV32_HOME=../../rtl_src/neorv32_tpu/neorv32 \
+    RISCV_PREFIX=riscv64-unknown-elf- USER_FLAGS+="-specs=picolibc.specs" \
+    APP_SRC=spare_route_baked_post.c clean install
+cd ../../vivado/dfx
+vivado -mode batch -source build_spare_route_baked.tcl          # impl_33 = static + SRB0 baseline
+vivado -mode batch -source spare_route_baked_edit_repair.tcl    # same-route repaired bitstream
+# bitread baseline impl_33 vs spare_route_icap/dfx_top_spare_route_repair.bit
+# -> m75-build-frameseqs.py -> one envelope per changed FAR
+# loadb baseline -> expect SRB0/c8/7 -> ICAP frames in background -> expect SRB0/e8/8
+```
+
+Expected acceptance: marker remains `SRB0` after ICAP because the edit changes
+only target LUT/select INITs; mailbox should move from `E33200c8`/`E3330007` to
+`E33200e8`/`E3330008` without PS/NEORV32 reset.

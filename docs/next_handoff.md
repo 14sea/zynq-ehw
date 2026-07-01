@@ -214,8 +214,12 @@ mailbox `0xe321..0xe328`: no-fault 8/8 mask `0xe8`, degraded 7/8 mask `0xc8`,
 repaired 8/8 mask `0xe8` using spare AS (`docs/board_results.md`). POP=128, firmware
 `bss=6176` (fits 16k DMEM).
 
-Next optional rung is **EHW-3.3 (ICAP-baked repair)**: bake the broken vs repaired
-island LUT/select INITs into two same-route builds, diff the frames, and ICAP-rewrite
-the live island from the degraded phenotype to the repaired one without a PS/NEORV32
-reset — the CGP-analogue of EHW-1.2/EHW-0.5, reusing the m75 framebank tooling. Keep
-the frozen 16-byte contract and re-extract frames from the fresh routed build.
+EHW-3.3 host prep is complete: `rtl/spare_route_baked.v`,
+`sw/ehw/spare_route_baked_post.c`, `tests/compare_spare_route_baked.py`, and
+`vivado/dfx/build_spare_route_baked.tcl` / `spare_route_baked_edit_repair.tcl`
+prepare the ICAP-baked repair flow. Host gate proves baseline hard-fault mask
+`0xc8` (`7/8`), repaired mask `0xe8` (`8/8`), and an exact target INIT diff set
+g0/g1/g2/g3/g4/g5/g7/g8/g11/g13/g14. Board work remains: build fresh baseline,
+edit same routed DCP, bitread/diff, make one envelope per FAR via
+`scripts/m75-build-frameseqs.py`, then ICAP-rewrite live `SRB0` from `c8/7` to
+`e8/8` without PS/NEORV32 reset.

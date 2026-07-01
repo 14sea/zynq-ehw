@@ -8,9 +8,9 @@
 #   tests/run_host_gates.sh           # run all host gates
 #   PY=python3 tests/run_host_gates.sh
 #
-# Vivado OOC synth_design checks (compare_cgp_vrc / compare_cgp_baked) are run with
-# --skip-ooc here because they need Vivado on PATH; a board/Vivado environment can
-# drop --skip-ooc to also gate RTL against Vivado synthesis strictness.
+# Vivado OOC synth_design checks are run with --skip-ooc here because they need
+# Vivado on PATH; a board/Vivado environment can drop --skip-ooc to also gate RTL
+# against Vivado synthesis strictness.
 set -u
 cd "$(dirname "$0")/.."
 PY="${PY:-python3}"
@@ -24,6 +24,7 @@ gates=(
   "compare_ehw2_micro.py"                # EHW-2: ICAPE2 micro oracle + framebank pack contract
   "compare_spare_route_twin.py"          # EHW-3.1: spare-route island Py<->C bit-exact
   "compare_spare_route_vrc.py --skip-ooc" # EHW-3.2: spare-route VRC RTL sim + firmware stub
+  "compare_spare_route_baked.py --skip-ooc" # EHW-3.3: baked spare-route ICAP repair host prep
 )
 
 fail=0
