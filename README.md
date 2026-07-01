@@ -76,6 +76,13 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   compares Python and C no-fault/recovery GA curves byte-for-byte, including the
   repaired genome and direct fault-model masks (`tests/compare_spare_route_twin.py`,
   `docs/ehw3_1_results.md`).
+- **EHW-3.2 host gate done; board pending** — `rtl/spare_route_vrc.v` implements the
+  spare-routing island as a register-configured fabric VRC with evolved local
+  path-select fields. RTL sim verifies config load, fault injection, 8-row sweep,
+  and repaired phenotype; firmware host stub measures GA fitness through the VRC
+  register protocol. Vivado OOC synth (`tests/vivado_ooc_spare_route_vrc.tcl`,
+  `xc7z010clg400-1`) passed with 0 errors; board mailbox evidence is still pending
+  (`docs/ehw3_2_results.md`).
 
 ## Dependencies & reproduction environment
 
@@ -99,7 +106,7 @@ Two large dependencies are kept **out of the repo** (gitignored, regenerable): t
 ## Host tests (no board, no Vivado)
 
 ```sh
-tests/run_host_gates.sh      # runs all 6 host gates: oracle<->C-twin bit-exact + RTL sims
+tests/run_host_gates.sh      # runs all 7 host gates: oracle<->C-twin bit-exact + RTL sims
 ```
 Every board-bound deliverable ships with a host self-proof; this is the gate that must be green before any board run (see `docs/workflow.md`). Board reproduction (build → ICAP/load → mailbox) is in `docs/BOARD_REPRO.md`.
 
@@ -134,6 +141,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
   spare-routing island.
+- `docs/ehw3_2_results.md` — EHW-3.2 host-gated fabric VRC result; board run
+  pending.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
@@ -166,6 +175,9 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `tests/compare_spare_route_twin.py` — verifies the EHW-3 spare-routing island
   Python oracle and portable-C twin are bit-exact for no-fault and post-fault
   recovery curves.
+- `tests/compare_spare_route_vrc.py` — verifies the EHW-3.2 spare-routing fabric
+  VRC RTL sim, firmware host stub, wrapper compile, Py/C oracle gate, and optional
+  Vivado OOC synth.
 - `scripts/ehw2-build-framebank-from-bits.py` — builds the EHW-2 multi-FAR
   candidate framebank from same-route `.bit` files and prjxray `.bits` outputs.
 - `vivado/icap_ehw2/build_ehw2_icap.tcl` — EHW-2 T2.3-style static build and

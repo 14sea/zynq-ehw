@@ -145,7 +145,7 @@ Implemented in `sw/ehw/spare_route_kernel.h`, `sw/ehw/spare_route_eval.c`, and
 post-fault recovery GA curves byte-for-byte, including direct fault-model masks.
 See `docs/ehw3_1_results.md`.
 
-### EHW-3.2 — Fabric VRC Island
+### EHW-3.2 — Fabric VRC Island — HOST GATE PASS, BOARD PENDING
 
 Implement the island as register-configured fabric logic, analogous to
 `rtl/cgp_vrc.v`, but with evolved local path selection.
@@ -170,6 +170,12 @@ Board gate:
 - with no fault: target truth table passes;
 - with injected fault: GA recovers the target using spare route/logic choices;
 - exact mailbox words logged in `docs/board_results.md`.
+
+Host prep is implemented in `rtl/spare_route_vrc.v`,
+`rtl/dfx/tpu_rp_rm_spare_route_vrc.v`, `sw/ehw/spare_route_vrc_mbox.c`, and
+`tests/compare_spare_route_vrc.py`. RTL sim + firmware host stub + Py/C oracle
+gate pass; Vivado OOC hook exists in `tests/vivado_ooc_spare_route_vrc.tcl`.
+Board verification is still pending. See `docs/ehw3_2_results.md`.
 
 ### EHW-3.3 — ICAP-Baked Repair
 
