@@ -291,3 +291,45 @@ d23 uncommitted (truncated phenotype) — one envelope per spanned FAR fixes it.
    recovered** (the one time this whole project needed it). After power-cycle: JTAG/DAP
    back, SLCR-reset → U-Boot, clean retry ran without wedge. **Lesson: do NOT poke the
    PS HWICAP path in an internal-ICAPE2 build; it has no PS HWICAP.**
+
+## EHW-3.2 — spare-routing fabric VRC island (2026-07-01)
+
+Firmware: `sw/ehw/spare_route_vrc_mbox.c` (POP=128), IMEM baked before the build.
+Bitstream: `vivado/dfx/build_spare_route_vrc.tcl` → `build_sr/dfx.runs/impl_2/dfx_top.bit`
+(static + `rm_spare_route_vrc`; impl_2 timing **met**, DRC **0 errors**, bitgen OK; the
+549-cell island is the reconfigurable module behind the `0xF0000000` XBUS window).
+
+Board bring-up: reset-to-U-Boot (SLCR `0xF8000008=0xDF0D` + `0xF8000200=1` while
+`uboot-intercept.py` hammers `d`) → `uboot-fpga-load.py --op loadb dfx_top.bit`
+(part `7z010clg400`, design `dfx_top` 2026/07/01 21:01:17, 2083740 bytes) → poll the
+mailbox at PS `0x41200000` with `host/ehw_watch.py` (firmware writes PL `0xF1000000`
+→ AXI-GPIO → PS `0x41200000`).
+
+Observed mailbox words (steady, two polls, identical), decoded against the firmware's
+tag scheme `0xE3<tag>0000 | value`:
+
+| word | tag | decode |
+|---|---|---|
+| `0xe32500e8` | E325 repair_mask | `0xe8` = target 3-input majority |
+| `0xe3260008` | E326 repair_fit  | `8` → **8/8** |
+| `0xe3270002` | E327 uses        | `2` (bit1=AS) → output routes the **spare node AS** |
+| `0xe3280001` | E328 heartbeat   | republish loop alive |
+
+**Result: the repaired genome — evolved on-board under injected `FAULT_DISABLE_NODE(A1)`
+— evaluates on the REAL register-configured fabric VRC island to mask `0xe8`, fitness
+`8/8`, with the output mux using the spare node AS. Spare-route fault recovery is
+confirmed on silicon.** The board masks match the POP=128 host/RTL model exactly
+(`docs/ehw3_2_results.md`).
+
+### Honest limitation (evidence scope)
+The firmware publishes the full detail — no-fault (`8/8`, mask `0xe8`) and degraded
+(`7/8`, mask `0xc8`) and both genomes — **once** at startup, then loops republishing
+only the repair endpoint (E325/E326/E327/E328). Those one-shot words are separated by
+~40 µs and are **not capturable by slow U-Boot `md` polling**, so the board steady-state
+evidence covers the recovery endpoint only; the no-fault and degraded values are proven
+by the host gates (oracle + C twin + RTL sim + firmware host stub), not re-captured on
+board. To capture the whole fault→recovery narrative in steady state, the firmware loop
+should republish nofault_mask/fit and degraded_mask/fit too (small change, follow-up run).
+
+No wedge; DEVCFG healthy; JTAG/UART stable throughout. `zynq_xpart`/`zynq_agentctl`
+untouched.
