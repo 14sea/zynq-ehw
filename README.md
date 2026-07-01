@@ -65,6 +65,12 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   8/8, mask `0xe8`). Key fix: the LUT INIT spans two config FARs, so each candidate
   needs **two** frame envelopes (the multi-FAR 8KB framebank) — a single envelope left
   the 2nd frame as a non-committed pad (`docs/board_results.md`).
+- **EHW-3.0 host oracle done** — `sim/oracle_spare_routing.py` starts the optional
+  spare-routing-island line: fixed outer routing, evolved LUT INITs plus local
+  mux-select fields. It demonstrates host-side recovery from injected
+  `FAULT_DISABLE_NODE(A1)`: no-fault majority `8/8`, degraded `6/8`, repaired
+  `8/8` using spare `AS` / local rerouting (`docs/ehw3_0_results.md`). No board
+  claim is made for EHW-3 yet.
 
 ## Dependencies & reproduction environment
 
@@ -119,6 +125,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `docs/ehw3_plan.md` — optional next-step plan for a fixed-route spare-routing
   island that evolves LUT truth tables plus local spare-path selection, without
   mutating raw Xilinx routing bits.
+- `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
+  no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.

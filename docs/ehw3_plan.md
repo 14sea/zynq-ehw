@@ -1,7 +1,8 @@
 # EHW-3 Plan — Evolved Spare-Routing Island
 
-Status: **PLAN ONLY**. EHW-0 through EHW-2 remain the completed, board-verified
-baseline. EHW-3 is an optional next research step.
+Status: **OPTIONAL NEXT LINE**. EHW-0 through EHW-2 remain the completed,
+board-verified baseline. EHW-3.0 is host-only complete; later EHW-3 rungs are
+planned, not board-verified.
 
 ## Goal
 
@@ -100,7 +101,7 @@ host model and RTL must share the same decode.
 
 ## Milestone Ladder
 
-### EHW-3.0 — Host Oracle For Spare-Routing Recovery
+### EHW-3.0 — Host Oracle For Spare-Routing Recovery — DONE (HOST-ONLY)
 
 Build a deterministic Python oracle for a tiny spare-routing island.
 
@@ -117,6 +118,11 @@ Host gate:
 - deterministic fixed-seed run;
 - prints best genome, truth-table mask, fitness, and fault mode;
 - confirms repaired phenotype equals the target truth table.
+
+Implemented first target: 3-input majority `0xe8`. The no-fault run reaches
+`8/8`; injecting `FAULT_DISABLE_NODE(A1)` drops the champion to `6/8`; a second
+run with the fault active recovers `8/8` using spare `AS` / local rerouting. See
+`docs/ehw3_0_results.md`.
 
 ### EHW-3.1 — Portable-C Twin And Firmware Stub
 
@@ -277,4 +283,3 @@ Full EHW-3 success:
   Report spare resources explicitly.
 - It is easy to overclaim "routing evolution." Use "spare-route selection inside
   a fixed-route island" unless raw vendor routing bits are actually edited.
-
