@@ -193,3 +193,12 @@ the multi-FAR framebank. What is still hardcoded / manual and worth generalizing
 - Keep the host gate (`tests/compare_ehw2_micro.py`) covering the new descriptor/contract, and
   remember: the target LUT moves every build → frames must be re-extracted from the fresh
   bitstreams (the `.bits` must match the `.bit` build).
+
+## P8 — EHW-3 evolved spare-routing island (optional next research line)
+
+Plan only: `docs/ehw3_plan.md`.
+
+This is the controlled next step beyond LUT-INIT-only evolution: keep the outer Xilinx
+routing fixed, but build a small spare-routing island whose safe local path-selection
+bits and LUT truth tables are evolved. The intended claim is **spare-route selection
+inside a fixed-route island**, not arbitrary vendor routing-bit mutation.

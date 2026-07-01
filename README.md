@@ -116,6 +116,9 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   multiplier.
 - `docs/ehw2_results.md` — host + board result for per-eval ICAPE2 LUT-INIT
   evolution.
+- `docs/ehw3_plan.md` — optional next-step plan for a fixed-route spare-routing
+  island that evolves LUT truth tables plus local spare-path selection, without
+  mutating raw Xilinx routing bits.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
