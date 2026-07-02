@@ -1,9 +1,9 @@
 # EHW-3 Plan — Evolved Spare-Routing Island
 
 Status: **OPTIONAL NEXT LINE**. EHW-0 through EHW-2 remain the completed,
-board-verified baseline. EHW-3.0/EHW-3.1 are host-only complete, EHW-3.2 is
-board-verified, EHW-3.3 is board-verified, and EHW-3.4 is host-prepped for board
-ICAPE2 evaluation.
+board-verified baseline. EHW-3.0/EHW-3.1 are host-only complete, and
+EHW-3.2 / EHW-3.3 / EHW-3.4 are all board-verified — the whole EHW-3 ladder is
+board-verified on the EBAZ4205.
 
 ## Goal
 
@@ -217,7 +217,7 @@ LUT/select INITs differ. **BOARD-VERIFIED on the EBAZ4205 (2026-07-01):** 8 FAR
 envelopes rewrote live `SRB0` from `mask=c8`, `7/8` to `mask=e8`, `8/8` without
 PS/NEORV32 reset; see `docs/board_results.md` and `docs/ehw3_3_results.md`.
 
-### EHW-3.4 — Per-Eval ICAPE2 Spare-Routing Evolution — HOST PREP COMPLETE
+### EHW-3.4 — Per-Eval ICAPE2 Spare-Routing Evolution — BOARD-VERIFIED
 
 Optional stretch: combine EHW-2's per-eval ICAPE2 loop with the spare-routing
 genome. Each candidate evaluation writes the candidate's logic and local route
@@ -232,8 +232,9 @@ Implemented host-prep deliverables in `sim/ehw34_icap_oracle.py`,
 `scripts/ehw34-build-framebank-from-bits.py`, `tests/compare_ehw34_icap.py`, and
 `vivado/icap_ehw34/build_ehw34_icap.tcl`. The host gate proves the four-candidate
 bank reaches the repaired phenotype (`mask=e8`, `8/8`) and validates the 16-byte
-genome framebank descriptor. Board ICAPE2 evidence remains pending. This substrate
-has no PS-HWICAP; PS only stages the framebank and reads GPIO mailboxes.
+genome framebank descriptor. The real framebank uses 9938 words, so EHW-3.4 uses a
+16384-word / 64KB framebuf. Board ICAPE2 evidence remains pending. This substrate has
+no PS-HWICAP; PS only stages the framebank and reads GPIO mailboxes.
 
 ## Suggested First Target
 

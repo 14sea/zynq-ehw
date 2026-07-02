@@ -142,10 +142,12 @@ python3 scripts/ehw34-build-framebank-from-bits.py --out-dir runs/ehw34_seqs \
     --candidate logic=0b090903b10104000202000401010200 \
     --candidate route=0a08010f320004040102000001020300 \
     --candidate repair=0b090903b10004040102000001020300
-# loadb base design -> PCAP_PR=0 -> stage framebank word0 last:
+# loadb base design -> PCAP_PR=0 -> stage 64KB framebank word0 last:
 python3 scripts/ehw2-framebank-load.py runs/ehw34_seqs/framebank.bin 0x40000000
 ```
 
 Expected acceptance: candidate loop emits `E900..` rows and converges to
 `0xEA0308E8`, then steady `0xEC0308E8`. This internal-ICAPE2 build has **no
 PS-HWICAP**; do not run PS-HWICAP readreg/writeseq commands or it can wedge PL-AXI.
+The real four-candidate bank uses 9938 words and is padded to the 16384-word
+EHW-3.4 framebuf.

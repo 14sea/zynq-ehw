@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pack EHW-3.4 spare-route genome candidates into one 8KB framebank image.
+"""Pack EHW-3.4 spare-route genome candidates into one 64KB framebank image.
 
 Layout in 32-bit words:
   0      magic "EH34" (written last by the loader as the ready flag)
@@ -27,7 +27,7 @@ MAGIC = 0x45483334  # "EH34"
 DESC_BASE = 4
 MAX_SEQ_PER_CAND = 16
 DESC_WORDS = 5 + MAX_SEQ_PER_CAND * 2
-MAX_WORDS = 2048
+MAX_WORDS = 16384
 MAX_CAND = 4
 MAX_SEQ_WORDS = 255
 GENOME_LEN = 16
@@ -97,9 +97,10 @@ def pack(candidates: list[tuple[str, list[int], list[Path]]]) -> list[int]:
             words[desc + 6 + seq_idx * 2] = len(seq)
             words.extend(seq)
 
-    if len(words) > MAX_WORDS:
-        raise ValueError(f"framebank uses {len(words)} words, exceeds {MAX_WORDS}")
-    words.extend([0] * (MAX_WORDS - len(words)))
+    used_words = len(words)
+    if used_words > MAX_WORDS:
+        raise ValueError(f"framebank uses {used_words} words, exceeds {MAX_WORDS}")
+    words.extend([0] * (MAX_WORDS - used_words))
     return words
 
 
@@ -114,7 +115,13 @@ def main() -> int:
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_bytes(struct.pack(f">{len(words)}I", *words))
-    print(f"packed {len(candidates)} candidates, {len(words)} words -> {out}")
+    used_words = 0
+    for idx in range(len(candidates)):
+        desc = DESC_BASE + idx * DESC_WORDS
+        used_words = max(used_words, desc + DESC_WORDS)
+        for seq_idx in range(words[desc + 4]):
+            used_words = max(used_words, words[desc + 5 + seq_idx * 2] + words[desc + 6 + seq_idx * 2])
+    print(f"packed {len(candidates)} candidates, used {used_words} words, padded to {len(words)} words -> {out}")
     for idx, (label, genome, _paths) in enumerate(candidates):
         desc = DESC_BASE + idx * DESC_WORDS
         seqs = []

@@ -69,7 +69,7 @@ connect_bd_net [get_bd_pins soc_0/mbox_o] [get_bd_pins axi_gpio_0/gpio2_io_i]
 connect_bd_net [get_bd_pins const1/dout]  [get_bd_pins soc_0/uart0_rxd_i]
 
 assign_bd_address
-catch {assign_bd_address -force -offset 0x40000000 -range 8K [get_bd_addr_segs soc_0/S_AXI/Reg]}
+catch {assign_bd_address -force -offset 0x40000000 -range 64K [get_bd_addr_segs soc_0/S_AXI/Reg]}
 validate_bd_design
 save_bd_design
 puts "=== ADDRESS MAP ==="

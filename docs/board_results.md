@@ -335,6 +335,47 @@ uncatchable by slow `md` polling).
 No wedge; DEVCFG healthy; JTAG/UART stable throughout. `zynq_xpart`/`zynq_agentctl`
 untouched.
 
+## EHW-3.4 — per-eval internal-ICAPE2 spare-route evolution (2026-07-02)
+
+Firmware: `sw/ehw/ehw34_icap_spare_route.c` (internal-ICAPE2, **NO PS-HWICAP**), IMEM
+baked before the build. SoC `rtl/neorv32_soc_icap_sr.vhd` (MBOX 0xF1000, xbus_icap
+0xF3000, baked island 0xF4000, frame BRAM 0xF5000; framebuf `rtl/axil_framebuf.vhd`
+parameterized to ADDR_BITS=14 = **16384 words / 64KB** for this build). Bitstreams:
+`vivado/icap_ehw34/build_ehw34_icap.tcl` — one route, 4 same-route bitstreams
+(base/logic/route/repair via apply_genome). Rebuild after the framebuf enlargement:
+timing **met** (WNS +6.83 ns), DRC **0 errors**, **BRAM 37/60** (the 64KB framebuf
+fits with headroom).
+
+Framebank: prjxray `bitread -y` of the 4 fresh bitstreams →
+`scripts/ehw34-build-framebank-from-bits.py` → **used 9938 words, padded to 16384**
+(cand frame counts base=0, logic=6, route=8, repair=8; the fresh build placed the LUTs
+in fewer FARs than the earlier 2048-word attempt).
+
+Board: reset-to-U-Boot → `fpga loadb` base → set `PCAP_PR=0` (`mw 0xF8007000
+0x4400e07f`) → stage framebank to the framebuf AXI window `0x40000000` with
+`scripts/ehw2-framebank-load.py` (word0 written last as the trigger; readback
+confirmed word0=`0x45483334` "EH34", word1=`4` candidates, word4=`0x0a08010f`) →
+NEORV32 runs the per-eval ICAPE2 loop → restore `PCAP_PR=1`. **No PS-HWICAP
+readreg/writeseq was issued** (this build has none; doing so would wedge PL-AXI).
+
+**GOTCHA (cost a confusing poll): the mailbox is on AXI-GPIO channel 2 = `0x41200008`
+(`soc_0/mbox_o → gpio2_io_i`); channel 1 `0x41200000` carries `lut_o` (read a red-herring
+`0x00000001`). `host/ehw_watch.py` hardcodes `0x41200000`, so read `0x41200008` directly.**
+(Same ch2 convention as EHW-2.)
+
+Observed mailbox `0x41200008`, steady, 25/25 then 12/12 reads (incl. after PCAP_PR
+restore): **`0xec0308e8`** = firmware steady endpoint `0xEC | best_idx=03 | fit=08 |
+mask=e8` → best candidate = index 3 (**repair**), **fitness 8/8, mask 0xe8**. (The
+one-shot converge word `0xEA0308E8` flashed by before polling; the steady loop republishes
+`0xEC0308E8` with the same result.)
+
+**Result: authentic per-eval on-chip ICAPE2 evolution over the EHW-3 spare-routing
+substrate, on real silicon — the NEORV32 rewrote the live baked island through the fabric
+`xbus_icap` for each candidate evaluation and converged to the repair genome (8/8, mask
+0xe8). This is the Thompson-style live-bitstream analogue of EHW-2, now on the spare-route
+island. The whole EHW-3.0→3.4 ladder is board-verified.** No DEVCFG wedge; sibling
+projects untouched.
+
 ## EHW-3.3 — ICAP-baked spare-route repair (2026-07-01)
 
 Firmware: `sw/ehw/spare_route_baked_post.c` (POST loop, re-reads the baked island and

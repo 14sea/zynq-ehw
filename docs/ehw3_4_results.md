@@ -6,7 +6,11 @@ Generated / verified by:
 python3 tests/compare_ehw34_icap.py
 ```
 
-Status: **HOST PREP COMPLETE / BOARD ICAPE2 RUN PENDING.** This stretch combines
+Status: **BOARD-VERIFIED on the EBAZ4205 (2026-07-02).** Per-eval on-chip ICAPE2
+evolution over the spare-routing substrate converged on real silicon: mailbox
+(AXI-GPIO ch2 `0x41200008`) steady **`0xEC0308E8`** = best candidate index 3 (repair),
+fitness 8/8, mask 0xe8. Build with the 64KB framebuf: timing met, DRC 0-err, BRAM 37/60.
+Full flow + the ch2-mailbox gotcha in `docs/board_results.md`. This stretch combines
 EHW-2's internal-ICAPE2 per-eval loop with the EHW-3 spare-routing genome. The
 board design intentionally has **no PS-HWICAP**; PS only stages the framebank and
 reads GPIO mailboxes. Do not use PS-HWICAP `readreg`/`writeseq` on this bitstream.
@@ -20,10 +24,12 @@ reads GPIO mailboxes. Do not use PS-HWICAP `readreg`/`writeseq` on this bitstrea
   live island.
 - `rtl/ehw34_spare_route_target.v`: baked spare-route target behind XBUS, starting
   from baseline `SR34/c8/7`.
-- `rtl/neorv32_soc_icap_sr.vhd`: internal-ICAPE2 NEORV32 SoC with XBUS maps:
+- `rtl/neorv32_soc_icap_sr.vhd`: internal-ICAPE2 NEORV32 SoC with a 64KB
+  framebuf and XBUS maps:
   `0xF1000000` mailbox, `0xF3000000` xbus_icap, `0xF4000000` spare-route target,
   `0xF5000000` framebank.
-- `scripts/ehw34-framebank-pack.py`: generalized 16-byte-genome framebank packer.
+- `scripts/ehw34-framebank-pack.py`: generalized 16-byte-genome 64KB framebank
+  packer.
 - `scripts/ehw34-build-framebank-from-bits.py`: bitread/diff wrapper around
   `m75-build-frameseqs.py` and the EHW-3.4 packer.
 - `tests/compare_ehw34_icap.py`: host gate tying Python oracle, C firmware stub,
@@ -53,7 +59,7 @@ Expected best endpoint: `0xEA0308E8`, then steady `0xEC0308E8`.
 
 ## Framebank Contract
 
-`scripts/ehw34-framebank-pack.py` writes an 8KB big-endian framebank:
+`scripts/ehw34-framebank-pack.py` writes a 64KB big-endian framebank:
 
 ```text
 word0 = 0x45483334 ("EH34", written last by loader)
@@ -68,6 +74,12 @@ per candidate. Each envelope must still fit the existing `xbus_icap` 255-word
 burst limit. If a candidate's edited INITs span multiple FARs, keep one envelope
 per FAR.
 
+The 64KB depth is required for the real EHW-3.4 framebank. The board-prep run
+produces 14 envelopes for `logic`, 12 for `route`, and 16 for `repair`; with
+233-word envelopes plus descriptors this uses 9938 words, then pads to 16384
+words. The original 2048-word EHW-2 framebuf cannot hold even one full
+spare-route repair candidate.
+
 ## Host Gate Output
 
 Expected local output includes:
@@ -75,8 +87,14 @@ Expected local output includes:
 ```text
 target=0xe8 final=repair observed=0xe8
 PASS: ehw34_spare_route_target marker=53523334 mask=c8 fitness=7/8
-packed 4 candidates, 2048 words -> .../framebank.bin
+packed 4 candidates, used <host-fake-seq-count> words, padded to 16384 words -> .../framebank.bin
 PASS: EHW-3.4 oracle, C stub, RTL target, and framebank pack agree
+```
+
+The real bitstream-derived framebank test reports:
+
+```text
+packed 4 candidates, used 9938 words, padded to 16384 words -> runs/ehw34_seqs/framebank.bin
 ```
 
 Vivado is optional in the compare script. When available, run without `--skip-ooc`

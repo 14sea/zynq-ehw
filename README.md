@@ -89,12 +89,14 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   rewrote the island from broken (`mask=0xc8`, `7/8`) to repaired (`mask=0xe8`, `8/8`)
   with the marker staying `SRB0` and no PS/NEORV32 reset — the CGP-analogue of EHW-1.2
   for the spare-routing island (`docs/board_results.md`, `docs/ehw3_3_results.md`).
-- **EHW-3.4 host prep done** — stretch flow combining EHW-2's internal-ICAPE2
+- **EHW-3.4 board-verified** — stretch flow combining EHW-2's internal-ICAPE2
   per-eval loop with the EHW-3 spare-routing genome. `sw/ehw/ehw34_icap_spare_route.c`
-  streams a staged candidate framebank through `rtl/xbus_icap.v`, then scores the
-  live `rtl/ehw34_spare_route_target.v` island. Host oracle + C stub + RTL target
-  sim + generalized framebank packer pass; board ICAPE2 run is pending
-  (`docs/ehw3_4_results.md`). This build intentionally has **no PS-HWICAP**.
+  streams a staged candidate framebank (64KB framebuf, real bank 9938 words) through
+  `rtl/xbus_icap.v`, then scores the live `rtl/ehw34_spare_route_target.v` island. On
+  the EBAZ4205 the per-eval ICAPE2 loop converged to the repair candidate — mailbox
+  (AXI-GPIO ch2 `0x41200008`) steady `0xEC0308E8` (best idx 3, fitness 8/8, mask 0xe8);
+  build timing met, DRC 0-err, BRAM 37/60 (`docs/board_results.md`,
+  `docs/ehw3_4_results.md`). This build intentionally has **no PS-HWICAP**.
 
 ## Dependencies & reproduction environment
 

@@ -95,6 +95,9 @@ architecture rtl of neorv32_soc_icap is
   signal fb_rddata : std_logic_vector(31 downto 0);
 
   component axil_framebuf is
+    generic (
+      ADDR_BITS : positive := 11
+    );
     port (
       s_axi_aclk    : in  std_logic;
       s_axi_aresetn : in  std_logic;
@@ -250,8 +253,11 @@ begin
 
   lut_inst: ehw2_lut_target port map ( i => lut_i, q => lut_q );
 
-  -- shared frame payload: PS writes via AXI-Lite; NEORV32 reads word index xbus_adr[9:2]
+  -- shared frame payload: PS writes via AXI-Lite; NEORV32 reads word index xbus_adr[12:2]
   framebuf_inst: axil_framebuf
+  generic map (
+    ADDR_BITS => 11
+  )
   port map (
     s_axi_aclk => s_axi_aclk, s_axi_aresetn => s_axi_aresetn,
     s_axi_awaddr => s_axi_awaddr, s_axi_awvalid => s_axi_awvalid, s_axi_awready => s_axi_awready,

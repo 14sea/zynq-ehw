@@ -76,9 +76,11 @@ def main() -> int:
 
     bank = out_dir / "framebank.bin"
     run([sys.executable, "scripts/ehw34-framebank-pack.py", "--out", str(bank), *seq_specs])
-    words = struct.unpack(">2048I", bank.read_bytes())
+    bank_data = bank.read_bytes()
+    words = struct.unpack(f">{len(bank_data) // 4}I", bank_data)
     desc_words = 37
     if (
+        len(words) != 16384 or
         words[0] != 0x45483334 or words[1] != 4 or words[2] != 4 or words[3] != desc_words or
         words[4] != 0x0A08010F or words[5] != 0x32010400 or words[8] != 0 or
         words[4 + desc_words] != 0x0B090903 or words[4 + desc_words + 4] != 1 or

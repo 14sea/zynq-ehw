@@ -225,5 +225,13 @@ EHW-3.4 host prep is complete: `sim/ehw34_icap_oracle.py`,
 `scripts/ehw34-build-framebank-from-bits.py`, `tests/compare_ehw34_icap.py`, and
 `vivado/icap_ehw34/build_ehw34_icap.tcl`. This is the per-eval internal-ICAPE2
 spare-route stretch: staged candidates base/logic/route/repair, expected best
-`0xEA0308E8` and steady `0xEC0308E8`. The build intentionally has no PS-HWICAP;
-do not poke PS-HWICAP registers on this bitstream.
+`0xEA0308E8` and steady `0xEC0308E8`. The real bank uses 9938 words, so the EHW-3.4
+SoC uses a 16384-word / 64KB framebuf. The build intentionally has no PS-HWICAP; do
+not poke PS-HWICAP registers on this bitstream.
+
+**EHW-3.4 is now BOARD-VERIFIED (2026-07-02):** on the EBAZ4205 the per-eval ICAPE2
+loop converged to the repair candidate — mailbox (AXI-GPIO **ch2 `0x41200008`**, not
+ch1) steady `0xEC0308E8` (best idx 3, 8/8, mask 0xe8); build timing met, DRC 0-err,
+BRAM 37/60 (`docs/board_results.md`). **The whole EHW-3.0→3.4 ladder is board-verified;
+EHW-3 is complete.** No mandatory rung remains — next work is optional (writeup/release,
+a tag, or a new research line).
