@@ -347,7 +347,7 @@ timing **met** (WNS +6.83 ns), DRC **0 errors**, **BRAM 37/60** (the 64KB frameb
 fits with headroom).
 
 Framebank: prjxray `bitread -y` of the 4 fresh bitstreams →
-`scripts/ehw34-build-framebank-from-bits.py` → **used 9938 words, padded to 16384**
+`scripts/ehw34-build-framebank-from-bits.py` → **used 5278 words, padded to 16384**
 (cand frame counts base=0, logic=6, route=8, repair=8; the fresh build placed the LUTs
 in fewer FARs than the earlier 2048-word attempt).
 

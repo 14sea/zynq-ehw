@@ -1,4 +1,4 @@
-# EHW-3.4 Results — Per-Eval ICAPE2 Spare-Routing Evolution Host Prep
+# EHW-3.4 Results — Per-Eval ICAPE2 Spare-Routing Evolution
 
 Generated / verified by:
 
@@ -74,11 +74,11 @@ per candidate. Each envelope must still fit the existing `xbus_icap` 255-word
 burst limit. If a candidate's edited INITs span multiple FARs, keep one envelope
 per FAR.
 
-The 64KB depth is required for the real EHW-3.4 framebank. The board-prep run
-produces 14 envelopes for `logic`, 12 for `route`, and 16 for `repair`; with
-233-word envelopes plus descriptors this uses 9938 words, then pads to 16384
-words. The original 2048-word EHW-2 framebuf cannot hold even one full
-spare-route repair candidate.
+The 64KB depth is required for the real EHW-3.4 framebank. The board-pass run
+produces 6 envelopes for `logic`, 8 for `route`, and 8 for `repair`; with
+233-word envelopes plus descriptors this uses 5278 words, then pads to 16384
+words. The original 2048-word EHW-2 framebuf cannot hold a full spare-route
+candidate set with safe headroom.
 
 ## Host Gate Output
 
@@ -91,10 +91,10 @@ packed 4 candidates, used <host-fake-seq-count> words, padded to 16384 words -> 
 PASS: EHW-3.4 oracle, C stub, RTL target, and framebank pack agree
 ```
 
-The real bitstream-derived framebank test reports:
+The board-pass bitstream-derived framebank test reports:
 
 ```text
-packed 4 candidates, used 9938 words, padded to 16384 words -> runs/ehw34_seqs/framebank.bin
+packed 4 candidates, used 5278 words, padded to 16384 words -> runs/ehw34_seqs/framebank.bin
 ```
 
 Vivado is optional in the compare script. When available, run without `--skip-ooc`
@@ -148,5 +148,6 @@ Board acceptance:
 - best publishes `0xEA0308E8`, steady loop publishes `0xEC0308E8`;
 - PS/NEORV32 must not reset during the per-eval ICAPE2 loop.
 
-Only after those mailbox words are captured should EHW-3.4 be marked
-hardware-verified.
+Board PASS on 2026-07-02 captured the steady `0xEC0308E8` mailbox word on
+AXI-GPIO channel 2 (`0x41200008`) after the per-eval ICAPE2 loop; EHW-3.4 is
+therefore hardware-verified.

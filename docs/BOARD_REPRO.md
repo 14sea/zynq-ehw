@@ -123,7 +123,7 @@ only target LUT/select INITs; mailbox should move from `E33200c8`/`E3330007` to
 PASS: observed live ICAP repair moved `SRB0` from `c8/7` to `e8/8` with no
 PS/NEORV32 reset; exact board evidence is in `docs/board_results.md`.
 
-## EHW-3.4 — per-eval internal-ICAPE2 spare-route evolution (pending board run)
+## EHW-3.4 — per-eval internal-ICAPE2 spare-route evolution
 
 ```sh
 cp sw/ehw/Makefile sw/ehw/spare_route_kernel.h sw/ehw/ehw34_icap_spare_route.c sw_src/sr_build/
@@ -147,7 +147,9 @@ python3 scripts/ehw2-framebank-load.py runs/ehw34_seqs/framebank.bin 0x40000000
 ```
 
 Expected acceptance: candidate loop emits `E900..` rows and converges to
-`0xEA0308E8`, then steady `0xEC0308E8`. This internal-ICAPE2 build has **no
+`0xEA0308E8`, then steady `0xEC0308E8`. Board PASS on 2026-07-02 observed steady
+`0xEC0308E8` on AXI-GPIO channel 2 (`0x41200008`): best candidate index 3
+(`repair`), fitness `8/8`, mask `0xe8`. This internal-ICAPE2 build has **no
 PS-HWICAP**; do not run PS-HWICAP readreg/writeseq commands or it can wedge PL-AXI.
-The real four-candidate bank uses 9938 words and is padded to the 16384-word
+The board-pass four-candidate bank uses 5278 words and is padded to the 16384-word
 EHW-3.4 framebuf.

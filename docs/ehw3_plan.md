@@ -232,9 +232,11 @@ Implemented host-prep deliverables in `sim/ehw34_icap_oracle.py`,
 `scripts/ehw34-build-framebank-from-bits.py`, `tests/compare_ehw34_icap.py`, and
 `vivado/icap_ehw34/build_ehw34_icap.tcl`. The host gate proves the four-candidate
 bank reaches the repaired phenotype (`mask=e8`, `8/8`) and validates the 16-byte
-genome framebank descriptor. The real framebank uses 9938 words, so EHW-3.4 uses a
-16384-word / 64KB framebuf. Board ICAPE2 evidence remains pending. This substrate has
-no PS-HWICAP; PS only stages the framebank and reads GPIO mailboxes.
+genome framebank descriptor. The board-pass framebank uses 5278 words and is padded
+to the 16384-word / 64KB EHW-3.4 framebuf. Board ICAPE2 verification passed on
+2026-07-02 with steady mailbox `0xEC0308E8` on AXI-GPIO channel 2 (`0x41200008`):
+best candidate index 3 (`repair`), fitness `8/8`, mask `0xe8`. This substrate has no
+PS-HWICAP; PS only stages the framebank and reads GPIO mailboxes.
 
 ## Suggested First Target
 

@@ -91,7 +91,7 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   for the spare-routing island (`docs/board_results.md`, `docs/ehw3_3_results.md`).
 - **EHW-3.4 board-verified** — stretch flow combining EHW-2's internal-ICAPE2
   per-eval loop with the EHW-3 spare-routing genome. `sw/ehw/ehw34_icap_spare_route.c`
-  streams a staged candidate framebank (64KB framebuf, real bank 9938 words) through
+  streams a staged candidate framebank (64KB framebuf, board-pass bank 5278 words) through
   `rtl/xbus_icap.v`, then scores the live `rtl/ehw34_spare_route_target.v` island. On
   the EBAZ4205 the per-eval ICAPE2 loop converged to the repair candidate — mailbox
   (AXI-GPIO ch2 `0x41200008`) steady `0xEC0308E8` (best idx 3, fitness 8/8, mask 0xe8);
@@ -159,8 +159,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   result.
 - `docs/ehw3_3_results.md` — EHW-3.3 host + board result for ICAP-baked
   spare-route repair.
-- `docs/ehw3_4_results.md` — EHW-3.4 host-prep result for per-eval internal-ICAPE2
-  spare-route evolution; board run pending.
+- `docs/ehw3_4_results.md` — EHW-3.4 host + board result for per-eval
+  internal-ICAPE2 spare-route evolution.
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.

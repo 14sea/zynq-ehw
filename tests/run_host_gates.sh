@@ -25,7 +25,7 @@ gates=(
   "compare_spare_route_twin.py"          # EHW-3.1: spare-route island Py<->C bit-exact
   "compare_spare_route_vrc.py --skip-ooc" # EHW-3.2: spare-route VRC RTL sim + firmware stub
   "compare_spare_route_baked.py --skip-ooc" # EHW-3.3: baked spare-route ICAP repair host prep
-  "compare_ehw34_icap.py --skip-ooc"     # EHW-3.4: per-eval ICAPE2 spare-route host prep
+  "compare_ehw34_icap.py --skip-ooc"     # EHW-3.4: per-eval ICAPE2 spare-route host gate
 )
 
 fail=0

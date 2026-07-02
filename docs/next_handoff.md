@@ -217,15 +217,15 @@ repaired 8/8 mask `0xe8` using spare AS (`docs/board_results.md`). POP=128, firm
 EHW-3.3 is **BOARD-VERIFIED** on the EBAZ4205 (2026-07-01): the baked island's
 8-FAR frame diff was ICAP-rewritten live, moving `SRB0` from `c8/7` to `e8/8` with
 the marker unchanged and no PS/NEORV32 reset (`docs/board_results.md`). The full
-EHW-3 ladder EHW-3.0→3.3 is now board-verified.
+EHW-3 ladder EHW-3.0→3.4 is now board-verified.
 
-EHW-3.4 host prep is complete: `sim/ehw34_icap_oracle.py`,
+EHW-3.4 is complete: `sim/ehw34_icap_oracle.py`,
 `sw/ehw/ehw34_icap_spare_route.c`, `rtl/ehw34_spare_route_target.v`,
 `rtl/neorv32_soc_icap_sr.vhd`, `scripts/ehw34-framebank-pack.py`,
 `scripts/ehw34-build-framebank-from-bits.py`, `tests/compare_ehw34_icap.py`, and
 `vivado/icap_ehw34/build_ehw34_icap.tcl`. This is the per-eval internal-ICAPE2
 spare-route stretch: staged candidates base/logic/route/repair, expected best
-`0xEA0308E8` and steady `0xEC0308E8`. The real bank uses 9938 words, so the EHW-3.4
+`0xEA0308E8` and steady `0xEC0308E8`. The board-pass bank uses 5278 words, so the EHW-3.4
 SoC uses a 16384-word / 64KB framebuf. The build intentionally has no PS-HWICAP; do
 not poke PS-HWICAP registers on this bitstream.
 
