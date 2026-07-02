@@ -18,9 +18,9 @@ open-bitstream modern part, the Lattice iCE40.
 This project asks a narrower, safer question on a **7-series Xilinx part** (XC7Z010, on
 a ~$10 recycled EBAZ4205 bitcoin-miner board): *can a fitness-driven search design and
 then physically instantiate on-chip digital logic, intrinsically and live, while staying
-contention-safe?* We constrain every mutation to **LUT-INIT bits (truth tables) and
-register config** — never routing — which is structurally safe, and we evaluate on real
-silicon via a soft-core + a PS mailbox.
+contention-safe?* We constrain every mutation to **LUT-INIT bits (truth tables), local
+select functions, and register config** — never raw Xilinx switch-matrix routing — which
+is structurally safe, and we evaluate on real silicon via a soft-core + a PS mailbox.
 
 ## 2. Approach — a milestone ladder, VRC→ICAP→internal-ICAPE2
 
@@ -41,6 +41,11 @@ copied in read-only. The ladder separates *fast search* from *physical instantia
 - **EHW-2 (authentic per-eval bitstream evolution).** The closest to Thompson: NEORV32 drives
   the **fabric ICAPE2** (`rtl/xbus_icap.v`) so that *every fitness evaluation* is a real on-chip
   LUT-INIT edit of a live LUT, scored in place. Small (a single LUT-INIT toward a target).
+- **EHW-3 (spare-routing island).** A fixed-route island adds safe local path-select LUTs plus
+  a spare node. The genome evolves both logic truth tables and local mux-select fields, without
+  mutating global routing bits. It first demonstrates fault recovery in host/RTL fabric VRC form
+  (EHW-3.0→3.2), then live ICAP repair of a baked broken island (EHW-3.3), then per-eval
+  internal-ICAPE2 evolution over the spare-routing genome (EHW-3.4).
 
 ## 3. Results (all board-verified on the EBAZ4205)
 
@@ -51,6 +56,9 @@ copied in read-only. The ladder separates *fast search* from *physical instantia
 | EHW-1.1-sw / -fabric | CGP GA → 2-bit multiplier 16/16 (software, then true fabric VRC) |
 | EHW-1.2 | ICAP-rewrite evolved LUTs → 7/16 multiplier becomes 16/16, live |
 | EHW-2 | per-eval on-chip ICAPE2 LUT-INIT evolution → converges to target `0xeb0308e8` |
+| EHW-3.2 | spare-routing fabric VRC recovers injected `DISABLE_NODE(A1)` fault → 8/8, using spare AS |
+| EHW-3.3 | ICAP-baked spare-route repair → broken `c8/7` island becomes `e8/8`, live |
+| EHW-3.4 | per-eval internal-ICAPE2 spare-route evolution → steady `0xec0308e8` (repair, 8/8, mask `0xe8`) |
 | EHW-0.4 (host) | on the SAME 40-sample set, the evolved INT8 weights score 40/40 vs the gradient-trained tile's 37/40 |
 
 Every board-bound artifact has a host self-proof (numpy oracle ↔ portable-C twin, bit-exact,
@@ -75,13 +83,15 @@ pure truth-table changes and our results are deterministic and reproducible.
 - **EHW-0.4 is a deployment-set metric, not generalization.** The GA was scored on the same
   40 samples it optimized against; the 40/40-vs-37/40 gap is an INT8 deployment comparison,
   not a held-out/generalization claim.
-- **Small problems.** XOR-scale weight nets and a 2-bit multiplier; the LUT-KCM whole-net does
-  not fit XC7Z010 spatially (documented in `zynq-xpart`), so EHW-0 uses a folded tile. EHW-2
-  evolves a single LUT-INIT from 4 pre-staged candidates — the mechanism is authentic per-eval
-  ICAP, but the search space is tiny.
+- **Small problems.** XOR-scale weight nets, a 2-bit multiplier, a one-LUT EHW-2 target, and a
+  3-input-majority spare-routing island; the LUT-KCM whole-net does not fit XC7Z010 spatially
+  (documented in `zynq-xpart`), so EHW-0 uses a folded tile. EHW-2/EHW-3.4 use small pre-staged
+  candidate sets — the mechanism is authentic per-eval ICAP, but the search space is tiny.
 - **EHW-1.0 CGP is a fixed pass-through scaffold + evolved output LUTs** (n8..n11), not all 12
   LUTs freely evolved.
-- **No analog / no routing evolution** — by design (contention safety on 7-series).
+- **No analog / no raw-routing evolution** — by design (contention safety on 7-series). EHW-3
+  evolves safe local path-select fields implemented as LUT/select INITs inside a fixed-route
+  island, not arbitrary FPGA switch boxes.
 - **EHW-1.1-sw evaluates the LUT grid in software**; only EHW-1.1-fabric puts it in fabric.
 
 ## 6. Reproducibility
@@ -113,5 +123,9 @@ The host gates have blind spots; the board build/run is the final gate. Real bug
    issue, as a host-side diagnosis correctly predicted before re-running on the board.
 8. **Poking a PS-HWICAP path in an internal-ICAPE2 build** (which has no PS HWICAP) wedged the
    PL-AXI interconnect and required a **physical power-cycle** — the one time in the whole project.
+9. **A board-pass framebank must be sized from real routed bitstreams, not fake host seqs.**
+   EHW-3.4's real spare-route candidate bank required a 64KB frame buffer; the final board-pass
+   bank used 5278 words padded to 16384 words. The host stub's tiny fake frame sequences cannot
+   prove this resource bound.
 
 No hardware was damaged: every edit is a reversible LUT-INIT/config change.

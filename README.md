@@ -139,6 +139,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   hardware gate.
 - `docs/WRITEUP.md` — paper-style report: problem, approach, results, prior-art diff,
   limitations, reproducibility, failure cases.
+- `docs/RELEASE_NOTES_v1.0.0.md` — release summary for the complete board-verified
+  EHW-0→EHW-3.4 ladder.
 - `docs/BOARD_REPRO.md` — ordered per-milestone board reproduction checklist.
 - `tests/run_host_gates.sh` — one-command host gate runner (no board/Vivado).
 - `docs/ehw0_4_results.md` — evolution-vs-gradient-training table for EHW-0.
