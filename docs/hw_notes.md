@@ -194,17 +194,27 @@ add a fresh golden cross-check before trusting results.
 
 ## Post-Config Settle And Build Variance
 
-- Reference M7.1 found that some array workloads must wait **wall-clock time**
-  after `fpga loadb` before compute (compute right after load diverges
-  deterministically). Minimum measured ~1–2 s; the reference ships ~10 s
-  (`M7_SETTLE_ITERS`). Warm-up *count* alone is NOT a reliable substitute — it is
-  wall-clock that matters.
-- Chunked settle loops with mailbox heartbeats were more reliable than one large
-  silent busy loop in some builds.
-- M7.2 exposed a build-dependent 7-series DFX in-context-routing issue: timing can
-  be clean while array behavior varies by P&R / firmware-size context.
-- EHW mitigates this by searching in one fixed VRC bitstream where possible and
-  paying ICAP edits only for the final reveal.
+> **⚑ SECTION SUPERSEDED 2026-07-02 — both phenomena were toolchain bugs, not
+> silicon.** Root cause: NEORV32 v1.12.9 `image_gen` drops LMA alignment gaps
+> (whole `.rodata` shifts −4 B in IMEM whenever `.text % 8 == 4` under the
+> picolibc ld script) → deterministic constant corruption that *looked* build/
+> firmware-size-dependent. The M7.1 "wall-clock settle" correlation was
+> firmware-layout confounding (zero-settle cold start is bit-exact on a correct
+> image); the M7.2 "in-context-routing" variance was the same bug (flat non-DFX
+> control reproduced it; fixed image cures it — full multi-epoch rm_train and the
+> 64→8→4 MNIST now train bit-exact). Fix auto-applied by `scripts/setup-deps.sh`
+> from `sw/patches/image_gen_lma_fix/`; tripwire = `make verify-image`. See
+> zynq-xpart `docs/m7_2_dcpdiff.md` + stnolting/neorv32#1593. **New firmware needs
+> NO settle.** Historical bullets kept below for the record:
+
+- ~~Reference M7.1 found that some array workloads must wait **wall-clock time**
+  after `fpga loadb` before compute~~ — settle busted; layout confound.
+- Chunked settle loops with mailbox heartbeats remain a *useful liveness pattern*
+  (a heartbeat proves the CPU is alive), just not needed as settle.
+- ~~M7.2 exposed a build-dependent 7-series DFX in-context-routing issue~~ —
+  retired; it was the image_gen bug.
+- The VRC single-fixed-bitstream design remains a virtue (determinism, eval
+  speed), just no longer *motivated* by a routing gremlin.
 - Still, any new board milestone must compare board output against the host model
   and record exact mailbox words in `docs/board_results.md`.
 

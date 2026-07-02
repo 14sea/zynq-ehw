@@ -38,6 +38,9 @@ that made multi-epoch `rm_train` miscompute): VRC fitness is computed inside **o
 fixed bitstream** with weights in FFs, so every evaluation is deterministic and
 routing-invariant. Only the *final* champion bake re-touches the fabric, and we
 verify it on-board the same way M7.5 does (board result == VRC-predicted == oracle).
+**[2026-07-02 root-cause update:** the 'M7.2 gremlin' was later root-caused to a NEORV32 image_gen toolchain bug (LMA gap dropped → .rodata shifted −4 B in IMEM when .text%8==4), NOT a physical/routing effect — Vivado/DFX/XC7Z010 exonerated; see zynq-xpart docs/m7_2_dcpdiff.md + stnolting/neorv32#1593. The VRC single-fixed-bitstream
+determinism remains a genuine design virtue, but "dodging M7.2" is no longer part
+of its justification — there was nothing physical to dodge.**]**
 
 ---
 
@@ -233,6 +236,8 @@ ICAP reveal, mailbox decoders `m7-watch-*.py`, `build_dfx.tcl`, reset-to-U-Boot 
 2. **M7.2 in-context-routing gremlin** — VRC eval is one fixed bitstream → immune.
    Only the champion ICAP-bake re-touches fabric; verify board == VRC == oracle
    before trusting (M7.5 protocol). ✅ mitigated.
+   **[2026-07-02: risk RETIRED — the 'M7.2 gremlin' was later root-caused to a NEORV32 image_gen toolchain bug (LMA gap dropped → .rodata shifted −4 B in IMEM when .text%8==4), NOT a physical/routing effect — Vivado/DFX/XC7Z010 exonerated; see zynq-xpart docs/m7_2_dcpdiff.md + stnolting/neorv32#1593. The verify-before-trust
+   protocol stays (good practice), but this risk never physically existed.]**
 3. **On-board GA ≠ oracle** — enforce host-seeded init + identical selection order +
    bit-exact C twin (M7.0 method) before believing any on-board curve.
 4. **INT8 fitness plateaus / GA stagnation** — standard cures: tournament size,
@@ -315,6 +320,13 @@ our design relates to them — and, by contrast, justifies our three core decisi
    and route around it with VRC (single fixed bitstream → deterministic, immune). Same
    phenomenon, opposite worldview — worth remembering if we ever want a "Thompson
    mode" demo: M7.2 says this part *will* give us device-entwined behaviour for free.
+   **[2026-07-02: this paragraph's premise is DEAD — the 'M7.2 gremlin' was later root-caused to a NEORV32 image_gen toolchain bug (LMA gap dropped → .rodata shifted −4 B in IMEM when .text%8==4), NOT a physical/routing effect — Vivado/DFX/XC7Z010 exonerated; see zynq-xpart docs/m7_2_dcpdiff.md + stnolting/neorv32#1593.
+   M7.2 was never device-entwined behaviour; it was deterministic constant corruption
+   from a broken image tool. A future "Thompson mode" demo therefore CANNOT lean on
+   M7.2 as evidence of free physical coupling — it would need real physics (e.g. the
+   zynq-agentctl ring-oscillator frequency-adaptation line: temperature/voltage-
+   sensitive RO behaviour is genuine, already board-proven, and a far honester
+   substrate for Whitley-style entanglement).]**
 
 ### Honest maturity caveat
 
@@ -390,12 +402,21 @@ tagged with its source and where it lands in our plan.
 - **Whitley:** `evolvablehardware.org` — tutorials + source for reproducing Thompson
   tasks; engineering detail on the measurement rig and seed search.
 
-### D. The inversion worth keeping in our back pocket
+### D. The inversion worth keeping in our back pocket — **[RETIRED 2026-07-02]**
 
-Whitley *exploits* device-coupling; we route around it. But if we ever want a
+~~Whitley *exploits* device-coupling; we route around it. But if we ever want a
 "Thompson-mode" easter egg, **M7.2 is free device-entwined behaviour on this exact
 part** — a placement-dependent, STA-clean-yet-functionally-distinct effect. Normally a
-bug we dodge with VRC; on demand, a feature to show.
+bug we dodge with VRC; on demand, a feature to show.~~
+
+**[RETIRED: M7.2 was root-caused to the NEORV32 image_gen toolchain bug
+(deterministic constant corruption from a −4 B `.rodata` shift), not any
+placement/physical effect — see §11 item 3's update, zynq-xpart
+docs/m7_2_dcpdiff.md and stnolting/neorv32#1593. There is no free
+device-entwined behaviour on this part from that source. A real "Thompson-mode"
+demo would need genuine physics: the zynq-agentctl ring-oscillator line
+(temperature/voltage-sensitive RO frequency, already board-proven) is the honest
+substrate for Whitley-style entanglement.]**
 
 > Cross-refs: A2 feeds **§4 (GA engine — fitness shaping & monitoring)**; A1 feeds
 > **§4 (init)**; B (robustness, reward-hacking) and A3/A4 feed **§9 (risk register)**;

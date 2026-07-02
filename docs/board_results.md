@@ -94,7 +94,7 @@ Result:
     both `correct=40`, expected.
   - The 4×4 VRC array (`tpu_accel`) computes correctly on silicon: SSE + genome
     match the host model exactly → the register-map driver in `ehw_ga_mbox.c` is
-    hardware-verified. The 300000-count settle was sufficient for `rm1_tpu`.
+    hardware-verified. The 300000-count settle was sufficient for `rm1_tpu`. **[2026-07-02: later shown unnecessary — the "post-config settle" requirement inherited from xpart M7.1 was an artifact of the image_gen bug (zynq-xpart docs/m7_2_dcpdiff.md FOLLOW-UP); a zero-settle cold start is bit-exact on a correct image. Kept in the firmware as a harmless ~6 ms delay to preserve the board-verified binary.]**
 
 ---
 

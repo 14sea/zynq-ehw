@@ -83,7 +83,7 @@ champion bit-identical to host (`docs/board_results.md`). Synth-compat fix to
   software. Same GA (keep bit-exact to `cgp_eval.c`).
 - **Host + board gates:** `tests/compare_cgp_vrc.py` proves the register protocol
   host-side; board run proves TT 16/16 on the fabric substrate.
-- Watch the M7.2 build-lottery (new fabric logic in the RP); keep the grid small.
+- Watch the M7.2 build-lottery (new fabric logic in the RP); keep the grid small. **[2026-07-02: the "build-lottery" was later root-caused to the image_gen toolchain bug (see sw/patches/image_gen_lma_fix/) — no P&R lottery exists; grid size is bounded only by real RP resources.]**
 
 ## P5 — EHW-1.2: ICAP-rewrite the evolved multiplier's LUTs — DONE (HW-VERIFIED)
 

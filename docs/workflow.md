@@ -33,9 +33,11 @@ both sides follow. Read it before contributing.
 4. **Hardware truth lives in the repo, not in one AI's head.** ChatGPT cannot
    read Claude's memory, so all board gotchas and numeric conventions go in
    [`docs/hw_notes.md`](hw_notes.md) (mailbox addresses, fixed-point conventions e.g.
-   `down = 8 - wshift - ashift`, the two leaky variants, post-config settle, the
-   M7.2 in-context-routing gremlin, load-via-`fpga loadb` etc.). Code is written
-   against that file, not against guesses.
+   `down = 8 - wshift - ashift`, the two leaky variants, load-via-`fpga loadb`
+   etc.). Code is written against that file, not against guesses. (2026-07-02:
+   "post-config settle" and the "M7.2 in-context-routing gremlin" were removed
+   from the gotcha list — both root-caused to the image_gen toolchain bug, see
+   hw_notes.md "Post-Config Settle And Build Variance".)
 
 5. **Isolation is absolute.** `external/` holds read-only copies of
    `/home/test/zynq_xpart` and `/home/test/zynq_agentctl` for offline reference.

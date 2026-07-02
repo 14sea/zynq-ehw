@@ -121,7 +121,7 @@ static void publish(uint32_t w) {
 
 int main(void) {
 #ifndef CGP_HOST_STUB
-    for (volatile uint32_t d = 0; d < 300000u; d++) { }   /* post-config settle */
+    for (volatile uint32_t d = 0; d < 300000u; d++) { }   /* historical "post-config settle" (~6 ms) — later shown unnecessary (the xpart-M7.1 settle was an image_gen-bug artifact, see sw/patches/image_gen_lma_fix/); kept to preserve the board-verified binary */
 #endif
     publish(0xC8000000u);
 
