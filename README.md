@@ -15,6 +15,13 @@ untouched.
 
 Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored; prjxray/Vivado are external tools; the `ref/` papers are gitignored.
 
+> **NEORV32 is intentionally frozen at v1.12.9** (+ the `sw/patches/image_gen_lma_fix/`
+> patch, auto-applied by `scripts/setup-deps.sh`). All published silicon results were
+> produced against this exact version — do NOT "helpfully" upgrade it; a newer core
+> re-places the whole design and invalidates every baked ICAP frame bank. New projects
+> should start from current NEORV32 (its post-2026-04-28 objcopy flow makes the patch
+> unnecessary), but this repo's baseline stays pinned for reproducibility.
+
 ## Status
 
 - **Design done** — see `docs/`. Decisions: task = the full ladder (EHW-0 evolve

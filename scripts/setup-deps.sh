@@ -2,7 +2,7 @@
 # Recreate the two gitignored upstream dependencies so the repo builds from a fresh
 # clone (see README "Build / reproduce"). Idempotent — safe to re-run.
 #   1. NEORV32 source  -> rtl_src/neorv32_tpu/neorv32   (+ picolibc-errno patch)
-#   2. firmware build tree -> sw_src/neorv32_tpu_sw/tpu_test  (from sw/tpu_firmware/)
+#   2. image_gen LMA fix applied to the cloned tree (sw/patches/image_gen_lma_fix/)
 set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 
@@ -29,19 +29,29 @@ else
   echo "[setup] picolibc patch already applied (or file absent)"
 fi
 
-# firmware build tree (canonical source lives in sw/tpu_firmware/)
-ft=$root/sw_src/neorv32_tpu_sw/tpu_test
-mkdir -p "$ft"
-cp "$root/sw/tpu_firmware/main.c"   "$ft/main.c"
-cp "$root/sw/tpu_firmware/Makefile" "$ft/Makefile"
-echo "[setup] firmware build tree ready: $ft"
+# image_gen LMA fix — stock v1.12.9 image_gen drops LMA alignment gaps (whole
+# .rodata shifts -4 B in IMEM whenever .text % 8 == 4 under the picolibc ld
+# script; silent constant corruption). See sw/patches/image_gen_lma_fix/README.md
+# + https://github.com/stnolting/neorv32/issues/1593. Fixed upstream 2026-04-28
+# by removing the ELF parser; for the pinned v1.12.9 we overwrite with the
+# PT_LOAD-based drop-in. The stale image_gen BINARY is removed so common.mk
+# rebuilds from the fixed source.
+ig=$NEORV32_DIR/sw/image_gen/image_gen.c
+if ! grep -q 'PT_LOAD' "$ig"; then
+  echo "[setup] applying image_gen LMA fix (PT_LOAD load-image construction)"
+  cp "$root/sw/patches/image_gen_lma_fix/image_gen.c" "$ig"
+  rm -f "$NEORV32_DIR/sw/image_gen/image_gen"
+else
+  echo "[setup] image_gen LMA fix already applied"
+fi
 
 cat <<EOF
 
-[setup] done. Next:
-  # build firmware (RISCV_PREFIX may be riscv64-unknown-elf- or riscv-none-elf-)
-  cd $ft && make NEORV32_HOME=$NEORV32_DIR \\
-      RISCV_PREFIX=riscv64-unknown-elf- USER_FLAGS+="-specs=picolibc.specs" clean install
+[setup] done. Next (EHW firmware builds in an ISOLATED dir — see sw/ehw/Makefile header):
+  mkdir -p $root/sw_src/ehw_build
+  cp $root/sw/ehw/{ehw_ga_mbox.c,*.h,Makefile} $root/sw_src/ehw_build/
+  cd $root/sw_src/ehw_build && make NEORV32_HOME=$NEORV32_DIR \\
+      RISCV_PREFIX=riscv64-unknown-elf- USER_FLAGS+="-specs=picolibc.specs" clean install verify-image
   # build the DFX bitstreams
   cd $root/vivado/dfx && vivado -mode batch -source build_dfx.tcl
 EOF
