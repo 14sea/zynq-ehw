@@ -153,7 +153,16 @@ create_pr_configuration -name cfg6 -partitions [list $rp_cell:rm_rot]
 create_pr_configuration -name cfg7 -partitions [list $rp_cell:rm_lutkcm]
 create_pr_configuration -name cfg8 -partitions [list $rp_cell:rm_train]
 create_pr_configuration -name cfg9 -partitions [list $rp_cell:rm_lutkcm_w45]
+# EHW-5.2: combined structure+weights RM = spare-route VRC + 4x4 array + LITE
+# memetic train unit (serialized updates, TU_BUSY @word77; OOC 4086 LUT / 18 DSP).
+create_reconfig_module -name rm_memetic_struct -partition_def [get_partition_defs tpu_pd] -top tpu_rp
+add_files -norecurse -of_objects [get_reconfig_modules rm_memetic_struct] \
+    [list $root/rtl/dfx/tpu_rp_rm_memetic_struct.v $root/rtl/memetic_train_unit_lite.v \
+          $root/rtl/spare_route_vrc.v \
+          $root/rtl/wb_tpu_accel.v $root/rtl/tpu_accel.v \
+          $root/rtl/systolic_array_4x4.v $root/rtl/pe.v]
 create_pr_configuration -name cfg10 -partitions [list $rp_cell:rm_memetic_train]
+create_pr_configuration -name cfg12 -partitions [list $rp_cell:rm_memetic_struct]
 add_files -fileset constrs_1 -norecurse $origin/pblock_rp.xdc
 
 set_property PR_CONFIGURATION cfg1 [get_runs impl_1]
@@ -166,6 +175,7 @@ create_run impl_7 -parent_run impl_1 -flow [get_property FLOW [get_runs impl_1]]
 create_run impl_8 -parent_run impl_1 -flow [get_property FLOW [get_runs impl_1]] -pr_config cfg8
 create_run impl_9 -parent_run impl_1 -flow [get_property FLOW [get_runs impl_1]] -pr_config cfg9
 create_run impl_10 -parent_run impl_1 -flow [get_property FLOW [get_runs impl_1]] -pr_config cfg10
+create_run impl_12 -parent_run impl_1 -flow [get_property FLOW [get_runs impl_1]] -pr_config cfg12
 
 # M6.1: by default build only the static (impl_1, the locked parent) + the new
 # TPU+VPU partial (impl_5). rm2/rm_lut/rm_lut_b are unchanged & already
