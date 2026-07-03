@@ -318,7 +318,10 @@ hardware train-unit arm produced `got_sse=4611`, two genome-byte mismatches, and
 35/40 instead of 38/40. Host gate has since been strengthened: host `SR_OUTPUT`
 now follows the same input/output register path as board, and the RTL test replays
 the full 40-sample epoch against Python golden. RTL still passes, so the current
-fix makes the lite unit more synthesis-friendly by replacing dynamic indexed W1/W2
-update writes with explicit `case` updates. Next Claude task: rerun OOC + pblock
-utilization and then board-test this revised lite unit. Target pblock LUT
-utilization is `<= ~3800` to leave route headroom.
+fix originally tried fully explicit per-register `case` updates, but Claude's OOC
+gate held it: Vivado duplicated the saturating add/sub lane 24 times (`+1210` LUT
+cells, `+308` CARRY4). Current revision keeps one shared `update_value` lane
+(`cur_w/cur_dw -> next_w`) and uses `case` only to write `next_w` back to the
+selected register. Next Claude task: rerun OOC + pblock utilization and then
+board-test this revised shared-lane lite unit. Target pblock LUT utilization is
+`<= ~3800` to leave route headroom.

@@ -82,40 +82,80 @@ module memetic_train_unit_lite (
         end
     endfunction
 
-    task update_w2_idx(input [2:0] idx);
+    reg signed [31:0] cur_w;
+    reg signed [31:0] cur_dw;
+    reg signed [31:0] next_w;
+    always @(*) begin
+        cur_w = 32'sd0;
+        cur_dw = 32'sd0;
+        if (upd_l1) begin
+            case (upd_idx)
+                4'd0:  begin cur_w = w1m[0];  cur_dw = dw[0];  end
+                4'd1:  begin cur_w = w1m[1];  cur_dw = dw[1];  end
+                4'd2:  begin cur_w = w1m[2];  cur_dw = dw[2];  end
+                4'd3:  begin cur_w = w1m[3];  cur_dw = dw[3];  end
+                4'd4:  begin cur_w = w1m[4];  cur_dw = dw[4];  end
+                4'd5:  begin cur_w = w1m[5];  cur_dw = dw[5];  end
+                4'd6:  begin cur_w = w1m[6];  cur_dw = dw[6];  end
+                4'd7:  begin cur_w = w1m[7];  cur_dw = dw[7];  end
+                4'd8:  begin cur_w = w1m[8];  cur_dw = dw[8];  end
+                4'd9:  begin cur_w = w1m[9];  cur_dw = dw[9];  end
+                4'd10: begin cur_w = w1m[10]; cur_dw = dw[10]; end
+                4'd11: begin cur_w = w1m[11]; cur_dw = dw[11]; end
+                4'd12: begin cur_w = w1m[12]; cur_dw = dw[12]; end
+                4'd13: begin cur_w = w1m[13]; cur_dw = dw[13]; end
+                4'd14: begin cur_w = w1m[14]; cur_dw = dw[14]; end
+                default: begin cur_w = w1m[15]; cur_dw = dw[15]; end
+            endcase
+        end else begin
+            case (upd_idx[2:0])
+                3'd0: begin cur_w = w2m[0]; cur_dw = dw[0]; end
+                3'd1: begin cur_w = w2m[1]; cur_dw = dw[1]; end
+                3'd2: begin cur_w = w2m[2]; cur_dw = dw[2]; end
+                3'd3: begin cur_w = w2m[3]; cur_dw = dw[3]; end
+                3'd4: begin cur_w = w2m[4]; cur_dw = dw[4]; end
+                3'd5: begin cur_w = w2m[5]; cur_dw = dw[5]; end
+                3'd6: begin cur_w = w2m[6]; cur_dw = dw[6]; end
+                default: begin cur_w = w2m[7]; cur_dw = dw[7]; end
+            endcase
+        end
+        next_w = update_value(cur_w, cur_dw);
+    end
+
+    task write_w2_idx(input [2:0] idx, input signed [31:0] value);
         begin
             case (idx)
-                3'd0: w2m[0] <= update_value(w2m[0], dw[0]);
-                3'd1: w2m[1] <= update_value(w2m[1], dw[1]);
-                3'd2: w2m[2] <= update_value(w2m[2], dw[2]);
-                3'd3: w2m[3] <= update_value(w2m[3], dw[3]);
-                3'd4: w2m[4] <= update_value(w2m[4], dw[4]);
-                3'd5: w2m[5] <= update_value(w2m[5], dw[5]);
-                3'd6: w2m[6] <= update_value(w2m[6], dw[6]);
-                default: w2m[7] <= update_value(w2m[7], dw[7]);
+                3'd0: w2m[0] <= value;
+                3'd1: w2m[1] <= value;
+                3'd2: w2m[2] <= value;
+                3'd3: w2m[3] <= value;
+                3'd4: w2m[4] <= value;
+                3'd5: w2m[5] <= value;
+                3'd6: w2m[6] <= value;
+                default: w2m[7] <= value;
             endcase
         end
     endtask
 
-    task update_w1_idx(input [3:0] idx);
+    task write_w1_idx(input [3:0] idx, input signed [31:0] value);
         begin
             case (idx)
-                4'd0:  w1m[0]  <= update_value(w1m[0],  dw[0]);
-                4'd1:  w1m[1]  <= update_value(w1m[1],  dw[1]);
-                4'd2:  w1m[2]  <= update_value(w1m[2],  dw[2]);
-                4'd3:  w1m[3]  <= update_value(w1m[3],  dw[3]);
-                4'd4:  w1m[4]  <= update_value(w1m[4],  dw[4]);
-                4'd5:  w1m[5]  <= update_value(w1m[5],  dw[5]);
-                4'd6:  w1m[6]  <= update_value(w1m[6],  dw[6]);
-                4'd7:  w1m[7]  <= update_value(w1m[7],  dw[7]);
-                4'd8:  w1m[8]  <= update_value(w1m[8],  dw[8]);
-                4'd9:  w1m[9]  <= update_value(w1m[9],  dw[9]);
-                4'd10: w1m[10] <= update_value(w1m[10], dw[10]);
-                4'd11: w1m[11] <= update_value(w1m[11], dw[11]);
-                4'd12: w1m[12] <= update_value(w1m[12], dw[12]);
-                4'd13: w1m[13] <= update_value(w1m[13], dw[13]);
-                4'd14: w1m[14] <= update_value(w1m[14], dw[14]);
-                default: w1m[15] <= update_value(w1m[15], dw[15]);
+                4'd0:  w1m[0]  <= value;
+                4'd1:  w1m[1]  <= value;
+                4'd2:  w1m[2]  <= value;
+                4'd3:  w1m[3]  <= value;
+                4'd4:  w1m[4]  <= value;
+                4'd5:  w1m[5]  <= value;
+                4'd6:  w1m[6]  <= value;
+                4'd7:  w1m[7]  <= value;
+                4'd8:  w1m[8]  <= value;
+                4'd9:  w1m[9]  <= value;
+                4'd10: w1m[10] <= value;
+                4'd11: w1m[11] <= value;
+                4'd12: w1m[12] <= value;
+                4'd13: w1m[13] <= value;
+                4'd14: w1m[14] <= value;
+                default: w1m[15] <= value;
             endcase
         end
     endtask
@@ -141,13 +181,13 @@ module memetic_train_unit_lite (
         end else begin
             if (upd_active) begin
                 if (upd_l1) begin
-                    update_w1_idx(upd_idx);
+                    write_w1_idx(upd_idx, next_w);
                     if (upd_idx == 4'd15)
                         upd_active <= 1'b0;
                     else
                         upd_idx <= upd_idx + 4'd1;
                 end else begin
-                    update_w2_idx(upd_idx[2:0]);
+                    write_w2_idx(upd_idx[2:0], next_w);
                     if (upd_idx == 4'd7)
                         upd_active <= 1'b0;
                     else

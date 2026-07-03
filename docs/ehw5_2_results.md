@@ -92,9 +92,21 @@ instead of the host/stub `38`. The host gate was strengthened after that failure
 and the RTL test now replays the full epoch rather than a smoke update only.
 
 Because full RTL sim still passes, the remaining likely issue is a Vivado
-synthesis or post-implementation behavior in the lite update path. To reduce that
-risk, `memetic_train_unit_lite.v` now uses explicit `case` statements for each
-serialized W1/W2 update instead of dynamic indexed register-array writes.
+synthesis or post-implementation behavior in the lite update path. One attempted
+fix used fully explicit `case` statements with per-register `update_value(...)`
+arms; Claude's OOC gate correctly held it because Vivado duplicated the
+saturating add/sub lane 24 times (`+1210` LUT cells, `+308` CARRY4).
+
+The current fix keeps one shared arithmetic lane:
+
+```text
+cur_w/cur_dw mux -> one update_value(cur_w, cur_dw) -> next_w -> case writeback
+```
+
+The explicit `case` logic is now only write decode, not 24 arithmetic lanes.
+Host RTL still replays the full epoch and passes; Claude must rerun OOC to confirm
+that the resource footprint returns near the ab53136 lite baseline before any
+board rerun.
 
 ## Resource Gate For Board
 
