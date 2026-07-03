@@ -480,3 +480,26 @@ wedge; all 8 frames baked cleanly in the background; sibling projects untouched.
   adapt-budget for both inheritance modes) is now silicon-backed in one build +
   one boot — no per-point rebuilds. 4.6b (PS-writable params via the proven
   `axil_framebuf` window) remains the optional interactive upgrade.
+
+## EHW-4.6b — PS-writable parameter window, board-verified (2026-07-03)
+
+- Static change (Claude lane): `axil_framebuf` (proven EHW-2/3 component,
+  ADDR_BITS=11) added to the ps BD as a module reference @AXI `0x40000000`
+  (8 KB); read port exported through `dfx_top` into `neorv32_soc_dfx`'s new
+  XBUS window @`0xF5000000` (1-cycle registered ack). `build_dfx.tcl` (from
+  scratch) + `m46b_add_framebuf.tcl` (incremental) both carry it; impl_1 +
+  impl_10 rebuilt clean.
+- Probe firmware `sw/ehw/fb_probe.c` (VHD 2448 B, verify-image OK).
+- On EBAZ4205:
+  1. PS AXI self-test: `mw 0x40000000 0x123456; mw +4 0xABCDEF` → `md` reads
+     back both — window write+readback OK;
+  2. NEORV32 side: mailbox carousels **`0xFB123456` / `0xFCABCDEF`** — the
+     soft-core reads exactly what the PS staged;
+  3. **live update**: `mw 0x40000000 0x777001` with firmware running → mailbox
+     flips to **`0xFB777001`** within one carousel period, word1 untouched —
+     no reboot, no reload.
+- **EHW-4.6b PASS.** Interactive parameter staging is ready: future sweeps /
+  EHW-5 firmware read params from `0xF5000000` instead of a baked table; one
+  bitstream, unlimited re-parameterization. (One power-cycle was needed before
+  this run — board wedged during a failed first load attempt, cause consistent
+  with a CH340-brownout-missed intercept; recovered by Type-C replug, standard.)

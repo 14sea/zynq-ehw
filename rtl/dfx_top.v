@@ -13,12 +13,16 @@ module dfx_top ();
     wire        rstn;
     wire [31:0] mbox;
     wire        mbox_valid;
+    wire [10:0] fb_addr;
+    wire [31:0] fb_data;
 
     ps_wrapper u_ps (
         .fclk_o       (fclk),
         .rstn_o       (rstn),
         .mbox_i       (mbox),
-        .mbox_valid_i (mbox_valid)
+        .mbox_valid_i (mbox_valid),
+        .fb_rd_addr   (fb_addr),
+        .fb_rd_data   (fb_data)
     );
 
     neorv32_soc_dfx u_soc (
@@ -28,7 +32,9 @@ module dfx_top ();
         .uart0_rxd_i  (1'b1),
         .gpio_o       (),
         .mbox_o       (mbox),
-        .mbox_valid_o (mbox_valid)
+        .mbox_valid_o (mbox_valid),
+        .fb_addr_o    (fb_addr),
+        .fb_data_i    (fb_data)
     );
 
 endmodule

@@ -26,7 +26,11 @@ entity neorv32_soc_dfx is
     uart0_rxd_i  : in  std_ulogic;
     gpio_o       : out std_ulogic_vector(3 downto 0);   -- debug LEDs
     mbox_o       : out std_ulogic_vector(31 downto 0);  -- firmware result -> PS
-    mbox_valid_o : out std_ulogic
+    mbox_valid_o : out std_ulogic;
+    -- EHW-4.6b: PS-staged parameter window (axil_framebuf in the ps BD; PS writes
+    -- via AXI @0x40000000, NEORV32 reads word xbus_adr[12:2] @0xF5000xxx)
+    fb_addr_o    : out std_ulogic_vector(10 downto 0);
+    fb_data_i    : in  std_ulogic_vector(31 downto 0) := (others => '0')
   );
 end entity neorv32_soc_dfx;
 
@@ -64,6 +68,8 @@ architecture rtl of neorv32_soc_dfx is
   signal mbox_vld  : std_ulogic := '0';
   signal mbox_ack  : std_ulogic := '0';
   signal def_ack   : std_ulogic := '0';
+  signal fb_selected : std_ulogic;
+  signal fb_ack      : std_ulogic := '0';
 
   component tpu_rp is
     port (
@@ -100,7 +106,8 @@ begin
   -- address decode (4 KB granularity)
   tpu_selected  <= '1' when xbus_adr(31 downto 12) = x"F0000" else '0';
   mbox_selected <= '1' when xbus_adr(31 downto 12) = x"F1000" else '0';
-  def_selected  <= '1' when (tpu_selected = '0' and mbox_selected = '0') else '0';
+  fb_selected   <= '1' when xbus_adr(31 downto 16) = x"F500" else '0';
+  def_selected  <= '1' when (tpu_selected = '0' and mbox_selected = '0' and fb_selected = '0') else '0';
 
   tpu_stb <= xbus_stb when tpu_selected = '1' else '0';
 
@@ -131,10 +138,22 @@ begin
   end process;
 
   -- XBUS response
+  -- param-window read: 1-cycle registered ack, matching the framebuf's registered
+  -- rd_data (valid 1 cycle after rd_addr) — MUST be 1-cycle (NEORV32 XBUS deasserts
+  -- stb on acceptance; a multi-cycle ack never fires). Same pattern as neorv32_soc_icap.
+  fbproc: process(clk_i)
+  begin
+    if rising_edge(clk_i) then
+      fb_ack <= xbus_cyc and xbus_stb and fb_selected;
+    end if;
+  end process;
+  fb_addr_o <= xbus_adr(12 downto 2);
+
   xbus_dat_i <= tpu_dat_r when tpu_ack = '1' else
                 mbox_reg  when mbox_ack = '1' else
+                fb_data_i when fb_ack  = '1' else
                 (others => '0');
-  xbus_ack   <= tpu_ack or mbox_ack or def_ack;
+  xbus_ack   <= tpu_ack or mbox_ack or fb_ack or def_ack;
   xbus_err   <= tpu_err;
 
   mbox_o       <= mbox_reg;

@@ -340,3 +340,20 @@ Until that is decided, `sw/ehw/ehw_eval_mbox.c` is the board bridge: it evaluate
 a compiled champion genome on the VRC array and publishes mailbox results. The
 next bridge, `sw/ehw/ehw_ga_mbox.c`, runs the GA on-board and uses the mailbox for
 progress/champion reporting, avoiding a PS-to-PL genome stream for now.
+
+## PS-Writable Parameter Window (EHW-4.6b, board-verified 2026-07-03)
+
+The memetic/dfx static now carries an `axil_framebuf` parameter window:
+
+- **PS side: AXI @ `0x40000000`** (8 KB, 2048 words). Write with U-Boot `mw`, or
+  `scripts/ehw2-framebank-load.py <file> 0x40000000` for bulk staging. AXI reads
+  work too (debug readback: `md 0x40000000`).
+- **NEORV32 side: XBUS window @ `0xF5000000`** — word w at `0xF5000000 + (w<<2)`,
+  read-only, 1-cycle registered ack (same proven pattern as neorv32_soc_icap; do
+  NOT convert to multi-cycle ack — NEORV32 XBUS deasserts stb on acceptance).
+- **Live-updatable**: PS `mw` during firmware execution is visible on the next
+  NEORV32 read — no reboot, no reload (probe demo: `sw/ehw/fb_probe.c`, mailbox
+  0xFB/0xFC carousel tracked a live `mw` within one period).
+- Sweep/param firmware should read its param struct from this window (word 0
+  first; define your own ready/len convention, e.g. framebank's word0=len,
+  last=ready).
