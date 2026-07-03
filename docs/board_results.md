@@ -410,3 +410,18 @@ edit of only the 11 target INITs — the marker stayed `SRB0`, proving no RM rel
 there was no PS/NEORV32 reset. This is the CGP-analogue of EHW-1.2 for the spare-routing
 island: live ICAP self-repair of a fixed-route island, confirmed on silicon.** No DEVCFG
 wedge; all 8 frames baked cleanly in the background; sibling projects untouched.
+
+## EHW-4.3 — memetic train-unit on-board smoke (2026-07-03)
+
+- Build: `vivado/dfx/m43_add_memetic.tcl` adds `rm_memetic_train` (cfg10/impl_10)
+  to the existing project; static IMEM = `memetic_train_mbox.c` (VHD 3880 B,
+  `verify-image` OK). impl_1 + impl_10 `write_bitstream Complete!`.
+- Resource gate (Claude-side, mandatory): OOC synth 18 DSP48E1 total; **place-level
+  RP utilization 18/20 DSPs (90.0%)** — the v1 blocker (48 DSP) confirmed fixed in
+  silicon flow, unit itself uses 2 (the two err² squares).
+- On EBAZ4205 via `fpga loadb` of `impl_10/dfx_top.bit`: mailbox `0x41200000`
+  settled at **`0xF4F00000`** (14/14 samples) = firmware's final verdict word:
+  RTL full-40-sample epoch trace vs `mem_adapt()` golden — **mism == 0 AND
+  gold_sse == got_sse, bit-exact on silicon**. (Fail word would be `0xF4F00001`.)
+- EHW-4.3 smoke: **PASS**. The HW memetic train unit is board-verified; next rung
+  (EHW-4.4+) can wire it into the GA adaptation inner loop.
