@@ -294,5 +294,12 @@ EHW-5.0/5.0b is host-only complete in `sim/oracle_memetic_struct.py` and
 EHW-3 safe spare-route structure genome with the EHW-4 24-byte weight genome and
 fixed-point SGD adaptation. Result: unpressured hybrid plumbing is deterministic
 but can exploit degenerate features; the structural-pressure arm then reaches
-`40/40`, SSE `4513`, first_40 `2`, with a non-constant `15/40` feature mask. Next
-task: EHW-5.1 C twin for this pressure contract, still host-only.
+`40/40`, SSE `4513`, first_40 `2`, with a non-constant `15/40` feature mask.
+
+EHW-5.1 is host-only complete in `sw/ehw/memetic_struct_kernel.h`,
+`sw/ehw/memetic_struct_eval.c`, and `tests/compare_memetic_struct_twin.py`
+(`docs/ehw5_1_results.md`). The gate byte-compares full Python/C per-generation
+curves and summary rows across the weight baseline, all pressured/unpressured
+hybrid couplings, and the no-adapt ablation; structural-pressure penalties are
+part of the golden. Next task: EHW-5.2 combined spare-route VRC + train-unit RM,
+with Vivado OOC/place resource gates before any board run.

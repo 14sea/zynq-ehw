@@ -32,6 +32,7 @@ gates=(
   "compare_memetic_ab_train.py"          # EHW-4.5: same-boot Baldwinian/Lamarckian firmware stub
   "compare_memetic_sweep.py"             # EHW-4.6a: compile-time memetic sweep firmware stub
   "check_memetic_struct_oracle.py"       # EHW-5.0: deterministic hybrid structure+weight oracle
+  "compare_memetic_struct_twin.py"       # EHW-5.1: hybrid structure+weight Py<->C bit-exact
 )
 
 fail=0

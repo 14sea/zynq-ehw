@@ -1,6 +1,6 @@
 # EHW-5 Plan — Structure + Weights + HW-SGD Hybrid Evolution
 
-Status: **EHW-5.0/5.0b host oracle done. No board claim yet.**
+Status: **EHW-5.1 portable-C twin done. No board claim yet.**
 
 EHW-5 is the "complete" hybrid line: combine the EHW-3 safe spare-routing island
 with the EHW-4 HW-SGD memetic loop. A candidate genome carries both a small
@@ -184,7 +184,7 @@ Result:
   penalty. This is enough to justify the EHW-5.1 C twin, while still remaining a
   same-set host result rather than a board claim.
 
-### EHW-5.1 — Portable-C Twin
+### EHW-5.1 — Portable-C Twin — DONE (HOST-ONLY)
 
 Deliver:
 
@@ -198,6 +198,18 @@ Gate:
 - hybrid genome, feature transform, mutation, crossover, and HW-SGD fixed-point
   adaptation all covered;
 - no board claim.
+
+Result:
+
+- `tests/compare_memetic_struct_twin.py` byte-compares Python and C curve CSVs
+  and summary CSVs across the weight baseline, all three unpressured hybrid
+  couplings, all three pressured hybrid couplings, and the no-adapt ablation.
+- Feature-balance pressure is covered as selection semantics: the gate asserts
+  the useful pressure arm (`bias_x3`, 15/40 feature ones, zero penalty) and the
+  penalized degenerate `gate_x3` arm (`400000` penalty).
+- The C twin preserves the key EHW-5.0b result: `hybrid_lamarckian_pressure /
+  bias_x3` reaches `40/40`, SSE `4513`, first_40 `2`.
+- See `docs/ehw5_1_results.md`.
 
 ### EHW-5.2 — Combined VRC + Train-Unit RM
 
