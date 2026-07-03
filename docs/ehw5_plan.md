@@ -1,6 +1,6 @@
 # EHW-5 Plan — Structure + Weights + HW-SGD Hybrid Evolution
 
-Status: **EHW-5.0 host oracle done. No board claim yet.**
+Status: **EHW-5.0/5.0b host oracle done. No board claim yet.**
 
 EHW-5 is the "complete" hybrid line: combine the EHW-3 safe spare-routing island
 with the EHW-4 HW-SGD memetic loop. A candidate genome carries both a small
@@ -158,7 +158,7 @@ Mandatory gate before board:
 
 ## Milestone Ladder
 
-### EHW-5.0 — Host Hybrid Oracle — DONE (HOST-ONLY)
+### EHW-5.0 / 5.0b — Host Hybrid Oracle — DONE (HOST-ONLY)
 
 Deliver:
 
@@ -174,12 +174,15 @@ Gate:
 - structural fault injection optional but useful: disable A1 and show whether the
   hybrid can repair structure while preserving weight adaptation.
 
-Stop condition:
+Result:
 
-- The first substrate reaches 40/40 in multiple hybrid arms, but some evolved
-  features degenerate to constants or near-constants. This is enough to prove the
-  hybrid plumbing, but not enough for a board-bound "structure helps" claim.
-  Refine structural-use pressure in EHW-5.1 or a 5.0b host sweep before board.
+- EHW-5.0 proved the hybrid plumbing and exposed the caveat: unpressured feature
+  evolution can exploit constants or near-constants.
+- EHW-5.0b added feature-balance pressure. The best pressure arm
+  (`hybrid_lamarckian_pressure` / `bias_x3`) reaches `40/40`, SSE `4513`,
+  first_40 `2`, with a non-constant `15/40` feature mask and zero pressure
+  penalty. This is enough to justify the EHW-5.1 C twin, while still remaining a
+  same-set host result rather than a board claim.
 
 ### EHW-5.1 — Portable-C Twin
 

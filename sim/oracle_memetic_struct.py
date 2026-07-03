@@ -44,6 +44,8 @@ class StructEval:
     pre_weight: list[int]
     post_weight: list[int]
     feature_mask: int
+    feature_ones: int
+    feature_penalty: int
 
 
 @dataclass
@@ -56,6 +58,8 @@ class StructResult:
     pre_weight: list[int]
     post_weight: list[int]
     feature_mask: int
+    feature_ones: int
+    feature_penalty: int
     degraded_correct: int
     repaired_correct: int
 
@@ -98,6 +102,18 @@ def feature_mask_for_dataset(sr_genome: list[int], fault: sr.Fault = sr.FAULT_NO
         if phi_for_x(sr_genome, x, fault):
             mask |= 1 << idx
     return mask
+
+
+def feature_ones(mask: int) -> int:
+    return mask.bit_count()
+
+
+def structural_penalty(mask: int, args: argparse.Namespace) -> int:
+    # Pressure against constant or near-constant feature channels. Correct labels
+    # still dominate because the penalty is far below one label's 1_000_000 fitness
+    # step, but among 40/40 candidates it strongly prefers non-trivial features.
+    balance = min(feature_ones(mask), evo.NTEST - feature_ones(mask))
+    return max(0, args.feature_min_balance - balance) * args.feature_penalty
 
 
 def forward_master(w1: list[list[int]], w2: list[list[int]], x_i8: list[int]):
@@ -205,15 +221,20 @@ def eval_struct_candidate(mode: str, coupling: str, sr_genome: list[int],
     else:
         post_genome, _ = adapt_dataset(weight_genome, xs, args.adapt_epochs, args.lr_shift, seed)
         post = evaluate_dataset(post_genome, xs)
+    feature_mask = feature_mask_for_dataset(sr_genome)
+    penalty = structural_penalty(feature_mask, args) if mode.endswith("_pressure") else 0
+    select_score = evo.Score(post.fitness - penalty, post.correct, post.sse)
     return StructEval(
-        select_score=post,
+        select_score=select_score,
         pre_score=pre,
         post_score=post,
         sr_genome=sr_genome[:],
-        weight_for_next=post_genome[:] if mode == "hybrid_lamarckian" else weight_genome[:],
+        weight_for_next=post_genome[:] if mode.startswith("hybrid_lamarckian") else weight_genome[:],
         pre_weight=weight_genome[:],
         post_weight=post_genome[:],
-        feature_mask=feature_mask_for_dataset(sr_genome),
+        feature_mask=feature_mask,
+        feature_ones=feature_ones(feature_mask),
+        feature_penalty=penalty,
     )
 
 
@@ -283,7 +304,11 @@ def sr_hex_text(genome: list[int]) -> str:
 
 def run_hybrid_mode(mode: str, coupling: str, args: argparse.Namespace,
                     curve_rows: list[dict[str, str]]) -> StructResult:
-    rng = evo.XorShift32(args.seed + {"hybrid_lamarckian": 303, "hybrid_no_adapt": 404}[mode])
+    rng = evo.XorShift32(args.seed + {
+        "hybrid_lamarckian": 303,
+        "hybrid_no_adapt": 404,
+        "hybrid_lamarckian_pressure": 505,
+    }[mode])
     pop = seed_hybrid_population(rng, args)
     best_eval = eval_struct_candidate(mode, coupling, pop[0][0], pop[0][1], args, args.seed)
     first_40 = None
@@ -307,7 +332,10 @@ def run_hybrid_mode(mode: str, coupling: str, args: argparse.Namespace,
             "best_correct": str(best_eval.post_score.correct),
             "best_sse": str(best_eval.post_score.sse),
             "best_fitness": str(best_eval.post_score.fitness),
+            "select_fitness": str(best_eval.select_score.fitness),
             "feature_mask": f"{best_eval.feature_mask:010x}",
+            "feature_ones": str(best_eval.feature_ones),
+            "feature_penalty": str(best_eval.feature_penalty),
             "top_index": str(top_i),
             "sr_genome": sr_hex_text(best_eval.sr_genome),
             "pre_weight": genome_i8_text(best_eval.pre_weight),
@@ -346,6 +374,8 @@ def run_hybrid_mode(mode: str, coupling: str, args: argparse.Namespace,
         pre_weight=best_eval.pre_weight,
         post_weight=best_eval.post_weight,
         feature_mask=best_eval.feature_mask,
+        feature_ones=best_eval.feature_ones,
+        feature_penalty=best_eval.feature_penalty,
         degraded_correct=degraded.correct,
         repaired_correct=repaired.correct,
     )
@@ -389,6 +419,8 @@ def write_summary(path: Path, baseline: mem.ModeResult,
         "first_40",
         "sat_count",
         "feature_mask",
+        "feature_ones",
+        "feature_penalty",
         "degraded_correct",
         "repaired_correct",
         "sr_genome",
@@ -403,6 +435,8 @@ def write_summary(path: Path, baseline: mem.ModeResult,
         "first_40": "" if baseline.first_40 is None else str(baseline.first_40),
         "sat_count": str(sat_count(baseline.best_post_genome)),
         "feature_mask": "",
+        "feature_ones": "",
+        "feature_penalty": "",
         "degraded_correct": "",
         "repaired_correct": "",
         "sr_genome": "",
@@ -418,6 +452,8 @@ def write_summary(path: Path, baseline: mem.ModeResult,
             "first_40": "" if r.first_40 is None else str(r.first_40),
             "sat_count": str(sat_count(r.post_weight)),
             "feature_mask": f"{r.feature_mask:010x}",
+            "feature_ones": str(r.feature_ones),
+            "feature_penalty": str(r.feature_penalty),
             "degraded_correct": str(r.degraded_correct),
             "repaired_correct": str(r.repaired_correct),
             "sr_genome": sr_hex_text(r.sr_genome),
@@ -433,17 +469,17 @@ def write_doc(path: Path, baseline: mem.ModeResult,
               results: list[StructResult], args: argparse.Namespace) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
-        "| Mode | Coupling | Correct | SSE | First 40/40 | Sat | Fault A1 | Repair ref |",
-        "|---|---|---:|---:|---:|---:|---:|---:|",
+        "| Mode | Coupling | Correct | SSE | First 40/40 | Feature ones | Penalty | Sat | Fault A1 |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|",
         f"| weight_only_lamarckian | none | {baseline.best_post_score.correct}/40 | "
         f"{baseline.best_post_score.sse} | {baseline.first_40 if baseline.first_40 is not None else 'none'} | "
-        f"{sat_count(baseline.best_post_genome)} | n/a | n/a |",
+        f"n/a | n/a | {sat_count(baseline.best_post_genome)} | n/a |",
     ]
     for r in results:
         lines.append(
             f"| {r.mode} | {r.coupling} | {r.best_score.correct}/40 | {r.best_score.sse} | "
-            f"{r.first_40 if r.first_40 is not None else 'none'} | {sat_count(r.post_weight)} | "
-            f"{r.degraded_correct}/40 | {r.repaired_correct}/40 |"
+            f"{r.first_40 if r.first_40 is not None else 'none'} | {r.feature_ones} | "
+            f"{r.feature_penalty} | {sat_count(r.post_weight)} | {r.degraded_correct}/40 |"
         )
     best_hybrid = max(results, key=lambda r: (r.best_score.correct, -r.best_score.sse))
     doc = f"""# EHW-5.0 Results — Host Hybrid Structure + Weights Oracle
@@ -483,18 +519,19 @@ generalization claim.
   `POP/GENS/adapt_epochs` budget.
 - `hybrid_lamarckian` evolves both the 16-byte structure and 24-byte seed weights;
   adapted weights are written back, structure changes only by GA.
+- `hybrid_lamarckian_pressure` uses the same Lamarckian semantics, but selection
+  subtracts a feature-balance penalty so constant and near-constant features are
+  disfavored after label correctness is preserved.
 - `hybrid_no_adapt` keeps the structural search but removes the HW-SGD inner loop.
 - `Fault A1` evaluates the best evolved structure with `FAULT_DISABLE_NODE(A1)`.
-  `Repair ref` swaps in the known EHW-3 repair structure under that fault while
-  keeping the evolved weights, as a quick representability sanity check.
+  It is a quick robustness probe for the evolved feature structure, not a full
+  EHW-3-style repair proof.
 
-Important caveat: this first substrate can exploit degenerate features. In this
-run, `bias_x3` reaches a useful Lamarckian result with an all-zero feature mask,
-which behaves like a constant input bias rather than a non-trivial evolved
-feature. The best no-adapt `gate_x3` result uses an almost-all-one feature mask.
-So EHW-5.0 proves the hybrid plumbing and gives a deterministic baseline, but the
-next rung should add a structural-use pressure or a harder feature task before
-making a board-bound "structure helps" claim.
+Important caveat: the unpressured substrate can exploit degenerate features. In
+this run, `bias_x3` reaches a useful Lamarckian result with an all-zero feature
+mask, which behaves like a constant input bias rather than a non-trivial evolved
+feature. The pressure arm is the first EHW-5.0b check: it asks whether useful
+results survive when selection demands a non-constant feature channel.
 
 ## Best Hybrid
 
@@ -547,6 +584,8 @@ def main() -> int:
     ap.add_argument("--struct-mutation-ppm", type=int, default=250_000)
     ap.add_argument("--struct-init-mutation-ppm", type=int, default=50_000)
     ap.add_argument("--struct-sel-mutation-ppm", type=int, default=30_000)
+    ap.add_argument("--feature-min-balance", type=int, default=8)
+    ap.add_argument("--feature-penalty", type=int, default=50_000)
     ap.add_argument("--curve-csv", type=Path, default=DEFAULT_CURVE_CSV)
     ap.add_argument("--summary-csv", type=Path, default=DEFAULT_SUMMARY_CSV)
     ap.add_argument("--doc", type=Path, default=DEFAULT_DOC)
@@ -562,6 +601,8 @@ def main() -> int:
     results: list[StructResult] = []
     for coupling in COUPLINGS:
         results.append(run_hybrid_mode("hybrid_lamarckian", coupling, args, curve_rows))
+    for coupling in COUPLINGS:
+        results.append(run_hybrid_mode("hybrid_lamarckian_pressure", coupling, args, curve_rows))
     results.append(run_hybrid_mode("hybrid_no_adapt", "gate_x3", args, curve_rows))
 
     write_csv(args.curve_csv, curve_rows)
@@ -573,7 +614,8 @@ def main() -> int:
     for r in results:
         first = r.first_40 if r.first_40 is not None else "none"
         print(f"{r.mode}:{r.coupling} best={r.best_score.correct}/40 "
-              f"sse={r.best_score.sse} first_40={first} faultA1={r.degraded_correct}/40")
+              f"sse={r.best_score.sse} first_40={first} feature_ones={r.feature_ones} "
+              f"penalty={r.feature_penalty} faultA1={r.degraded_correct}/40")
     print(f"wrote {args.curve_csv}")
     print(f"wrote {args.summary_csv}")
     print(f"wrote {args.doc}")

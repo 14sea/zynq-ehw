@@ -27,13 +27,16 @@ generalization claim.
 
 ## Results
 
-| Mode | Coupling | Correct | SSE | First 40/40 | Sat | Fault A1 | Repair ref |
-|---|---|---:|---:|---:|---:|---:|---:|
-| weight_only_lamarckian | none | 40/40 | 6116 | 3 | 0 | n/a | n/a |
-| hybrid_lamarckian | replace_x3 | 40/40 | 7177 | 20 | 3 | 40/40 | 31/40 |
-| hybrid_lamarckian | gate_x3 | 40/40 | 7888 | 6 | 0 | 40/40 | 39/40 |
-| hybrid_lamarckian | bias_x3 | 40/40 | 5837 | 5 | 0 | 40/40 | 31/40 |
-| hybrid_no_adapt | gate_x3 | 40/40 | 4615 | 11 | 0 | 40/40 | 39/40 |
+| Mode | Coupling | Correct | SSE | First 40/40 | Feature ones | Penalty | Sat | Fault A1 |
+|---|---|---:|---:|---:|---:|---:|---:|---:|
+| weight_only_lamarckian | none | 40/40 | 6116 | 3 | n/a | n/a | 0 | n/a |
+| hybrid_lamarckian | replace_x3 | 40/40 | 7177 | 20 | 15 | 0 | 3 | 40/40 |
+| hybrid_lamarckian | gate_x3 | 40/40 | 7888 | 6 | 40 | 0 | 0 | 40/40 |
+| hybrid_lamarckian | bias_x3 | 40/40 | 5837 | 5 | 0 | 0 | 0 | 40/40 |
+| hybrid_lamarckian_pressure | replace_x3 | 38/40 | 7633 | none | 15 | 0 | 6 | 38/40 |
+| hybrid_lamarckian_pressure | gate_x3 | 40/40 | 8439 | 24 | 40 | 400000 | 6 | 40/40 |
+| hybrid_lamarckian_pressure | bias_x3 | 40/40 | 4513 | 2 | 15 | 0 | 0 | 40/40 |
+| hybrid_no_adapt | gate_x3 | 40/40 | 4615 | 11 | 39 | 0 | 0 | 40/40 |
 
 ## Interpretation
 
@@ -41,39 +44,40 @@ generalization claim.
   `POP/GENS/adapt_epochs` budget.
 - `hybrid_lamarckian` evolves both the 16-byte structure and 24-byte seed weights;
   adapted weights are written back, structure changes only by GA.
+- `hybrid_lamarckian_pressure` uses the same Lamarckian semantics, but selection
+  subtracts a feature-balance penalty so constant and near-constant features are
+  disfavored after label correctness is preserved.
 - `hybrid_no_adapt` keeps the structural search but removes the HW-SGD inner loop.
 - `Fault A1` evaluates the best evolved structure with `FAULT_DISABLE_NODE(A1)`.
-  `Repair ref` swaps in the known EHW-3 repair structure under that fault while
-  keeping the evolved weights, as a quick representability sanity check.
+  It is a quick robustness probe for the evolved feature structure, not a full
+  EHW-3-style repair proof.
 
-Important caveat: this first substrate can exploit degenerate features. In this
-run, `bias_x3` reaches a useful Lamarckian result with an all-zero feature mask,
-which behaves like a constant input bias rather than a non-trivial evolved
-feature. The best no-adapt `gate_x3` result uses an almost-all-one feature mask.
-So EHW-5.0 proves the hybrid plumbing and gives a deterministic baseline, but the
-next rung should add a structural-use pressure or a harder feature task before
-making a board-bound "structure helps" claim.
+Important caveat: the unpressured substrate can exploit degenerate features. In
+this run, `bias_x3` reaches a useful Lamarckian result with an all-zero feature
+mask, which behaves like a constant input bias rather than a non-trivial evolved
+feature. The pressure arm is the first EHW-5.0b check: it asks whether useful
+results survive when selection demands a non-constant feature channel.
 
 ## Best Hybrid
 
-Mode/coupling: `hybrid_no_adapt` / `gate_x3`
+Mode/coupling: `hybrid_lamarckian_pressure` / `bias_x3`
 
 Feature mask over the 40 deployment samples:
 
 ```text
-0xfffffbffff
+0xd2c1d02a42
 ```
 
 Spare-route genome:
 
 ```text
-08 00 0a 0a e1 00 00 03 03 02 02 01 01 00 03 02
+08 00 0a 00 e8 00 00 03 03 02 02 03 01 00 03 02
 ```
 
 Post-adaptation weight genome:
 
 ```text
-3 -3 -3 -10 13 19 18 18 -5 -3 -5 72 3 0 -6 -9 -9 27 26 2 17 -14 10 14
+9 12 9 -4 28 34 31 43 -3 -3 -1 0 0 12 6 -1 15 42 15 14 29 1 20 25
 ```
 
 ## Reproducibility

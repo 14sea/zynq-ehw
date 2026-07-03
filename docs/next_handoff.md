@@ -289,9 +289,10 @@ EHW-4.6b is board-verified: the memetic static has a PS-writable 8 KB parameter
 window. PS writes AXI `0x40000000`; NEORV32 reads XBUS `0xF5000000`; mailbox probe
 proved AXI readback, soft-core readback, and live `mw` update without reboot.
 
-EHW-5.0 is host-only complete in `sim/oracle_memetic_struct.py` and
+EHW-5.0/5.0b is host-only complete in `sim/oracle_memetic_struct.py` and
 `tests/check_memetic_struct_oracle.py` (`docs/ehw5_0_results.md`). It combines the
 EHW-3 safe spare-route structure genome with the EHW-4 24-byte weight genome and
-fixed-point SGD adaptation. Result: the hybrid plumbing is deterministic and
-reaches 40/40, but first-run features can degenerate to constants, so the next
-task should add structural-use pressure or a harder feature task before board.
+fixed-point SGD adaptation. Result: unpressured hybrid plumbing is deterministic
+but can exploit degenerate features; the structural-pressure arm then reaches
+`40/40`, SSE `4513`, first_40 `2`, with a non-constant `15/40` feature mask. Next
+task: EHW-5.1 C twin for this pressure contract, still host-only.

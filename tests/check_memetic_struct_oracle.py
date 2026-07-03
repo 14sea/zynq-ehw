@@ -54,6 +54,7 @@ def main() -> int:
     expected = {
         ("weight_only_lamarckian", "none"): ("40", "6116", "3"),
         ("hybrid_lamarckian", "bias_x3"): ("40", "5837", "5"),
+        ("hybrid_lamarckian_pressure", "bias_x3"): ("40", "4513", "2"),
         ("hybrid_no_adapt", "gate_x3"): ("40", "4615", "11"),
     }
     for key, (correct, sse, first_40) in expected.items():
@@ -66,6 +67,10 @@ def main() -> int:
         if got != want:
             print(f"FAIL: {key} expected {want}, got {got}", file=sys.stderr)
             return 1
+    pressure = rows[("hybrid_lamarckian_pressure", "bias_x3")]
+    if pressure["feature_ones"] != "15" or pressure["feature_penalty"] != "0":
+        print("FAIL: expected pressure arm to use a non-constant zero-penalty feature", file=sys.stderr)
+        return 1
 
     print("PASS: EHW-5.0 hybrid oracle is deterministic")
     print("PASS: baseline and hybrid known-value rows match")

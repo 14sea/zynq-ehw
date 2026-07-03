@@ -146,10 +146,11 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   window: PS writes AXI `0x40000000`, NEORV32 reads XBUS `0xF5000000`. Board probe
   proved AXI readback, soft-core readback (`0xFB123456` / `0xFCABCDEF`), and live
   `mw` update without reboot (`docs/board_results.md`, `docs/hw_notes.md`).
-- **EHW-5.0 host oracle done** — `sim/oracle_memetic_struct.py` combines the EHW-3
+- **EHW-5.0/5.0b host oracle done** — `sim/oracle_memetic_struct.py` combines the EHW-3
   spare-route structure genome with the EHW-4 24-byte weight genome and fixed-point
-  SGD adaptation. The deterministic gate records the caveat that the first
-  substrate can exploit degenerate features (`docs/ehw5_0_results.md`).
+  SGD adaptation. The first unpressured substrate exposed degenerate features;
+  the pressure arm then found a non-constant 15/40 feature with `40/40`, SSE
+  `4513`, first_40 `2` (`docs/ehw5_0_results.md`).
 
 ## Dependencies & reproduction environment
 
