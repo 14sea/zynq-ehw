@@ -250,7 +250,6 @@ Baldwinian, and Lamarckian modes on the same fixed-point deployment set.
 EHW-4.1 is also host-only complete in `sw/ehw/memetic_kernel.h`,
 `sw/ehw/memetic_eval.c`, and `tests/compare_memetic_twin.py`: Python and C
 per-generation curves are byte-exact for all four modes (`docs/ehw4_1_results.md`).
-No board claim is made for EHW-4 yet.
 
 EHW-4.2 is host-prep complete in `rtl/memetic_train_unit.v`,
 `rtl/dfx/tpu_rp_rm_memetic_train.v`, `sw/ehw/memetic_train_mbox.c`, and
@@ -261,15 +260,23 @@ stub uses the same MMIO protocol as the board path and matches `mem_adapt()`.
 Isolated firmware build passed `verify-image` with `text=3880 data=0 bss=0`.
 Post-review note: the first train-unit RTL synthesized to 48 DSP48E1 total and
 would not fit the 20-DSP RP pblock. The fixed RTL removes generic leaky-path
-multipliers and targets `array 16 + train_unit <=4` DSP48E1. Claude must rerun
-the non-skipped OOC resource gate before push/board.
+multipliers and targets `array 16 + train_unit <=4` DSP48E1.
 
-Next EHW-4 task: EHW-4.3 board run after OOC resource PASS. Build the
-`tpu_rp_rm_memetic_train` RM, build `memetic_train_mbox.c` in the board/Vivado
-build flow, load via U-Boot `fpga loadb`, poll the mailbox, and record exact words in
-`docs/board_results.md`. The smoke-test mailbox expected by the firmware is:
-`0xF4000042`, `0xF420mmss`, `0xF430ccss`, then `0xF4F00000` on PASS. After the
-smoke test passes, extend the firmware to the real short-population HW-SGD
-inner-loop GA. The current Lamarckian best reaches 40/40 but leaves three INT8
-weights at saturation, so a clamp/decay writeback variant remains a useful
-non-blocking EHW-4.x sub-experiment.
+EHW-4.3 is board-verified: OOC/resource/place passed (`18/20` DSP total, train unit
+`2` DSP), and `memetic_train_mbox.c` reached steady mailbox `0xF4F00000` on the
+EBAZ4205, proving the full 40-sample train-unit epoch is bit-exact to `mem_adapt()`
+on silicon (`docs/board_results.md`).
+
+EHW-4.4 is host-prep complete in `sw/ehw/memetic_ga_train_mbox.c` and
+`tests/compare_memetic_ga_train.py` (`docs/ehw4_4_results.md`). It runs a
+Lamarckian GA with train-unit adaptation in each candidate eval (`POP=16`,
+`GENS=8`, `adapt_epochs=1`) and byte-compares the firmware host-stub curve against
+`memetic_eval.c`. Host result: `40/40` by generation `3`, final SSE `6116`.
+
+Next EHW-4 task: EHW-4.5 board run. Build `memetic_ga_train_mbox.c` into the
+EHW-4.3 memetic-train RM bitstream, run `make verify-image`, load via U-Boot
+`fpga loadb`, poll `0xF4xxxxxx` mailbox words, and record exact observations in
+`docs/board_results.md`. Expected final steady word: `0xF4F00028`. The longer
+EHW-4.1 Lamarckian run reaches 40/40 but leaves three INT8 weights at saturation,
+so a clamp/decay writeback variant remains a useful non-blocking EHW-4.x
+sub-experiment.

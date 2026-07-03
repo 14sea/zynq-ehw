@@ -173,8 +173,8 @@ contract is **EHW-4's 4→4→2 net**, not the original 2→4→1 XOR train unit
 - DFX wrapper: `rtl/dfx/tpu_rp_rm_memetic_train.v`.
 - Firmware smoke test: `sw/ehw/memetic_train_mbox.c`.
 - Host gate: `tests/compare_memetic_train_unit.py`.
-- Status: host-prep only; no board claim until exact mailbox words are logged in
-  `docs/board_results.md`.
+- Status: EHW-4.2 host-prep; EHW-4.3 board-verified with steady mailbox
+  `0xF4F00000` in `docs/board_results.md`.
 
 Fixed-point rules:
 
@@ -208,6 +208,23 @@ In the DFX wrapper, this appears at byte address `0xF0000800 + word*4`; non-clai
 accesses continue to the 4x4 array at the existing `0xF0000000` register map.
 Firmware publishes through the usual mailbox at `0xF1000000` (PS sees
 `0x41200000`, unless the chosen SoC variant documents channel 2).
+
+EHW-4.4 first full GA x HW-SGD loop:
+
+- Firmware: `sw/ehw/memetic_ga_train_mbox.c`.
+- Mode: Lamarckian only.
+- Parameters: seed `3`, `POP=16`, `GENS=8`, `adapt_epochs=1`.
+- Host gate: `tests/compare_memetic_ga_train.py`, byte-exact against the
+  `memetic_eval.c` lamarckian curve.
+- Expected host result: first `40/40` at generation `3`, final `40/40`, SSE `6116`.
+- Isolated firmware build: `text=4096 data=0 bss=2560`, `verify-image` OK.
+- Mailbox:
+  - `0xF4000044`: reached EHW-4.4 firmware.
+  - `0xF4400001`: adaptation epochs.
+  - `0xF410ggcc`: generation progress, best correct count.
+  - `0xF420ssss`: best SSE low 16 bits.
+  - `0xF430iicc`: current top index / current top correct.
+  - `0xF4F00028`: expected final steady word for `40/40`.
 
 ## ICAP / PCAP Facts
 

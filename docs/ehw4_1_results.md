@@ -68,6 +68,6 @@ gitignored.
 
 ## Next
 
-EHW-4.2 has prepared the board-bound train-unit path. EHW-4.3 can now build and
-board-test the smoke firmware, then extend it into the actual short-population
-HW-SGD inner-loop GA.
+EHW-4.2/4.3 prepared and board-verified the train-unit path. EHW-4.4 adds the
+short-population Lamarckian GA firmware prep; EHW-4.5 is the board run for that
+full GA x HW-SGD loop.

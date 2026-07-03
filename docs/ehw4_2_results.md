@@ -122,6 +122,6 @@ and U-Boot `fpga loadb`.
 
 ## Next
 
-EHW-4.3 can now run the actual board loop: NEORV32 evaluates candidates with a short
-HW-SGD inner loop using the 4x4 array plus this train unit, then publishes the
-mailbox curve for board verification.
+EHW-4.3 has board-verified this train unit on silicon. EHW-4.4 prepares the actual
+Lamarckian GA candidate loop using the same train-unit MMIO path; EHW-4.5 is the
+board run for that loop.
