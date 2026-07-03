@@ -1,8 +1,8 @@
 # EHW-4 Plan — GA × HW-SGD Memetic Evolution
 
-Status: **EHW-4.0 host oracle done; no board claim.** This is the next research line
-after the board-verified `v1.0.0` EHW-0→EHW-3.4 ladder. It deliberately reuses the
-proven `zynq_xpart` M7 training stack as a read-only reference and keeps this
+Status: **EHW-4.0/4.1 host gates done; no board claim.** This is the next research
+line after the board-verified `v1.0.0` EHW-0→EHW-3.4 ladder. It deliberately reuses
+the proven `zynq_xpart` M7 training stack as a read-only reference and keeps this
 repository independent by copying any required RTL/firmware into `zynq_ehw`.
 
 ## Goal
@@ -85,12 +85,12 @@ firmware image or board artifact.
 | ID | Deliverable | Gate |
 |---|---|---|
 | **EHW-4.0** | host-only Python oracle for pure-GA, pure-SGD, Baldwinian, and Lamarckian modes on the small net | ✅ deterministic CSV + documented curves (`docs/ehw4_0_results.md`) |
-| **EHW-4.1** | portable-C twin sharing the same fixed-point kernel and RNG | Py↔C bit-exact for all modes |
+| **EHW-4.1** | portable-C twin sharing the same fixed-point kernel and RNG | ✅ Py↔C bit-exact for all modes (`docs/ehw4_1_results.md`) |
 | **EHW-4.2** | EHW-local RTL/firmware prep: copy/adapt `train_unit`, XBUS map, firmware stubs, optional OOC synth | RTL sim + firmware host stub + `verify-image` |
 | **EHW-4.3** | board run: NEORV32 evaluates candidates with short HW-SGD inner loops | board mailbox curve matches host model |
 | **EHW-4.4** | optional ICAP reveal: bake the best adapted weights into LUT-KCM or a spare-route island | board result equals post-adapt oracle |
 
-EHW-4.0 and EHW-4.1 are mandatory before Claude spends board time.
+EHW-4.0 and EHW-4.1 are complete. EHW-4.2 is the first board-bound preparation rung.
 
 ## Board Mailbox Sketch
 
@@ -124,19 +124,16 @@ Exact tags can change during implementation, but they must be documented in
 
 ## Next Task For ChatGPT
 
-Implement EHW-4.1 host twin:
+Implement EHW-4.2 board-bound prep:
 
-- `sw/ehw/memetic_kernel.h`
-- `sw/ehw/memetic_eval.c`
-- `tests/compare_memetic_twin.py`
-- `docs/ehw4_1_results.md`
+- copy/adapt an EHW-local `train_unit` path rather than editing `zynq_xpart`;
+- add RTL and firmware host stubs for one short HW-SGD inner loop;
+- preserve the EHW-4.1 fixed-point contract exactly;
+- keep firmware image verification in the build path;
+- add host gates before any board claim.
 
-Required output:
-
-- Py↔C bit-exact curves for the EHW-4.0 defaults;
-- bit-exact fixed-point SGD adaptation for the Lamarckian best-case path;
-- explicit same-set caveat preserved;
-- no RTL, firmware, or board claim.
-
-After EHW-4.1 is reviewed, EHW-4.2 can copy/adapt the EHW-local `train_unit` and
-firmware stubs for RTL/board preparation.
+The EHW-4.1 host twin already proves deterministic Python/C agreement for the
+current oracle defaults, including Lamarckian writeback. A useful EHW-4.2
+sub-experiment is a writeback clamp/decay comparison, because the current
+Lamarckian best reaches 40/40 but leaves three INT8 weights on the saturation
+boundary.

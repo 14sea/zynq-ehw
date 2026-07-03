@@ -244,8 +244,17 @@ controls where feasible, golden-from-oracle/ELF rather than the artifact under t
 and same-firmware cross-build comparisons.
 
 Next research line is **EHW-4 GA × HW-SGD memetic evolution** (`docs/ehw4_memetic_plan.md`).
-EHW-4.0 is now host-only complete in `sim/oracle_memetic.py` and
+EHW-4.0 is host-only complete in `sim/oracle_memetic.py` and
 `docs/ehw4_0_results.md`: deterministic curves compare pure GA, pure HW-SGD,
-Baldwinian, and Lamarckian modes on the same fixed-point deployment set. No board
-claim is made; EHW-4.1 should add the portable-C twin and Py↔C bit-exact gate before
-any RTL/firmware/board work.
+Baldwinian, and Lamarckian modes on the same fixed-point deployment set.
+EHW-4.1 is also host-only complete in `sw/ehw/memetic_kernel.h`,
+`sw/ehw/memetic_eval.c`, and `tests/compare_memetic_twin.py`: Python and C
+per-generation curves are byte-exact for all four modes (`docs/ehw4_1_results.md`).
+No board claim is made for EHW-4 yet.
+
+Next EHW-4 task: EHW-4.2 board-bound prep. Copy/adapt an EHW-local `train_unit`,
+add RTL/firmware host stubs for a short HW-SGD inner loop, preserve the EHW-4.1
+fixed-point contract exactly, keep `verify-image`, and add host gates before any
+board run. The current Lamarckian best reaches 40/40 but leaves three INT8 weights
+at saturation, so a clamp/decay writeback variant is a useful non-blocking
+sub-experiment for EHW-4.2/4.x.

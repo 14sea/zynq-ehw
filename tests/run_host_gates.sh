@@ -26,6 +26,7 @@ gates=(
   "compare_spare_route_vrc.py --skip-ooc" # EHW-3.2: spare-route VRC RTL sim + firmware stub
   "compare_spare_route_baked.py --skip-ooc" # EHW-3.3: baked spare-route ICAP repair host prep
   "compare_ehw34_icap.py --skip-ooc"     # EHW-3.4: per-eval ICAPE2 spare-route host gate
+  "compare_memetic_twin.py"              # EHW-4.1: memetic GA x SGD Py<->C bit-exact
 )
 
 fail=0
@@ -41,10 +42,6 @@ done
 # EHW-0.4 deployment-metric reproducibility (deterministic, no pass/fail — just runs)
 "$PY" sim/ehw0_4_compare.py --seed 3 --population 32 --generations 64 >/dev/null 2>&1 \
   && printf '  OK    ehw0_4_compare (deployment metric regenerated)\n'
-
-# EHW-4.0 host-only memetic oracle reproducibility (no C twin yet; EHW-4.1 restores Py<->C)
-"$PY" sim/oracle_memetic.py >/dev/null 2>&1 \
-  && printf '  OK    oracle_memetic (EHW-4.0 host curves regenerated)\n'
 
 if [ "$fail" -eq 0 ]; then echo "ALL HOST GATES PASS"; else echo "SOME HOST GATES FAILED"; fi
 exit $fail
