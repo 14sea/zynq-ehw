@@ -463,3 +463,20 @@ wedge; all 8 frames baked cleanly in the background; sibling projects untouched.
   (6116 vs 4678, saturation pressure), while pure learnability selection
   (Baldwinian) converges slower but to a lower-SSE genome — both on one boot,
   same silicon, same seeds.
+
+## EHW-4.6a — compile-time memetic parameter sweep on-board (2026-07-03)
+
+- Firmware `memetic_sweep_mbox.c` (VHD 4792 B, verify-image OK, .bss 6080 B in
+  budget): ONE image bakes a 12-point parameter table (population/generations/
+  adapt_epochs/seed), runs Baldwinian AND Lamarckian per point sequentially in
+  one boot, then carousels 48 packed result words (0xF8 = point|mode|first_40|
+  correct, 0xF9 = point|mode|SSE16).
+- Same rm_memetic_train lineage (impl_1+impl_10 rebuilt).
+- On EBAZ4205 via `fpga loadb`, ~2 min sweep, then paced mailbox sampling:
+  **48/48 distinct carousel words collected, every one bit-identical to the
+  host-golden `runs/tests/ehw4_6a_fw_sweep.csv` encoding — 24/24 (point, mode)
+  rows, ZERO mismatches.** (16/24 rows reach 40/40, matching host.)
+- **EHW-4.6a PASS.** The citable sweep table (convergence vs POP/GENS/
+  adapt-budget for both inheritance modes) is now silicon-backed in one build +
+  one boot — no per-point rebuilds. 4.6b (PS-writable params via the proven
+  `axil_framebuf` window) remains the optional interactive upgrade.
