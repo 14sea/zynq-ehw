@@ -301,5 +301,15 @@ EHW-5.1 is host-only complete in `sw/ehw/memetic_struct_kernel.h`,
 (`docs/ehw5_1_results.md`). The gate byte-compares full Python/C per-generation
 curves and summary rows across the weight baseline, all pressured/unpressured
 hybrid couplings, and the no-adapt ablation; structural-pressure penalties are
-part of the golden. Next task: EHW-5.2 combined spare-route VRC + train-unit RM,
-with Vivado OOC/place resource gates before any board run.
+part of the golden.
+
+EHW-5.2 is host-prep complete in `rtl/dfx/tpu_rp_rm_memetic_struct.v`,
+`rtl/memetic_train_unit_lite.v`, `sw/ehw/memetic_struct_train_mbox.c`,
+`tests/compare_memetic_struct_train.py`, and `tests/vivado_ooc_memetic_struct.tcl`
+(`docs/ehw5_2_results.md`). The combined RM keeps the train-unit window at
+`0xF0000800` and adds spare-route VRC at `0xF0000400`; host RTL sim and firmware
+stub pass. First review failed OOC LUT budget (`5049/4400`) with the full
+train-unit, so the current handoff uses the lite train unit: fixed `LR_SHIFT=7`,
+fixed `K=2`, serialized W1/W2 updates, and `TU_BUSY` at word 77. Next Claude task
+is mandatory OOC + pblock utilization review before any board run. Target pblock
+LUT utilization is `<= ~3800` to leave route headroom.

@@ -1,6 +1,6 @@
 # EHW-5 Plan — Structure + Weights + HW-SGD Hybrid Evolution
 
-Status: **EHW-5.1 portable-C twin done. No board claim yet.**
+Status: **EHW-5.2 combined RM host-prep done. No board claim yet.**
 
 EHW-5 is the "complete" hybrid line: combine the EHW-3 safe spare-routing island
 with the EHW-4 HW-SGD memetic loop. A candidate genome carries both a small
@@ -211,7 +211,7 @@ Result:
   bias_x3` reaches `40/40`, SSE `4513`, first_40 `2`.
 - See `docs/ehw5_1_results.md`.
 
-### EHW-5.2 — Combined VRC + Train-Unit RM
+### EHW-5.2 — Combined VRC + Train-Unit RM — DONE (HOST-PREP)
 
 Deliver:
 
@@ -228,6 +228,26 @@ Gate:
   MMIO adaptation;
 - firmware host stub byte-exact vs the C twin;
 - Vivado OOC and place/resource gates pass before any board run.
+
+Result:
+
+- `rtl/dfx/tpu_rp_rm_memetic_struct.v` maps the spare-route VRC feature island to
+  `0xF0000400..0xF000047f` and maps the EHW-5.2 lite train-unit window to
+  `0xF0000800..0xF0000934`.
+- The first full-train-unit wrapper failed Claude's mandatory OOC resource gate
+  (`5049/4400` LUT). The corrected wrapper uses `rtl/memetic_train_unit_lite.v`,
+  with fixed `LR_SHIFT=7`/`K=2` and serialized W1/W2 updates behind a `BUSY` word.
+- `tests/compare_memetic_struct_train.py` simulates the combined RM wrapper,
+  loading the EHW-5.0b `bias_x3` feature genome and checking VRC marker/mask/output
+  plus train-unit register access and serialized update behavior.
+- `sw/ehw/memetic_struct_train_mbox.c` uses the same MMIO protocol to run one
+  `bias_x3` transformed SGD epoch through the train unit and compares against a
+  CPU golden.
+- The feature genome's 8-row VRC mask is `0xa0`; this is intentional because it is
+  a dataset feature from EHW-5.0b, not the EHW-3 majority target `0xe8`.
+- Vivado is unavailable in the ChatGPT host environment, so OOC/place/resource
+  gates remain mandatory Claude-side checks via `tests/vivado_ooc_memetic_struct.tcl`.
+- See `docs/ehw5_2_results.md`.
 
 ### EHW-5.3 — Board Hybrid Memetic Loop
 

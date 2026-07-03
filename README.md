@@ -156,6 +156,12 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   gate byte-compares full per-generation curves and summaries across all hybrid
   arms, including structural-pressure penalties (`tests/compare_memetic_struct_twin.py`,
   `docs/ehw5_1_results.md`). Host-only, no board claim.
+- **EHW-5.2 host-prep done** — `rtl/dfx/tpu_rp_rm_memetic_struct.v` combines the
+  spare-route VRC feature window (`0xF0000400`) with the board-verified memetic
+  train-unit window (`0xF0000800`). The host gate simulates the combined RM wrapper
+  and verifies the firmware MMIO stub against a CPU golden
+  (`tests/compare_memetic_struct_train.py`, `docs/ehw5_2_results.md`). Host-prep
+  only; Vivado OOC/place/resource gates are mandatory before any board claim.
 
 ## Dependencies & reproduction environment
 
@@ -179,7 +185,7 @@ Two large dependencies are kept **out of the repo** (gitignored, regenerable): t
 ## Host tests (no board, no Vivado)
 
 ```sh
-tests/run_host_gates.sh      # runs all 16 host gates: oracle<->C-twin bit-exact + RTL sims
+tests/run_host_gates.sh      # runs all 17 host gates: oracle<->C-twin bit-exact + RTL sims
 ```
 Every board-bound deliverable ships with a host self-proof; this is the gate that must be green before any board run (see `docs/workflow.md`). Board reproduction (build → ICAP/load → mailbox) is in `docs/BOARD_REPRO.md`.
 
@@ -232,6 +238,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   structure+weights oracle.
 - `docs/ehw5_1_results.md` — host-only EHW-5.1 Python/C bit-exact twin for the
   hybrid structure+weights oracle.
+- `docs/ehw5_2_results.md` — host-prep EHW-5.2 combined spare-route VRC +
+  train-unit RM result.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
@@ -262,6 +270,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   EHW-2 stretch substrate for in-fabric ICAPE2 LUT-INIT edits.
 - `rtl/memetic_train_unit.v` / `rtl/dfx/tpu_rp_rm_memetic_train.v` — EHW-4.2
   train-unit prep for the GA × HW-SGD memetic line.
+- `rtl/dfx/tpu_rp_rm_memetic_struct.v` — EHW-5.2 combined spare-route VRC +
+  memetic train-unit RM wrapper.
 - `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and
   `ga_eval.c` for EHW-0.1, plus `ehw_eval_mbox.c` for the EHW-0.2 VRC/mailbox
   bridge, `ehw_ga_mbox.c` for the EHW-0.3 board-resident GA bridge, and
@@ -278,7 +288,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   `memetic_ab_train_mbox.c` for the EHW-4.5 same-boot Baldwinian/Lamarckian A/B,
   `memetic_sweep_mbox.c` for the EHW-4.6a compile-time parameter sweep, and
   `memetic_struct_kernel.h`/`memetic_struct_eval.c` for the EHW-5.1 hybrid
-  structure+weights C twin.
+  structure+weights C twin, plus `memetic_struct_train_mbox.c` for the EHW-5.2
+  combined VRC + train-unit firmware protocol smoke test.
 - `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
 - `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
   bit-exact CSV curves plus the M7.5.3 golden bitmap guard.
@@ -310,6 +321,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `tests/compare_memetic_struct_twin.py` — verifies the EHW-5.1 hybrid
   structure+weight Python oracle and portable-C twin are byte-exact, including
   feature-pressure selection penalties.
+- `tests/compare_memetic_struct_train.py` — verifies the EHW-5.2 combined
+  spare-route VRC + train-unit RM wrapper and firmware host stub.
 - `tests/compare_spare_route_vrc.py` — verifies the EHW-3.2 spare-routing fabric
   VRC RTL sim, firmware host stub, wrapper compile, Py/C oracle gate, and optional
   Vivado OOC synth.
