@@ -160,6 +160,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `docs/ehw3_plan.md` — optional next-step plan for a fixed-route spare-routing
   island that evolves LUT truth tables plus local spare-path selection, without
   mutating raw Xilinx routing bits.
+- `docs/ehw4_memetic_plan.md` — next research-line design for GA × HW-SGD memetic
+  evolution, reusing the M7 training stack as a read-only reference.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the

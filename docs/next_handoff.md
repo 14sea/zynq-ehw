@@ -235,3 +235,15 @@ ch1) steady `0xEC0308E8` (best idx 3, 8/8, mask 0xe8); build timing met, DRC 0-e
 BRAM 37/60 (`docs/board_results.md`). **The whole EHW-3.0→3.4 ladder is board-verified;
 EHW-3 is complete.** No mandatory rung remains — next work is optional (writeup/release,
 a tag, or a new research line).
+
+Post-v1.0.0 hygiene is complete through `6da55d2`: the pinned NEORV32 v1.12.9
+`image_gen` LMA-gap fix is tracked and auto-applied by `scripts/setup-deps.sh`,
+`sw/ehw/Makefile` has `verify-image`, and stale M7.2/settle narratives are retired.
+Workflow now requires three root-cause checks before blaming silicon/P&R: flat
+controls where feasible, golden-from-oracle/ELF rather than the artifact under test,
+and same-firmware cross-build comparisons.
+
+Next research line is **EHW-4 GA × HW-SGD memetic evolution** (`docs/ehw4_memetic_plan.md`).
+First rung is host-only EHW-4.0: implement `sim/oracle_memetic.py` plus
+`docs/ehw4_0_results.md`, comparing pure GA, pure HW-SGD, Baldwinian, and Lamarckian
+modes on a small fixed-point net. No board claim until EHW-4.0/4.1 host gates are green.

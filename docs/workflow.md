@@ -69,6 +69,14 @@ Run before every commit; all must pass:
    `__pycache__/`, and no staged file > ~500 KB.
 5. **Claims source-validated** — every assertion in the review/commit message is
    backed by a command that was actually run this session.
+6. **Root-cause discipline for build-dependent bugs** — before blaming P&R, DFX,
+   timing, settle, or silicon:
+   - build a flat/non-DFX control when feasible; if the same firmware fails in flat
+     and DFX, the bug is not DFX-specific;
+   - compare golden outputs from the independent source of truth (ELF/objcopy,
+     Python oracle, or mathematical model), never from the artifact under test;
+   - prefer same-firmware cross-build comparisons over cross-firmware comparisons,
+     so firmware layout/toolchain effects cannot masquerade as hardware effects.
 
 ## Git policy
 
