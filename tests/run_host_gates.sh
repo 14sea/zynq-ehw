@@ -42,5 +42,9 @@ done
 "$PY" sim/ehw0_4_compare.py --seed 3 --population 32 --generations 64 >/dev/null 2>&1 \
   && printf '  OK    ehw0_4_compare (deployment metric regenerated)\n'
 
+# EHW-4.0 host-only memetic oracle reproducibility (no C twin yet; EHW-4.1 restores Py<->C)
+"$PY" sim/oracle_memetic.py >/dev/null 2>&1 \
+  && printf '  OK    oracle_memetic (EHW-4.0 host curves regenerated)\n'
+
 if [ "$fail" -eq 0 ]; then echo "ALL HOST GATES PASS"; else echo "SOME HOST GATES FAILED"; fi
 exit $fail

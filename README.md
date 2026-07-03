@@ -104,6 +104,10 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   (AXI-GPIO ch2 `0x41200008`) steady `0xEC0308E8` (best idx 3, fitness 8/8, mask 0xe8);
   build timing met, DRC 0-err, BRAM 37/60 (`docs/board_results.md`,
   `docs/ehw3_4_results.md`). This build intentionally has **no PS-HWICAP**.
+- **EHW-4.0 host oracle done** — `sim/oracle_memetic.py` starts the GA × HW-SGD
+  memetic line: pure GA, pure HW-SGD, Baldwinian, and Lamarckian modes over the
+  EHW-0 24-byte weight genome with a deterministic fixed-point SGD adaptation inner
+  loop. Host-only, no board claim (`docs/ehw4_0_results.md`).
 
 ## Dependencies & reproduction environment
 
@@ -162,6 +166,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   mutating raw Xilinx routing bits.
 - `docs/ehw4_memetic_plan.md` — next research-line design for GA × HW-SGD memetic
   evolution, reusing the M7 training stack as a read-only reference.
+- `docs/ehw4_0_results.md` — host-only EHW-4.0 memetic oracle result comparing
+  pure GA, pure HW-SGD, Baldwinian, and Lamarckian modes.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
@@ -175,6 +181,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `sim/oracle_evolve.py` — EHW-0.0 host GA oracle; writes per-generation CSV logs
   under `runs/` (gitignored).
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
+- `sim/oracle_memetic.py` — EHW-4.0 host oracle for GA × fixed-point SGD memetic
+  evolution modes.
 - `sim/oracle_cgp.py` — EHW-1.0 CGP/LUT-INIT oracle for a 2-bit multiplier.
 - `rtl/cgp_vrc.v` — EHW-1.1-fabric register-configured CGP VRC core and XBUS wrapper.
 - `rtl/dfx/tpu_rp_rm_cgp_vrc.v` — DFX RM wrapper exposing the CGP VRC in the existing

@@ -244,6 +244,8 @@ controls where feasible, golden-from-oracle/ELF rather than the artifact under t
 and same-firmware cross-build comparisons.
 
 Next research line is **EHW-4 GA × HW-SGD memetic evolution** (`docs/ehw4_memetic_plan.md`).
-First rung is host-only EHW-4.0: implement `sim/oracle_memetic.py` plus
-`docs/ehw4_0_results.md`, comparing pure GA, pure HW-SGD, Baldwinian, and Lamarckian
-modes on a small fixed-point net. No board claim until EHW-4.0/4.1 host gates are green.
+EHW-4.0 is now host-only complete in `sim/oracle_memetic.py` and
+`docs/ehw4_0_results.md`: deterministic curves compare pure GA, pure HW-SGD,
+Baldwinian, and Lamarckian modes on the same fixed-point deployment set. No board
+claim is made; EHW-4.1 should add the portable-C twin and Py↔C bit-exact gate before
+any RTL/firmware/board work.
