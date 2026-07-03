@@ -132,7 +132,7 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   curve against `memetic_eval.c` and reaches `40/40` by generation `3`
   (`tests/compare_memetic_ga_train.py`, `docs/ehw4_4_results.md`). On the EBAZ4205
   it reached steady mailbox `0xF4F00028`, matching the host model.
-- **EHW-4.5 host-prep done** — `sw/ehw/memetic_ab_train_mbox.c` runs Baldwinian
+- **EHW-4.5 board-verified** — same-boot A/B, final mailbox `0xF7F02828` (both arms 40/40; Lamarckian ~10× faster convergence, Baldwinian lower final SSE). `sw/ehw/memetic_ab_train_mbox.c` runs Baldwinian
   then Lamarckian arms in one firmware image / same boot (`POP=16`, `GENS=32`,
   `adapt_epochs=1`). The host gate byte-compares both firmware curves against
   `memetic_eval.c`: Baldwinian reaches `40/40` at gen `29`, Lamarckian at gen `3`
@@ -202,9 +202,9 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   the memetic GA × fixed-point SGD line.
 - `docs/ehw4_2_results.md` — host-prep EHW-4.2 result for the memetic train-unit
   RTL and firmware host stub.
-- `docs/ehw4_4_results.md` — host-prep EHW-4.4 result for the train-unit
+- `docs/ehw4_4_results.md` — EHW-4.4 result (board-verified `0xF4F00028`) for the train-unit
   Lamarckian GA firmware loop.
-- `docs/ehw4_5_results.md` — host-prep EHW-4.5 result for the same-boot
+- `docs/ehw4_5_results.md` — EHW-4.5 result (board-verified `0xF7F02828`) for the same-boot
   Baldwinian vs Lamarckian firmware comparison.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.

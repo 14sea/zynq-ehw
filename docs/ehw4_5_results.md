@@ -1,6 +1,6 @@
 # EHW-4.5 Results — Same-Boot Baldwinian vs Lamarckian Prep
 
-Status: **HOST-PREP; no board claim.**
+Status: **BOARD-VERIFIED (2026-07-03).** Final steady mailbox `0xF7F02828` = both arms 40/40 on EBAZ4205, live 0xF5/0xF6 arm checkpoints captured; full board record in `docs/board_results.md` §EHW-4.5.
 
 EHW-4.5 prepares the clean board A/B comparison for the memetic line. One firmware
 image runs both arms on the same boot and same bitstream:
@@ -87,6 +87,6 @@ Expected steady final word: **`0xF7F02828`**.
 
 ## Next
 
-Board run: build `sw/ehw/memetic_ab_train_mbox.c` into the EHW-4.3
+DONE — board run: built `sw/ehw/memetic_ab_train_mbox.c` into the EHW-4.3
 `rm_memetic_train` bitstream, load via U-Boot `fpga loadb`, poll the mailbox, and
 record exact observations in `docs/board_results.md`.

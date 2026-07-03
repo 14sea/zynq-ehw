@@ -1,6 +1,6 @@
 # EHW-4 Plan — GA × HW-SGD Memetic Evolution
 
-Status: **EHW-4.0→4.4 done; EHW-4.5 host-prep done.** This is the next research
+Status: **EHW-4.0→4.5 ALL DONE incl. board (4.6 board run folded into 4.5, verified 2026-07-03).** This is the next research
 line after the board-verified `v1.0.0` EHW-0→EHW-3.4 ladder. It deliberately reuses
 the proven `zynq_xpart` M7 training stack as a read-only reference and keeps this
 repository independent by copying any required RTL/firmware into `zynq_ehw`.
@@ -89,11 +89,11 @@ firmware image or board artifact.
 | **EHW-4.2** | EHW-local RTL/firmware prep: copy/adapt `train_unit`, XBUS map, firmware stubs, optional OOC synth | ✅ RTL sim + firmware host stub + isolated `verify-image` (`docs/ehw4_2_results.md`) |
 | **EHW-4.3** | board run: train-unit smoke test on silicon | ✅ board mailbox `0xF4F00000`, OOC/resource/place pass (`docs/board_results.md`) |
 | **EHW-4.4** | board-bound firmware prep: NEORV32 evaluates Lamarckian GA candidates with train-unit HW-SGD inner loops | ✅ host stub curve byte-exact vs `memetic_eval.c` (`docs/ehw4_4_results.md`) |
-| **EHW-4.5** | host-prep: same-boot Baldwinian vs Lamarckian firmware A/B | ✅ both curves byte-exact vs `memetic_eval.c` (`docs/ehw4_5_results.md`) |
-| **EHW-4.6** | board run: EHW-4.5 A/B firmware loop on silicon | board mailbox curves match host model |
+| **EHW-4.5** | same-boot Baldwinian vs Lamarckian firmware A/B | ✅ host curves byte-exact AND board-verified `0xF7F02828` both arms 40/40 (`docs/board_results.md`) |
+| **EHW-4.6** | board run: EHW-4.5 A/B firmware loop on silicon | ✅ folded into 4.5 — final `0xF7F02828`, live arm checkpoints observed |
 | **EHW-4.7** | optional ICAP reveal: bake the best adapted weights into LUT-KCM or a spare-route island | board result equals post-adapt oracle |
 
-EHW-4.0 through EHW-4.5 are complete on the host side. EHW-4.3 proves the train-unit
+EHW-4.0 through EHW-4.5 are complete host AND board. EHW-4.3 proves the train-unit
 hardware bottom layer on board; EHW-4.4 proves the Lamarckian GA loop on board;
 EHW-4.6 is the board run for the same-boot Baldwinian/Lamarckian A/B comparison.
 

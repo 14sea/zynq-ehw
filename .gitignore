@@ -40,3 +40,6 @@ vivado/**/hd_visual/
 vivado/icap_ehw2/ehw2_seqs*/
 vivado/**/cgp_icap/
 hd_visual/
+
+# vivado batch console captures (m43.out etc.)
+vivado/dfx/*.out
