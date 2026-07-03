@@ -267,16 +267,23 @@ EHW-4.3 is board-verified: OOC/resource/place passed (`18/20` DSP total, train u
 EBAZ4205, proving the full 40-sample train-unit epoch is bit-exact to `mem_adapt()`
 on silicon (`docs/board_results.md`).
 
-EHW-4.4 is host-prep complete in `sw/ehw/memetic_ga_train_mbox.c` and
-`tests/compare_memetic_ga_train.py` (`docs/ehw4_4_results.md`). It runs a
-Lamarckian GA with train-unit adaptation in each candidate eval (`POP=16`,
-`GENS=8`, `adapt_epochs=1`) and byte-compares the firmware host-stub curve against
-`memetic_eval.c`. Host result: `40/40` by generation `3`, final SSE `6116`.
+EHW-4.4 is board-verified: `memetic_ga_train_mbox.c` ran the full Lamarckian
+GA-with-HW-SGD loop on silicon (`POP=16`, `GENS=8`, `adapt_epochs=1`) and reached
+steady mailbox `0xF4F00028`, matching the host curve (`40/40` by generation `3`,
+final SSE `6116`).
 
-Next EHW-4 task: EHW-4.5 board run. Build `memetic_ga_train_mbox.c` into the
+EHW-4.5 is host-prep complete in `sw/ehw/memetic_ab_train_mbox.c` and
+`tests/compare_memetic_ab_train.py` (`docs/ehw4_5_results.md`). One firmware image
+runs Baldwinian then Lamarckian arms on the same boot (`POP=16`, `GENS=32`,
+`adapt_epochs=1`) and byte-compares both host-stub curves against `memetic_eval.c`.
+Host result: Baldwinian first reaches `40/40` at gen `29` (SSE `4678`), Lamarckian
+at gen `3` (SSE `6116`). Isolated firmware build passed `verify-image` with
+`text=4232 data=0 bss=2560`.
+
+Next EHW-4 task: EHW-4.6 board run. Build `memetic_ab_train_mbox.c` into the
 EHW-4.3 memetic-train RM bitstream, run `make verify-image`, load via U-Boot
-`fpga loadb`, poll `0xF4xxxxxx` mailbox words, and record exact observations in
-`docs/board_results.md`. Expected final steady word: `0xF4F00028`. The longer
-EHW-4.1 Lamarckian run reaches 40/40 but leaves three INT8 weights at saturation,
-so a clamp/decay writeback variant remains a useful non-blocking EHW-4.x
-sub-experiment.
+`fpga loadb`, poll `0xF5xxxxxx`/`0xF6xxxxxx` arm mailboxes and the final
+`0xF7F02828` word, then record exact observations in `docs/board_results.md`.
+The longer EHW-4.1 Lamarckian run reaches 40/40 but leaves three INT8 weights at
+saturation, so a clamp/decay writeback variant remains a useful non-blocking
+EHW-4.x sub-experiment.

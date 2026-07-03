@@ -226,6 +226,26 @@ EHW-4.4 first full GA x HW-SGD loop:
   - `0xF430iicc`: current top index / current top correct.
   - `0xF4F00028`: expected final steady word for `40/40`.
 
+EHW-4.5 same-boot A/B comparison:
+
+- Firmware: `sw/ehw/memetic_ab_train_mbox.c`.
+- Modes: Baldwinian arm first, then Lamarckian arm, same firmware / same boot.
+- Parameters: seed `3`, `POP=16`, `GENS=32`, `adapt_epochs=1`.
+- Host gate: `tests/compare_memetic_ab_train.py`, byte-exact against the
+  `memetic_eval.c` Baldwinian and Lamarckian curves.
+- Expected host result:
+  - Baldwinian: first `40/40` at generation `29`, final `40/40`, SSE `4678`.
+  - Lamarckian: first `40/40` at generation `3`, final `40/40`, SSE `6116`.
+- Isolated firmware build: `text=4232 data=0 bss=2560`, `verify-image` OK.
+- Mailbox:
+  - `0xF4000045`: reached EHW-4.5 firmware.
+  - `0xF5400001`: adaptation epochs.
+  - `0xF51ggcc` / `0xF61ggcc`: Baldwinian/Lamarckian generation progress.
+  - `0xF52ssss` / `0xF62ssss`: best SSE low 16 bits.
+  - `0xF53iicc` / `0xF63iicc`: current top index / current top correct.
+  - `0xF5F00028` / `0xF6F00028`: per-arm final 40/40.
+  - `0xF7F02828`: expected final steady word, packing both best-correct counts.
+
 ## ICAP / PCAP Facts
 
 - Zynq config-engine handoff uses `devcfg.CTRL[PCAP_PR]`, bit 27, at

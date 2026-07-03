@@ -1,6 +1,6 @@
 # EHW-4 Plan — GA × HW-SGD Memetic Evolution
 
-Status: **EHW-4.0→4.3 done; EHW-4.4 host-prep done.** This is the next research
+Status: **EHW-4.0→4.4 done; EHW-4.5 host-prep done.** This is the next research
 line after the board-verified `v1.0.0` EHW-0→EHW-3.4 ladder. It deliberately reuses
 the proven `zynq_xpart` M7 training stack as a read-only reference and keeps this
 repository independent by copying any required RTL/firmware into `zynq_ehw`.
@@ -89,12 +89,13 @@ firmware image or board artifact.
 | **EHW-4.2** | EHW-local RTL/firmware prep: copy/adapt `train_unit`, XBUS map, firmware stubs, optional OOC synth | ✅ RTL sim + firmware host stub + isolated `verify-image` (`docs/ehw4_2_results.md`) |
 | **EHW-4.3** | board run: train-unit smoke test on silicon | ✅ board mailbox `0xF4F00000`, OOC/resource/place pass (`docs/board_results.md`) |
 | **EHW-4.4** | board-bound firmware prep: NEORV32 evaluates Lamarckian GA candidates with train-unit HW-SGD inner loops | ✅ host stub curve byte-exact vs `memetic_eval.c` (`docs/ehw4_4_results.md`) |
-| **EHW-4.5** | board run: EHW-4.4 firmware loop on silicon | board mailbox curve matches host model |
-| **EHW-4.6** | optional ICAP reveal: bake the best adapted weights into LUT-KCM or a spare-route island | board result equals post-adapt oracle |
+| **EHW-4.5** | host-prep: same-boot Baldwinian vs Lamarckian firmware A/B | ✅ both curves byte-exact vs `memetic_eval.c` (`docs/ehw4_5_results.md`) |
+| **EHW-4.6** | board run: EHW-4.5 A/B firmware loop on silicon | board mailbox curves match host model |
+| **EHW-4.7** | optional ICAP reveal: bake the best adapted weights into LUT-KCM or a spare-route island | board result equals post-adapt oracle |
 
-EHW-4.0 through EHW-4.4 are complete on the host side. EHW-4.3 proves the train-unit
-hardware bottom layer on board; EHW-4.5 is the first board run of the full GA x
-HW-SGD candidate loop.
+EHW-4.0 through EHW-4.5 are complete on the host side. EHW-4.3 proves the train-unit
+hardware bottom layer on board; EHW-4.4 proves the Lamarckian GA loop on board;
+EHW-4.6 is the board run for the same-boot Baldwinian/Lamarckian A/B comparison.
 
 ## Board Mailbox Sketch
 
@@ -128,17 +129,17 @@ Exact tags can change during implementation, but they must be documented in
 
 ## Next Task For Claude
 
-Run EHW-4.5 board verification for `sw/ehw/memetic_ga_train_mbox.c`:
+Run EHW-4.6 board verification for `sw/ehw/memetic_ab_train_mbox.c`:
 
 - build the firmware in an isolated directory with `make verify-image`;
 - reuse the EHW-4.3 `rm_memetic_train` bitstream/RM flow;
 - load via U-Boot `fpga loadb`;
 - poll `0xF4xxxxxx` mailbox words and record exact observations in
   `docs/board_results.md`;
-- expected final steady word: `0xF4F00028` (`40/40`).
+- expected final steady word: `0xF7F02828` (Baldwinian 40/40, Lamarckian 40/40).
 
-The EHW-4.4 host gate proves the firmware host-stub curve is byte-exact against
-`memetic_eval.c` for `POP=16`, `GENS=8`, `adapt_epochs=1`. A useful EHW-4.x
-sub-experiment remains a writeback clamp/decay comparison, because the longer
-EHW-4.1 Lamarckian run reaches 40/40 but leaves three INT8 weights on the
-saturation boundary.
+The EHW-4.5 host gate proves both firmware host-stub curves are byte-exact against
+`memetic_eval.c` for `POP=16`, `GENS=32`, `adapt_epochs=1`: Baldwinian first reaches
+40/40 at gen 29; Lamarckian at gen 3. A useful EHW-4.x sub-experiment remains a
+writeback clamp/decay comparison, because the longer EHW-4.1 Lamarckian run reaches
+40/40 but leaves three INT8 weights on the saturation boundary.

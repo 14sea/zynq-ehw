@@ -126,11 +126,17 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   rounding-shift fix) and the board smoke firmware reached steady mailbox
   `0xF4F00000`, proving the 40-sample train-unit epoch is bit-exact to
   `mem_adapt()` on silicon (`docs/board_results.md`).
-- **EHW-4.4 host-prep done** — `sw/ehw/memetic_ga_train_mbox.c` connects the
+- **EHW-4.4 board-verified** — `sw/ehw/memetic_ga_train_mbox.c` connects the
   board-verified train-unit MMIO path to a Lamarckian GA candidate-evaluation loop
   (`POP=16`, `GENS=8`, `adapt_epochs=1`). The host gate byte-compares the firmware
   curve against `memetic_eval.c` and reaches `40/40` by generation `3`
-  (`tests/compare_memetic_ga_train.py`, `docs/ehw4_4_results.md`). Host-prep only,
+  (`tests/compare_memetic_ga_train.py`, `docs/ehw4_4_results.md`). On the EBAZ4205
+  it reached steady mailbox `0xF4F00028`, matching the host model.
+- **EHW-4.5 host-prep done** — `sw/ehw/memetic_ab_train_mbox.c` runs Baldwinian
+  then Lamarckian arms in one firmware image / same boot (`POP=16`, `GENS=32`,
+  `adapt_epochs=1`). The host gate byte-compares both firmware curves against
+  `memetic_eval.c`: Baldwinian reaches `40/40` at gen `29`, Lamarckian at gen `3`
+  (`tests/compare_memetic_ab_train.py`, `docs/ehw4_5_results.md`). Host-prep only,
   no board claim yet.
 
 ## Dependencies & reproduction environment
@@ -155,7 +161,7 @@ Two large dependencies are kept **out of the repo** (gitignored, regenerable): t
 ## Host tests (no board, no Vivado)
 
 ```sh
-tests/run_host_gates.sh      # runs all 12 host gates: oracle<->C-twin bit-exact + RTL sims
+tests/run_host_gates.sh      # runs all 13 host gates: oracle<->C-twin bit-exact + RTL sims
 ```
 Every board-bound deliverable ships with a host self-proof; this is the gate that must be green before any board run (see `docs/workflow.md`). Board reproduction (build → ICAP/load → mailbox) is in `docs/BOARD_REPRO.md`.
 
@@ -198,6 +204,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   RTL and firmware host stub.
 - `docs/ehw4_4_results.md` — host-prep EHW-4.4 result for the train-unit
   Lamarckian GA firmware loop.
+- `docs/ehw4_5_results.md` — host-prep EHW-4.5 result for the same-boot
+  Baldwinian vs Lamarckian firmware comparison.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
@@ -238,7 +246,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   `ehw34_icap_spare_route.c` for the EHW-3.4 per-eval ICAPE2 spare-route loop, and
   `memetic_kernel.h`/`memetic_eval.c` for the EHW-4.1 memetic C twin, plus
   `memetic_train_mbox.c` for the EHW-4.2/4.3 train-unit firmware smoke test, and
-  `memetic_ga_train_mbox.c` for the EHW-4.4 train-unit Lamarckian GA loop.
+  `memetic_ga_train_mbox.c` for the EHW-4.4 train-unit Lamarckian GA loop, plus
+  `memetic_ab_train_mbox.c` for the EHW-4.5 same-boot Baldwinian/Lamarckian A/B.
 - `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
 - `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
   bit-exact CSV curves plus the M7.5.3 golden bitmap guard.
@@ -261,6 +270,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   stub against `mem_adapt()`.
 - `tests/compare_memetic_ga_train.py` — verifies the EHW-4.4 train-unit
   Lamarckian GA firmware curve is bit-exact against `memetic_eval.c`.
+- `tests/compare_memetic_ab_train.py` — verifies the EHW-4.5 same-boot
+  Baldwinian/Lamarckian firmware curves are bit-exact against `memetic_eval.c`.
 - `tests/compare_spare_route_vrc.py` — verifies the EHW-3.2 spare-routing fabric
   VRC RTL sim, firmware host stub, wrapper compile, Py/C oracle gate, and optional
   Vivado OOC synth.

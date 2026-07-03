@@ -1,6 +1,6 @@
-# EHW-4.4 Results — Train-Unit Lamarckian GA Prep
+# EHW-4.4 Results — Train-Unit Lamarckian GA
 
-Status: **HOST-PREP; no board claim.**
+Status: **BOARD-VERIFIED on EBAZ4205.**
 
 EHW-4.4 connects the EHW-4.3 board-verified memetic train unit to an actual
 candidate-evaluation loop. The first scoped board-bound experiment is deliberately
@@ -39,6 +39,8 @@ Memory utilization: text=4096 data=0 bss=2560
 
 ## What Is Proven
 
+- On silicon, NEORV32 ran the full Lamarckian GA loop with train-unit adaptation in
+  every candidate evaluation and reached steady mailbox `0xF4F00028` (`40/40`).
 - `sw/ehw/memetic_ga_train_mbox.c` uses the same train-unit MMIO protocol as
   `sw/ehw/memetic_train_mbox.c`.
 - The host stub models the train unit and emits a lamarckian per-generation curve.
@@ -71,7 +73,7 @@ These are intentionally smaller than the EHW-4.1 default `GENS=32,
 adapt_epochs=2` run. The goal is a first board-verifiable GA x HW-SGD integration
 loop, not a final tuning run.
 
-## Mailbox Sketch
+## Mailbox
 
 Board firmware publishes compact `0xF4xxxxxx` words:
 
@@ -84,11 +86,9 @@ Board firmware publishes compact `0xF4xxxxxx` words:
 0xF4F000cc       final steady word, cc = best correct
 ```
 
-Expected final low byte for the current host-gated run is `0x28` (`40/40`).
+Observed final steady word: **`0xF4F00028`** (`40/40`).
 
 ## Next
 
-Board run: build this firmware into the EHW-4.3 memetic-train RM bitstream, load via
-U-Boot `fpga loadb`, poll the mailbox, and record exact words in
-`docs/board_results.md`. If board time is too long, reduce `GENS` first while
-keeping the host gate parameterized to match the board binary.
+EHW-4.5 prepares the same-boot Baldwinian vs Lamarckian A/B firmware. EHW-4.6 is
+the board run for that comparison.
