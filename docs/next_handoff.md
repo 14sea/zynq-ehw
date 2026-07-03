@@ -278,16 +278,14 @@ Lamarckian arms in one firmware image / same boot (`POP=16`, `GENS=32`,
 Baldwinian first reaches `40/40` at gen `29` (SSE `4678`), Lamarckian at gen `3`
 (SSE `6116`).
 
-EHW-4.6a is host-prep complete in `sw/ehw/memetic_sweep_mbox.c` and
+EHW-4.6a is board-verified in `sw/ehw/memetic_sweep_mbox.c` and
 `tests/compare_memetic_sweep.py` (`docs/ehw4_6a_results.md`). One firmware image
 bakes a 12-point parameter table and runs Baldwinian/Lamarckian arms sequentially
-for each point. The host gate byte-compares the combined summary CSV against
-`memetic_eval.c`; 16 of 24 point/mode rows reach 40/40. Isolated firmware build
-passed `verify-image` with `text=4792 data=0 bss=6080`.
+for each point. On board, one build/one boot collected all 48 carousel words:
+24/24 point/mode rows, zero mismatches vs host-golden encoding, and 16/24 rows
+reach 40/40. Isolated firmware build was `text=4792 data=0 bss=6080`.
 
-Next EHW-4 task: EHW-4.6a board run. Build `memetic_sweep_mbox.c` into the EHW-4.3
-memetic-train RM bitstream, run `make verify-image`, load via U-Boot `fpga loadb`,
-poll the `0xF8/0xF9` carousel long enough to collect all point/mode result words,
-then record exact observations in `docs/board_results.md`. EHW-4.6b remains the
-optional static upgrade: attach the existing `axil_framebuf` to the memetic static
-so future parameter structs can be injected from PS without rebuilding firmware.
+Next research line: EHW-5 (`docs/ehw5_plan.md`) — combine EHW-3 safe spare-route
+structure evolution with EHW-4 evolved weights and HW-SGD adaptation. EHW-4.6b
+remains optional infrastructure work if interactive PS-injected sweep parameters
+are needed later.

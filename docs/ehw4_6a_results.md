@@ -1,6 +1,6 @@
 # EHW-4.6a Results — Compile-Time Memetic Parameter Sweep
 
-Status: **HOST-PREP complete. No board claim yet.**
+Status: **BOARD-VERIFIED on EBAZ4205 (2026-07-03).**
 
 EHW-4.6a turns the single EHW-4.5 A/B point into a small deterministic parameter
 sweep without changing the static design. One firmware image bakes a compile-time
@@ -88,12 +88,22 @@ Board firmware publishes:
 For `first_40`, the firmware encodes `0x3f` when the arm never reaches 40/40.
 Mode `0` is Baldwinian and mode `1` is Lamarckian.
 
-## Next
+## Board Result
 
-Board run for EHW-4.6a: build `sw/ehw/memetic_sweep_mbox.c` into the same
-EHW-4.3 `rm_memetic_train` lineage, run `make verify-image`, load through U-Boot
-`fpga loadb`, capture the `0xF8/0xF9` carousel, and record the exact observations
-in `docs/board_results.md`.
+The board run used the same EHW-4.3 `rm_memetic_train` lineage. One firmware
+image and one boot ran all 12 points × 2 modes in about two minutes, then
+carouseled the packed results.
+
+Observed on EBAZ4205:
+
+```text
+48/48 distinct carousel words collected
+24/24 point/mode rows covered
+0 mismatches vs host-golden CSV encoding
+16/24 rows reached 40/40
+```
+
+Full board log: `docs/board_results.md` §EHW-4.6a.
 
 EHW-4.6b is the optional static upgrade: attach the existing `rtl/axil_framebuf.vhd`
 to `neorv32_soc_dfx` so PS can inject parameter structs without rebuilding the

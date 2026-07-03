@@ -137,11 +137,15 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   `adapt_epochs=1`). The host gate byte-compares both firmware curves against
   `memetic_eval.c`: Baldwinian reaches `40/40` at gen `29`, Lamarckian at gen `3`
   (`tests/compare_memetic_ab_train.py`, `docs/ehw4_5_results.md`).
-- **EHW-4.6a host-prep done** — `sw/ehw/memetic_sweep_mbox.c` bakes a 12-point
+- **EHW-4.6a board-verified** — `sw/ehw/memetic_sweep_mbox.c` bakes a 12-point
   compile-time parameter table into one firmware image and runs Baldwinian and
-  Lamarckian arms for each point sequentially. The host gate byte-compares the
-  combined sweep summary against `memetic_eval.c` reference runs; no board claim
-  yet (`tests/compare_memetic_sweep.py`, `docs/ehw4_6a_results.md`).
+  Lamarckian arms for each point sequentially. On board, one build/one boot ran
+  all 24 point/mode rows and the 48-word carousel matched the host-golden CSV
+  bit-for-bit (`tests/compare_memetic_sweep.py`, `docs/ehw4_6a_results.md`).
+- **EHW-5 design draft ready** — `docs/ehw5_plan.md` defines the next hybrid line:
+  evolve the EHW-3 safe spare-route feature structure and EHW-4 INT8 seed weights
+  together, with the board-verified HW-SGD train unit as the candidate adaptation
+  inner loop.
 
 ## Dependencies & reproduction environment
 
@@ -210,8 +214,10 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   Lamarckian GA firmware loop.
 - `docs/ehw4_5_results.md` — EHW-4.5 result (board-verified `0xF7F02828`) for the same-boot
   Baldwinian vs Lamarckian firmware comparison.
-- `docs/ehw4_6a_results.md` — host-prep result for the compile-time memetic
+- `docs/ehw4_6a_results.md` — board-verified result for the compile-time memetic
   parameter sweep firmware.
+- `docs/ehw5_plan.md` — design draft for the next hybrid line: evolved safe
+  spare-route structure + evolved weights + HW-SGD adaptation.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
