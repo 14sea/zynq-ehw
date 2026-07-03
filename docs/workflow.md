@@ -61,6 +61,11 @@ Run before every commit; all must pass:
 
 1. **Host gate green** — `python3 tests/compare_ehw0_twin.py` (and equivalents)
    PASS: Py↔C bit-exact **and** golden cross-check vs the zynq_xpart oracle.
+   For any board-bound RTL, this also includes the Vivado OOC synth/resource gate
+   when Vivado is available. If ChatGPT's environment can only run the compare
+   script with `--skip-ooc`, Claude must run the non-skipped OOC gate before commit
+   or push. `iverilog` proves protocol behavior; it does not prove Vivado
+   synthesizability or pblock resource fit.
 2. **Board-verified** (only for hardware milestones) — the on-board result
    matches the host model; logged in `docs/board_results.md`.
 3. **Isolation** — `git -C /home/test/zynq_xpart status -s` and the same for

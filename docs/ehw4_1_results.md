@@ -68,6 +68,6 @@ gitignored.
 
 ## Next
 
-EHW-4.2 can now prepare the board-bound path: copy/adapt an EHW-local `train_unit`,
-add RTL/firmware stubs, keep `verify-image` in the firmware build, and preserve the
-same fixed-point contract before any board claim.
+EHW-4.2 has prepared the board-bound train-unit path. EHW-4.3 can now build and
+board-test the smoke firmware, then extend it into the actual short-population
+HW-SGD inner-loop GA.

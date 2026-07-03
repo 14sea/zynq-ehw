@@ -252,9 +252,24 @@ EHW-4.1 is also host-only complete in `sw/ehw/memetic_kernel.h`,
 per-generation curves are byte-exact for all four modes (`docs/ehw4_1_results.md`).
 No board claim is made for EHW-4 yet.
 
-Next EHW-4 task: EHW-4.2 board-bound prep. Copy/adapt an EHW-local `train_unit`,
-add RTL/firmware host stubs for a short HW-SGD inner loop, preserve the EHW-4.1
-fixed-point contract exactly, keep `verify-image`, and add host gates before any
-board run. The current Lamarckian best reaches 40/40 but leaves three INT8 weights
-at saturation, so a clamp/decay writeback variant is a useful non-blocking
-sub-experiment for EHW-4.2/4.x.
+EHW-4.2 is host-prep complete in `rtl/memetic_train_unit.v`,
+`rtl/dfx/tpu_rp_rm_memetic_train.v`, `sw/ehw/memetic_train_mbox.c`, and
+`tests/compare_memetic_train_unit.py` (`docs/ehw4_2_results.md`). It adapts the
+M7.2 train-unit idea to the EHW-4 4→4→2 / 24-master-weight contract and proves the
+RTL against a generated full 40-sample Python-oracle epoch trace. The firmware host
+stub uses the same MMIO protocol as the board path and matches `mem_adapt()`.
+Isolated firmware build passed `verify-image` with `text=3880 data=0 bss=0`.
+Post-review note: the first train-unit RTL synthesized to 48 DSP48E1 total and
+would not fit the 20-DSP RP pblock. The fixed RTL removes generic leaky-path
+multipliers and targets `array 16 + train_unit <=4` DSP48E1. Claude must rerun
+the non-skipped OOC resource gate before push/board.
+
+Next EHW-4 task: EHW-4.3 board run after OOC resource PASS. Build the
+`tpu_rp_rm_memetic_train` RM, build `memetic_train_mbox.c` in the board/Vivado
+build flow, load via U-Boot `fpga loadb`, poll the mailbox, and record exact words in
+`docs/board_results.md`. The smoke-test mailbox expected by the firmware is:
+`0xF4000042`, `0xF420mmss`, `0xF430ccss`, then `0xF4F00000` on PASS. After the
+smoke test passes, extend the firmware to the real short-population HW-SGD
+inner-loop GA. The current Lamarckian best reaches 40/40 but leaves three INT8
+weights at saturation, so a clamp/decay writeback variant remains a useful
+non-blocking EHW-4.x sub-experiment.

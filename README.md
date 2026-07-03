@@ -114,6 +114,13 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   Baldwinian, and Lamarckian modes, preserving the same-set caveat and recording the
   Lamarckian saturation count (`tests/compare_memetic_twin.py`,
   `docs/ehw4_1_results.md`). Host-only, no board claim.
+- **EHW-4.2 host-prep done** — `rtl/memetic_train_unit.v` adapts the M7.2
+  train-unit idea into an EHW-local 4→4→2, 24-master-weight unit. The host gate
+  drives a full 40-sample Python-oracle trace through RTL and checks loss/delta/master
+  updates, then verifies the firmware MMIO stub against `mem_adapt()`
+  (`sw/ehw/memetic_train_mbox.c`, `tests/compare_memetic_train_unit.py`,
+  `docs/ehw4_2_results.md`). Host-prep only, no board claim; Vivado OOC resource
+  gate is mandatory before push/board for this RTL.
 
 ## Dependencies & reproduction environment
 
@@ -137,7 +144,7 @@ Two large dependencies are kept **out of the repo** (gitignored, regenerable): t
 ## Host tests (no board, no Vivado)
 
 ```sh
-tests/run_host_gates.sh      # runs all 10 host gates: oracle<->C-twin bit-exact + RTL sims
+tests/run_host_gates.sh      # runs all 11 host gates: oracle<->C-twin bit-exact + RTL sims
 ```
 Every board-bound deliverable ships with a host self-proof; this is the gate that must be green before any board run (see `docs/workflow.md`). Board reproduction (build → ICAP/load → mailbox) is in `docs/BOARD_REPRO.md`.
 
@@ -176,6 +183,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   pure GA, pure HW-SGD, Baldwinian, and Lamarckian modes.
 - `docs/ehw4_1_results.md` — host-only EHW-4.1 Python/C bit-exact twin result for
   the memetic GA × fixed-point SGD line.
+- `docs/ehw4_2_results.md` — host-prep EHW-4.2 result for the memetic train-unit
+  RTL and firmware host stub.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
@@ -202,6 +211,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   internal-ICAPE2 spare-route substrate and no-PS-HWICAP NEORV32 SoC.
 - `rtl/ehw2_lut_target.v` / `rtl/neorv32_soc_icap.vhd` / `rtl/xbus_icap.v` —
   EHW-2 stretch substrate for in-fabric ICAPE2 LUT-INIT edits.
+- `rtl/memetic_train_unit.v` / `rtl/dfx/tpu_rp_rm_memetic_train.v` — EHW-4.2
+  train-unit prep for the GA × HW-SGD memetic line.
 - `sw/ehw/` — EHW host/firmware C twin code; currently `ehw_kernel.h` and
   `ga_eval.c` for EHW-0.1, plus `ehw_eval_mbox.c` for the EHW-0.2 VRC/mailbox
   bridge, `ehw_ga_mbox.c` for the EHW-0.3 board-resident GA bridge, and
@@ -212,7 +223,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   stretch, `lutkcm_post.c` for the EHW-0.5 ICAP-bake POST, and
   `spare_route_baked_post.c` for the EHW-3.3 baked spare-route POST,
   `ehw34_icap_spare_route.c` for the EHW-3.4 per-eval ICAPE2 spare-route loop, and
-  `memetic_kernel.h`/`memetic_eval.c` for the EHW-4.1 memetic C twin.
+  `memetic_kernel.h`/`memetic_eval.c` for the EHW-4.1 memetic C twin, plus
+  `memetic_train_mbox.c` for the EHW-4.2 train-unit firmware smoke test.
 - `host/ehw_watch.py` — U-Boot serial mailbox watcher for EHW `0xE*` status tags.
 - `tests/compare_ehw0_twin.py` — builds the C twin and verifies Python/C
   bit-exact CSV curves plus the M7.5.3 golden bitmap guard.
@@ -230,6 +242,9 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `tests/compare_memetic_twin.py` — verifies the EHW-4 memetic Python oracle and
   portable-C twin are bit-exact across pure GA, pure SGD, Baldwinian, and
   Lamarckian modes.
+- `tests/compare_memetic_train_unit.py` — verifies the EHW-4.2 memetic train-unit
+  RTL against a generated Python-oracle epoch trace and verifies the firmware host
+  stub against `mem_adapt()`.
 - `tests/compare_spare_route_vrc.py` — verifies the EHW-3.2 spare-routing fabric
   VRC RTL sim, firmware host stub, wrapper compile, Py/C oracle gate, and optional
   Vivado OOC synth.

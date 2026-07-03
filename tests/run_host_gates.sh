@@ -27,6 +27,7 @@ gates=(
   "compare_spare_route_baked.py --skip-ooc" # EHW-3.3: baked spare-route ICAP repair host prep
   "compare_ehw34_icap.py --skip-ooc"     # EHW-3.4: per-eval ICAPE2 spare-route host gate
   "compare_memetic_twin.py"              # EHW-4.1: memetic GA x SGD Py<->C bit-exact
+  "compare_memetic_train_unit.py --skip-ooc" # EHW-4.2: memetic train-unit RTL + firmware stub
 )
 
 fail=0

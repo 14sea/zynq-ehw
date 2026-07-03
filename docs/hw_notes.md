@@ -164,6 +164,51 @@ Do not mix these two paths:
 If a future milestone uses the VPU path rather than the EHW-0 software-net path,
 add a fresh golden cross-check before trusting results.
 
+## EHW-4.2 Memetic Train-Unit Contract
+
+EHW-4.2 adapts the `zynq_xpart` M7.2 train-unit idea into this repo, but the
+contract is **EHW-4's 4→4→2 net**, not the original 2→4→1 XOR train unit.
+
+- RTL: `rtl/memetic_train_unit.v`.
+- DFX wrapper: `rtl/dfx/tpu_rp_rm_memetic_train.v`.
+- Firmware smoke test: `sw/ehw/memetic_train_mbox.c`.
+- Host gate: `tests/compare_memetic_train_unit.py`.
+- Status: host-prep only; no board claim until exact mailbox words are logged in
+  `docs/board_results.md`.
+
+Fixed-point rules:
+
+- Q8.8 master weights, 24 values: `W1[4][4]` + `W2[2][4]`.
+- Biases stay fixed in firmware/oracle and are not part of the genome.
+- `qmul(a,b) = (a*b + 128) >>> 8`.
+- `leaky'(z) = 256` if `z>=0`, otherwise `64`.
+- `err` clamp: `[-2^20, 2^20-1]`.
+- delta clamp: `[-2^14, 2^14-1]`.
+- update: `master = sat16(master - (dw >>> 7))`.
+- Resource constraint for the DFX RP: the 4x4 array already consumes 16 DSP48E1
+  out of the pblock's 20, so `memetic_train_unit` must stay at **4 DSP48E1 or
+  fewer**. Do not reintroduce generic `qmul` multipliers in the leaky-derivative
+  lanes; `qmul(x, 256>>k)` is the exact rounding shift `(x + 2^(k-1)) >>> k`.
+  OOC synth/resource reporting is mandatory before board build.
+
+Train-unit MMIO word map inside the claimed window:
+
+- `0..3`: `INA0..3` (`y[0..1]` for loss/d2, or `w2td2[0..3]` for d1).
+- `4..7`: `Z0..3` (`z2[0..1]` for loss/d2, or `z1[0..3]` for d1).
+- `8..11`: targets; only `T0/T1` are used.
+- `12..27`: gradient bank; `DW0..7` for W2, `DW0..15` for W1.
+- `28`: command `[0]=loss_d2 [1]=d1 [2]=upd_l2 [3]=upd_l1 [4]=clr_loss`.
+- `32..47`: Q8.8 master W1, row-major.
+- `48..55`: Q8.8 master W2, row-major.
+- `64..65`: D2.
+- `68..71`: D1.
+- `76`: accumulated epoch SSE.
+
+In the DFX wrapper, this appears at byte address `0xF0000800 + word*4`; non-claimed
+accesses continue to the 4x4 array at the existing `0xF0000000` register map.
+Firmware publishes through the usual mailbox at `0xF1000000` (PS sees
+`0x41200000`, unless the chosen SoC variant documents channel 2).
+
 ## ICAP / PCAP Facts
 
 - Zynq config-engine handoff uses `devcfg.CTRL[PCAP_PR]`, bit 27, at
