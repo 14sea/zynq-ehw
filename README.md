@@ -142,10 +142,14 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   Lamarckian arms for each point sequentially. On board, one build/one boot ran
   all 24 point/mode rows and the 48-word carousel matched the host-golden CSV
   bit-for-bit (`tests/compare_memetic_sweep.py`, `docs/ehw4_6a_results.md`).
-- **EHW-5 design draft ready** — `docs/ehw5_plan.md` defines the next hybrid line:
-  evolve the EHW-3 safe spare-route feature structure and EHW-4 INT8 seed weights
-  together, with the board-verified HW-SGD train unit as the candidate adaptation
-  inner loop.
+- **EHW-4.6b board-verified** — the memetic static now has a PS-writable parameter
+  window: PS writes AXI `0x40000000`, NEORV32 reads XBUS `0xF5000000`. Board probe
+  proved AXI readback, soft-core readback (`0xFB123456` / `0xFCABCDEF`), and live
+  `mw` update without reboot (`docs/board_results.md`, `docs/hw_notes.md`).
+- **EHW-5.0 host oracle done** — `sim/oracle_memetic_struct.py` combines the EHW-3
+  spare-route structure genome with the EHW-4 24-byte weight genome and fixed-point
+  SGD adaptation. The deterministic gate records the caveat that the first
+  substrate can exploit degenerate features (`docs/ehw5_0_results.md`).
 
 ## Dependencies & reproduction environment
 
@@ -169,7 +173,7 @@ Two large dependencies are kept **out of the repo** (gitignored, regenerable): t
 ## Host tests (no board, no Vivado)
 
 ```sh
-tests/run_host_gates.sh      # runs all 14 host gates: oracle<->C-twin bit-exact + RTL sims
+tests/run_host_gates.sh      # runs all 15 host gates: oracle<->C-twin bit-exact + RTL sims
 ```
 Every board-bound deliverable ships with a host self-proof; this is the gate that must be green before any board run (see `docs/workflow.md`). Board reproduction (build → ICAP/load → mailbox) is in `docs/BOARD_REPRO.md`.
 
@@ -218,6 +222,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   parameter sweep firmware.
 - `docs/ehw5_plan.md` — design draft for the next hybrid line: evolved safe
   spare-route structure + evolved weights + HW-SGD adaptation.
+- `docs/ehw5_0_results.md` — host-only result for the first EHW-5 hybrid
+  structure+weights oracle.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
@@ -233,6 +239,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `sim/ehw0_4_compare.py` — reproducible EHW-0.4 comparison generator.
 - `sim/oracle_memetic.py` — EHW-4.0 host oracle for GA × fixed-point SGD memetic
   evolution modes.
+- `sim/oracle_memetic_struct.py` — EHW-5.0 host oracle for the first hybrid
+  spare-route-structure + weight-genome memetic substrate.
 - `sim/oracle_cgp.py` — EHW-1.0 CGP/LUT-INIT oracle for a 2-bit multiplier.
 - `rtl/cgp_vrc.v` — EHW-1.1-fabric register-configured CGP VRC core and XBUS wrapper.
 - `rtl/dfx/tpu_rp_rm_cgp_vrc.v` — DFX RM wrapper exposing the CGP VRC in the existing
@@ -287,6 +295,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   Baldwinian/Lamarckian firmware curves are bit-exact against `memetic_eval.c`.
 - `tests/compare_memetic_sweep.py` — verifies the EHW-4.6a compile-time parameter
   sweep firmware summary is bit-exact against `memetic_eval.c`.
+- `tests/check_memetic_struct_oracle.py` — verifies the EHW-5.0 hybrid
+  structure+weight oracle is deterministic and matches known baseline rows.
 - `tests/compare_spare_route_vrc.py` — verifies the EHW-3.2 spare-routing fabric
   VRC RTL sim, firmware host stub, wrapper compile, Py/C oracle gate, and optional
   Vivado OOC synth.

@@ -1,6 +1,6 @@
 # EHW-5 Plan — Structure + Weights + HW-SGD Hybrid Evolution
 
-Status: **DESIGN DRAFT. No implementation or board claim yet.**
+Status: **EHW-5.0 host oracle done. No board claim yet.**
 
 EHW-5 is the "complete" hybrid line: combine the EHW-3 safe spare-routing island
 with the EHW-4 HW-SGD memetic loop. A candidate genome carries both a small
@@ -24,6 +24,8 @@ generalization claim unless a separate holdout set is added.
 - EHW-4.5 proves same-boot Baldwinian vs Lamarckian A/B.
 - EHW-4.6a proves that parameter sweeps can be run as one baked table in one
   firmware image; the 12-point sweep is board-verified and byte-exact.
+- EHW-4.6b proves a PS-writable parameter window: PS writes AXI `0x40000000`,
+  NEORV32 reads XBUS `0xF5000000`, and live updates are visible without reboot.
 
 These results meet the threshold for EHW-5: structure, weight evolution, and
 hardware adaptation have all been proven separately on the same board family.
@@ -156,7 +158,7 @@ Mandatory gate before board:
 
 ## Milestone Ladder
 
-### EHW-5.0 — Host Hybrid Oracle
+### EHW-5.0 — Host Hybrid Oracle — DONE (HOST-ONLY)
 
 Deliver:
 
@@ -174,8 +176,10 @@ Gate:
 
 Stop condition:
 
-- If no coupling reaches a credible result, do not proceed to board. Refine the
-  host substrate first.
+- The first substrate reaches 40/40 in multiple hybrid arms, but some evolved
+  features degenerate to constants or near-constants. This is enough to prove the
+  hybrid plumbing, but not enough for a board-bound "structure helps" claim.
+  Refine structural-use pressure in EHW-5.1 or a 5.0b host sweep before board.
 
 ### EHW-5.1 — Portable-C Twin
 

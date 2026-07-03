@@ -105,6 +105,6 @@ Observed on EBAZ4205:
 
 Full board log: `docs/board_results.md` §EHW-4.6a.
 
-EHW-4.6b is the optional static upgrade: attach the existing `rtl/axil_framebuf.vhd`
-to `neorv32_soc_dfx` so PS can inject parameter structs without rebuilding the
-firmware image.
+EHW-4.6b is now board-verified: the existing `rtl/axil_framebuf.vhd` is attached
+to `neorv32_soc_dfx`, so PS can inject parameter structs without rebuilding the
+firmware image. PS writes AXI `0x40000000`; NEORV32 reads XBUS `0xF5000000`.

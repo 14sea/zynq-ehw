@@ -91,13 +91,14 @@ firmware image or board artifact.
 | **EHW-4.4** | board-bound firmware prep: NEORV32 evaluates Lamarckian GA candidates with train-unit HW-SGD inner loops | ✅ host stub curve byte-exact vs `memetic_eval.c` (`docs/ehw4_4_results.md`) |
 | **EHW-4.5** | same-boot Baldwinian vs Lamarckian firmware A/B | ✅ host curves byte-exact AND board-verified `0xF7F02828` both arms 40/40 (`docs/board_results.md`) |
 | **EHW-4.6a** | compile-time parameter sweep: one firmware image runs a 12-point Baldwinian/Lamarckian grid | ✅ host summary byte-exact and board-verified 48/48 carousel words (`docs/ehw4_6a_results.md`) |
-| **EHW-4.6b** | optional PS-injected parameter source via existing `axil_framebuf` | static rebuild + same sweep gate |
+| **EHW-4.6b** | PS-injected parameter source via existing `axil_framebuf` | ✅ board-verified live PS `mw` -> NEORV32 mailbox (`docs/board_results.md`) |
 | **EHW-4.7** | optional ICAP reveal: bake the best adapted weights into LUT-KCM or a spare-route island | board result equals post-adapt oracle |
 
 EHW-4.0 through EHW-4.5 are complete host AND board. EHW-4.3 proves the train-unit
 hardware bottom layer on board; EHW-4.4 proves the Lamarckian GA loop on board;
 EHW-4.5 proves the same-boot Baldwinian/Lamarckian A/B comparison on board.
-EHW-4.6a proves the first parameter sweep on board.
+EHW-4.6a proves the first parameter sweep on board; EHW-4.6b proves the live
+PS-writable parameter channel for future interactive sweeps and EHW-5.
 
 ## Board Mailbox Sketch
 
@@ -131,6 +132,7 @@ Exact tags can change during implementation, but they must be documented in
 
 ## Next Task
 
-EHW-4 is complete through the board-verified 4.6a sweep. The next research line is
-EHW-5: combine EHW-3 safe spare-route structure evolution with EHW-4 evolved
-weights and HW-SGD adaptation. See `docs/ehw5_plan.md`.
+EHW-4 is complete through the board-verified 4.6a sweep and 4.6b PS-writable
+parameter channel. The next research line is EHW-5: combine EHW-3 safe spare-route
+structure evolution with EHW-4 evolved weights and HW-SGD adaptation. See
+`docs/ehw5_plan.md`.

@@ -285,7 +285,13 @@ for each point. On board, one build/one boot collected all 48 carousel words:
 24/24 point/mode rows, zero mismatches vs host-golden encoding, and 16/24 rows
 reach 40/40. Isolated firmware build was `text=4792 data=0 bss=6080`.
 
-Next research line: EHW-5 (`docs/ehw5_plan.md`) — combine EHW-3 safe spare-route
-structure evolution with EHW-4 evolved weights and HW-SGD adaptation. EHW-4.6b
-remains optional infrastructure work if interactive PS-injected sweep parameters
-are needed later.
+EHW-4.6b is board-verified: the memetic static has a PS-writable 8 KB parameter
+window. PS writes AXI `0x40000000`; NEORV32 reads XBUS `0xF5000000`; mailbox probe
+proved AXI readback, soft-core readback, and live `mw` update without reboot.
+
+EHW-5.0 is host-only complete in `sim/oracle_memetic_struct.py` and
+`tests/check_memetic_struct_oracle.py` (`docs/ehw5_0_results.md`). It combines the
+EHW-3 safe spare-route structure genome with the EHW-4 24-byte weight genome and
+fixed-point SGD adaptation. Result: the hybrid plumbing is deterministic and
+reaches 40/40, but first-run features can degenerate to constants, so the next
+task should add structural-use pressure or a harder feature task before board.
