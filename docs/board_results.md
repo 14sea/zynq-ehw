@@ -425,3 +425,20 @@ wedge; all 8 frames baked cleanly in the background; sibling projects untouched.
   gold_sse == got_sse, bit-exact on silicon**. (Fail word would be `0xF4F00001`.)
 - EHW-4.3 smoke: **PASS**. The HW memetic train unit is board-verified; next rung
   (EHW-4.4+) can wire it into the GA adaptation inner loop.
+
+## EHW-4.4 — Lamarckian GA × HW train-unit on-board (2026-07-03)
+
+- Firmware `memetic_ga_train_mbox.c` (VHD 4096 B, verify-image OK, .bss 2560 B
+  population arrays within the 16 KB budget): full Lamarckian GA — POP=16,
+  GENS=8, every candidate's fitness eval runs 1 HW-SGD adaptation epoch through
+  the EHW-4.3-verified train-unit MMIO window at 0xF0000800, adapted weights
+  written back to the genome.
+- Same rm_memetic_train bitstream lineage (cfg10/impl_10 rebuilt with the new
+  static IMEM; RP still 18/20 DSPs).
+- On EBAZ4205 via `fpga loadb`: mailbox `0x41200000` settled at **`0xF4F00028`**
+  (14/14 samples) — final steady word, low byte 0x28 = **best_correct 40/40**,
+  matching the host twin exactly (host: 40/40, first_40=gen 3, SSE 6116; the
+  curve gate `compare_memetic_ga_train.py` is byte-exact vs `memetic_eval`).
+- **EHW-4.4 PASS — the GA × HW-SGD memetic inner loop is now a silicon fact:**
+  evolution (GA selection/crossover/mutation on NEORV32) and gradient descent
+  (loss/leaky'/SGD in fabric hardware) running fused, on-chip, in one power-on.
