@@ -404,6 +404,19 @@ int main(void) {
            (unsigned)mask, (int)got_sse, score.correct);
     return 0;
 #else
-    while (1) { MBOX = pass ? 0xF5F00000u : 0xF5F00001u; }
+    /* Board-only evidence carousel (EHW-3.2 lesson: every pass-condition input
+       must live in the steady republish loop, one-shot publishes are unreadable
+       over UART-paced md sampling). Does not touch GA/decode/host-stub path. */
+    while (1) {
+        publish(0xF5100000u | (marker >> 16));
+        publish(0xF5110000u | (marker & 0xffffu));
+        publish(0xF5400000u | mask);
+        publish(0xF5200000u | ((uint32_t)(score.correct & 0xff) << 8) | (uint32_t)(mism & 0xff));
+        publish(0xF5300000u | ((uint32_t)score.sse & 0xffffu));
+        publish(0xF5600000u | ((uint32_t)gold_sse & 0xffffu));
+        publish(0xF5610000u | ((uint32_t)got_sse & 0xffffu));
+        publish(0xF5620000u | ((uint32_t)(gold_sse - got_sse) & 0xffffu));
+        publish(pass ? 0xF5F00000u : 0xF5F00001u);
+    }
 #endif
 }
