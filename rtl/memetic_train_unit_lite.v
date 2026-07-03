@@ -82,6 +82,44 @@ module memetic_train_unit_lite (
         end
     endfunction
 
+    task update_w2_idx(input [2:0] idx);
+        begin
+            case (idx)
+                3'd0: w2m[0] <= update_value(w2m[0], dw[0]);
+                3'd1: w2m[1] <= update_value(w2m[1], dw[1]);
+                3'd2: w2m[2] <= update_value(w2m[2], dw[2]);
+                3'd3: w2m[3] <= update_value(w2m[3], dw[3]);
+                3'd4: w2m[4] <= update_value(w2m[4], dw[4]);
+                3'd5: w2m[5] <= update_value(w2m[5], dw[5]);
+                3'd6: w2m[6] <= update_value(w2m[6], dw[6]);
+                default: w2m[7] <= update_value(w2m[7], dw[7]);
+            endcase
+        end
+    endtask
+
+    task update_w1_idx(input [3:0] idx);
+        begin
+            case (idx)
+                4'd0:  w1m[0]  <= update_value(w1m[0],  dw[0]);
+                4'd1:  w1m[1]  <= update_value(w1m[1],  dw[1]);
+                4'd2:  w1m[2]  <= update_value(w1m[2],  dw[2]);
+                4'd3:  w1m[3]  <= update_value(w1m[3],  dw[3]);
+                4'd4:  w1m[4]  <= update_value(w1m[4],  dw[4]);
+                4'd5:  w1m[5]  <= update_value(w1m[5],  dw[5]);
+                4'd6:  w1m[6]  <= update_value(w1m[6],  dw[6]);
+                4'd7:  w1m[7]  <= update_value(w1m[7],  dw[7]);
+                4'd8:  w1m[8]  <= update_value(w1m[8],  dw[8]);
+                4'd9:  w1m[9]  <= update_value(w1m[9],  dw[9]);
+                4'd10: w1m[10] <= update_value(w1m[10], dw[10]);
+                4'd11: w1m[11] <= update_value(w1m[11], dw[11]);
+                4'd12: w1m[12] <= update_value(w1m[12], dw[12]);
+                4'd13: w1m[13] <= update_value(w1m[13], dw[13]);
+                4'd14: w1m[14] <= update_value(w1m[14], dw[14]);
+                default: w1m[15] <= update_value(w1m[15], dw[15]);
+            endcase
+        end
+    endtask
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             for (i = 0; i < 4; i = i + 1) begin
@@ -103,13 +141,13 @@ module memetic_train_unit_lite (
         end else begin
             if (upd_active) begin
                 if (upd_l1) begin
-                    w1m[upd_idx] <= update_value(w1m[upd_idx], dw[upd_idx]);
+                    update_w1_idx(upd_idx);
                     if (upd_idx == 4'd15)
                         upd_active <= 1'b0;
                     else
                         upd_idx <= upd_idx + 4'd1;
                 end else begin
-                    w2m[upd_idx] <= update_value(w2m[upd_idx], dw[upd_idx]);
+                    update_w2_idx(upd_idx[2:0]);
                     if (upd_idx == 4'd7)
                         upd_active <= 1'b0;
                     else

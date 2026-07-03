@@ -310,6 +310,15 @@ EHW-5.2 is host-prep complete in `rtl/dfx/tpu_rp_rm_memetic_struct.v`,
 `0xF0000800` and adds spare-route VRC at `0xF0000400`; host RTL sim and firmware
 stub pass. First review failed OOC LUT budget (`5049/4400`) with the full
 train-unit, so the current handoff uses the lite train unit: fixed `LR_SHIFT=7`,
-fixed `K=2`, serialized W1/W2 updates, and `TU_BUSY` at word 77. Next Claude task
-is mandatory OOC + pblock utilization review before any board run. Target pblock
-LUT utilization is `<= ~3800` to leave route headroom.
+fixed `K=2`, serialized W1/W2 updates, and `TU_BUSY` at word 77.
+
+First board run of the lite wrapper failed deterministically: VRC marker/mask were
+good (`SRV0`, mask `0xa0`) and CPU golden matched host (`gold_sse=4560`), but the
+hardware train-unit arm produced `got_sse=4611`, two genome-byte mismatches, and
+35/40 instead of 38/40. Host gate has since been strengthened: host `SR_OUTPUT`
+now follows the same input/output register path as board, and the RTL test replays
+the full 40-sample epoch against Python golden. RTL still passes, so the current
+fix makes the lite unit more synthesis-friendly by replacing dynamic indexed W1/W2
+update writes with explicit `case` updates. Next Claude task: rerun OOC + pblock
+utilization and then board-test this revised lite unit. Target pblock LUT
+utilization is `<= ~3800` to leave route headroom.

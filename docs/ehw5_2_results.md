@@ -53,6 +53,9 @@ The RTL test drives the combined RM wrapper through the XBUS port:
 - checks live feature output rows;
 - writes and reads train-unit master-weight registers through `0xF0000800`.
 - checks a serialized W2 update through `BUSY` and the updated master-weight readback.
+- replays the full 40-sample EHW-5.2 epoch transaction stream against a Python
+  golden: every per-sample VRC `INPUT`/`OUTPUT` phi, `D2`, accumulated loss, `D1`,
+  and post-update W1/W2 master word is checked.
 
 The firmware host stub then uses the same register protocol to:
 
@@ -79,6 +82,19 @@ firmware-visible train-unit words used by this line, fixes `LR_SHIFT=7` and
 `K=2`, and serializes W1/W2 master-weight updates behind `TU_BUSY`. This removes
 the 24 parallel saturating update lanes that are unnecessary for the serial
 candidate-evaluation firmware path.
+
+A later board run of the lite wrapper still failed deterministically in the
+hardware train-unit arm: VRC marker and mask were correct, the board CPU-golden
+path matched the host (`gold_sse=4560`), but the train-unit arm reported
+`got_sse=4611`, two genome bytes mismatched, and final correct count was `35`
+instead of the host/stub `38`. The host gate was strengthened after that failure:
+`sr_read(SR_OUTPUT)` in host mode now models the real input/output register path,
+and the RTL test now replays the full epoch rather than a smoke update only.
+
+Because full RTL sim still passes, the remaining likely issue is a Vivado
+synthesis or post-implementation behavior in the lite update path. To reduce that
+risk, `memetic_train_unit_lite.v` now uses explicit `case` statements for each
+serialized W1/W2 update instead of dynamic indexed register-array writes.
 
 ## Resource Gate For Board
 

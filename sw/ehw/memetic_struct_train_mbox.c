@@ -57,6 +57,7 @@ static const uint32_t SR_FEATURE_TRUTH_MASK = 0xa0u;
 
 #ifdef MEMETIC_STRUCT_TRAIN_HOST_STUB
 static uint8_t sr_genome_model[SR_GENOME_LEN];
+static uint8_t sr_input_model;
 static int32_t tu_ina[4], tu_z[4], tu_t[4], tu_dw[16], tu_w1[16], tu_w2[8], tu_d2_reg[2], tu_d1_reg[4], tu_loss;
 
 static int32_t tu_qmul(int32_t a, int32_t b) {
@@ -94,12 +95,13 @@ static void tu_model_cmd(uint32_t cmd) {
 
 static void sr_write(uint32_t word, uint32_t value) {
     if (word >= SR_GEN(0) && word <= SR_GEN(15)) sr_genome_model[word - SR_GEN(0)] = (uint8_t)value;
+    else if (word == SR_INPUT) sr_input_model = (uint8_t)(value & 7u);
 }
 
 static uint32_t sr_read(uint32_t word) {
     if (word == SR_MARKER) return 0x53525630u;
     if (word == SR_MASK) return sr_truth_mask(sr_genome_model, &SR_FAULT_NONE_OBJ);
-    if (word == SR_OUTPUT) return 0; /* board path reads output only through sr_phi_hw */
+    if (word == SR_OUTPUT) return sr_eval_row(sr_genome_model, sr_input_model, &SR_FAULT_NONE_OBJ);
     return 0;
 }
 
@@ -161,12 +163,8 @@ static void sr_load(const uint8_t genome[SR_GENOME_LEN]) {
 
 static uint8_t sr_phi_hw(const int8_t x[EHW_NIN]) {
     uint32_t row = (uint32_t)(x[0] >= 8) | ((uint32_t)(x[1] >= 8) << 1) | ((uint32_t)(x[2] >= 8) << 2);
-#ifdef MEMETIC_STRUCT_TRAIN_HOST_STUB
-    return sr_eval_row(sr_genome_model, (int)row, &SR_FAULT_NONE_OBJ);
-#else
     sr_write(SR_INPUT, row);
     return (uint8_t)(sr_read(SR_OUTPUT) & 1u);
-#endif
 }
 
 static void transformed_x_hw(const int8_t x[EHW_NIN], int8_t out[EHW_NIN]) {
