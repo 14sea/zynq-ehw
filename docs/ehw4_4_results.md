@@ -90,5 +90,6 @@ Observed final steady word: **`0xF4F00028`** (`40/40`).
 
 ## Next
 
-EHW-4.5 prepares the same-boot Baldwinian vs Lamarckian A/B firmware. EHW-4.6 is
-the board run for that comparison.
+DONE — EHW-4.5 ran the same-boot Baldwinian vs Lamarckian A/B on board and reached
+final mailbox `0xF7F02828`. EHW-4.6a extends the line to a compile-time parameter
+sweep.

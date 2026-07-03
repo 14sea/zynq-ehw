@@ -30,6 +30,7 @@ gates=(
   "compare_memetic_train_unit.py --skip-ooc" # EHW-4.2: memetic train-unit RTL + firmware stub
   "compare_memetic_ga_train.py"          # EHW-4.4: train-unit Lamarckian GA firmware stub
   "compare_memetic_ab_train.py"          # EHW-4.5: same-boot Baldwinian/Lamarckian firmware stub
+  "compare_memetic_sweep.py"             # EHW-4.6a: compile-time memetic sweep firmware stub
 )
 
 fail=0

@@ -1,6 +1,6 @@
 # EHW-4 Plan — GA × HW-SGD Memetic Evolution
 
-Status: **EHW-4.0→4.5 ALL DONE incl. board (4.6 board run folded into 4.5, verified 2026-07-03).** This is the next research
+Status: **EHW-4.0→4.5 ALL DONE incl. board; EHW-4.6a host-prep done.** This is the next research
 line after the board-verified `v1.0.0` EHW-0→EHW-3.4 ladder. It deliberately reuses
 the proven `zynq_xpart` M7 training stack as a read-only reference and keeps this
 repository independent by copying any required RTL/firmware into `zynq_ehw`.
@@ -90,12 +90,14 @@ firmware image or board artifact.
 | **EHW-4.3** | board run: train-unit smoke test on silicon | ✅ board mailbox `0xF4F00000`, OOC/resource/place pass (`docs/board_results.md`) |
 | **EHW-4.4** | board-bound firmware prep: NEORV32 evaluates Lamarckian GA candidates with train-unit HW-SGD inner loops | ✅ host stub curve byte-exact vs `memetic_eval.c` (`docs/ehw4_4_results.md`) |
 | **EHW-4.5** | same-boot Baldwinian vs Lamarckian firmware A/B | ✅ host curves byte-exact AND board-verified `0xF7F02828` both arms 40/40 (`docs/board_results.md`) |
-| **EHW-4.6** | board run: EHW-4.5 A/B firmware loop on silicon | ✅ folded into 4.5 — final `0xF7F02828`, live arm checkpoints observed |
+| **EHW-4.6a** | compile-time parameter sweep: one firmware image runs a 12-point Baldwinian/Lamarckian grid | ✅ host summary byte-exact vs `memetic_eval.c` (`docs/ehw4_6a_results.md`); board run pending |
+| **EHW-4.6b** | optional PS-injected parameter source via existing `axil_framebuf` | static rebuild + same sweep gate |
 | **EHW-4.7** | optional ICAP reveal: bake the best adapted weights into LUT-KCM or a spare-route island | board result equals post-adapt oracle |
 
 EHW-4.0 through EHW-4.5 are complete host AND board. EHW-4.3 proves the train-unit
 hardware bottom layer on board; EHW-4.4 proves the Lamarckian GA loop on board;
-EHW-4.6 is the board run for the same-boot Baldwinian/Lamarckian A/B comparison.
+EHW-4.5 proves the same-boot Baldwinian/Lamarckian A/B comparison on board.
+EHW-4.6a is the first sweep rung and currently has no board claim.
 
 ## Board Mailbox Sketch
 
@@ -129,17 +131,15 @@ Exact tags can change during implementation, but they must be documented in
 
 ## Next Task For Claude
 
-Run EHW-4.6 board verification for `sw/ehw/memetic_ab_train_mbox.c`:
+Run EHW-4.6a board verification for `sw/ehw/memetic_sweep_mbox.c`:
 
 - build the firmware in an isolated directory with `make verify-image`;
 - reuse the EHW-4.3 `rm_memetic_train` bitstream/RM flow;
 - load via U-Boot `fpga loadb`;
-- poll `0xF4xxxxxx` mailbox words and record exact observations in
-  `docs/board_results.md`;
-- expected final steady word: `0xF7F02828` (Baldwinian 40/40, Lamarckian 40/40).
+- poll the `0xF8/0xF9` sweep mailbox carousel long enough to collect all 24
+  point/mode rows, then record exact observations in `docs/board_results.md`.
 
-The EHW-4.5 host gate proves both firmware host-stub curves are byte-exact against
-`memetic_eval.c` for `POP=16`, `GENS=32`, `adapt_epochs=1`: Baldwinian first reaches
-40/40 at gen 29; Lamarckian at gen 3. A useful EHW-4.x sub-experiment remains a
-writeback clamp/decay comparison, because the longer EHW-4.1 Lamarckian run reaches
-40/40 but leaves three INT8 weights on the saturation boundary.
+The EHW-4.6a host gate proves the firmware summary is byte-exact against
+`memetic_eval.c` for the baked 12-point table. A useful follow-up remains EHW-4.6b:
+attach the existing `axil_framebuf` to the memetic static design so the PS can inject
+parameter structs and sweep new grids without rebuilding firmware.

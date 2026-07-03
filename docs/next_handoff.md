@@ -272,18 +272,22 @@ GA-with-HW-SGD loop on silicon (`POP=16`, `GENS=8`, `adapt_epochs=1`) and reache
 steady mailbox `0xF4F00028`, matching the host curve (`40/40` by generation `3`,
 final SSE `6116`).
 
-EHW-4.5 is host-prep complete in `sw/ehw/memetic_ab_train_mbox.c` and
-`tests/compare_memetic_ab_train.py` (`docs/ehw4_5_results.md`). One firmware image
-runs Baldwinian then Lamarckian arms on the same boot (`POP=16`, `GENS=32`,
-`adapt_epochs=1`) and byte-compares both host-stub curves against `memetic_eval.c`.
-Host result: Baldwinian first reaches `40/40` at gen `29` (SSE `4678`), Lamarckian
-at gen `3` (SSE `6116`). Isolated firmware build passed `verify-image` with
-`text=4232 data=0 bss=2560`.
+EHW-4.5 is board-verified: `memetic_ab_train_mbox.c` ran Baldwinian then
+Lamarckian arms in one firmware image / same boot (`POP=16`, `GENS=32`,
+`adapt_epochs=1`) and reached final mailbox `0xF7F02828`. Host/board result:
+Baldwinian first reaches `40/40` at gen `29` (SSE `4678`), Lamarckian at gen `3`
+(SSE `6116`).
 
-Next EHW-4 task: EHW-4.6 board run. Build `memetic_ab_train_mbox.c` into the
-EHW-4.3 memetic-train RM bitstream, run `make verify-image`, load via U-Boot
-`fpga loadb`, poll `0xF5xxxxxx`/`0xF6xxxxxx` arm mailboxes and the final
-`0xF7F02828` word, then record exact observations in `docs/board_results.md`.
-The longer EHW-4.1 Lamarckian run reaches 40/40 but leaves three INT8 weights at
-saturation, so a clamp/decay writeback variant remains a useful non-blocking
-EHW-4.x sub-experiment.
+EHW-4.6a is host-prep complete in `sw/ehw/memetic_sweep_mbox.c` and
+`tests/compare_memetic_sweep.py` (`docs/ehw4_6a_results.md`). One firmware image
+bakes a 12-point parameter table and runs Baldwinian/Lamarckian arms sequentially
+for each point. The host gate byte-compares the combined summary CSV against
+`memetic_eval.c`; 16 of 24 point/mode rows reach 40/40. Isolated firmware build
+passed `verify-image` with `text=4792 data=0 bss=6080`.
+
+Next EHW-4 task: EHW-4.6a board run. Build `memetic_sweep_mbox.c` into the EHW-4.3
+memetic-train RM bitstream, run `make verify-image`, load via U-Boot `fpga loadb`,
+poll the `0xF8/0xF9` carousel long enough to collect all point/mode result words,
+then record exact observations in `docs/board_results.md`. EHW-4.6b remains the
+optional static upgrade: attach the existing `axil_framebuf` to the memetic static
+so future parameter structs can be injected from PS without rebuilding firmware.

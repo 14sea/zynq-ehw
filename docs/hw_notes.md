@@ -246,6 +246,32 @@ EHW-4.5 same-boot A/B comparison:
   - `0xF5F00028` / `0xF6F00028`: per-arm final 40/40.
   - `0xF7F02828`: expected final steady word, packing both best-correct counts.
 
+EHW-4.6a compile-time parameter sweep:
+
+- Firmware: `sw/ehw/memetic_sweep_mbox.c`.
+- Substrate: same EHW-4.3/4.4 train-unit MMIO window at `0xF0000800`; no static
+  change and no PS-to-NEORV32 parameter injection yet.
+- Parameter source: const table of `ehw46_param_t` structs, deliberately matching
+  the future EHW-4.6b framebuf-loaded struct shape.
+- Sweep: 12 points, each running Baldwinian and Lamarckian arms. POP values are
+  `8`, `16`, and `32`; GENS values are `8`, `16`, and `32`; adapt epochs are `1`
+  for the main grid plus a POP=16 / adapt_epochs=2 mini-grid.
+- Host gate: `tests/compare_memetic_sweep.py`, byte-exact summary CSV against
+  `memetic_eval.c` reference runs.
+- Isolated firmware build: `text=4792 data=0 bss=6080`, `verify-image` OK. This
+  fits 16 KB DMEM with roughly 5.5 KB headroom; POP=64 is intentionally not in the
+  table without a new size audit.
+- Mailbox:
+  - `0xF8000046`: reached EHW-4.6a firmware.
+  - `0xF830000c`: sweep point count.
+  - `0xF8200000 | point<<8 | mode_mask`: starting point.
+  - `0xF8100000 | point<<16 | mode<<15 | gen<<8 | best_correct`: per-generation
+    heartbeat.
+  - `0xF8F0000c`: sweep complete.
+  - `0xF8000000 | point<<18 | mode<<17 | first_40<<8 | best_correct`: result
+    carousel word 0.
+  - `0xF9000000 | point<<18 | mode<<17 | best_sse_low16`: result carousel word 1.
+
 ## ICAP / PCAP Facts
 
 - Zynq config-engine handoff uses `devcfg.CTRL[PCAP_PR]`, bit 27, at
