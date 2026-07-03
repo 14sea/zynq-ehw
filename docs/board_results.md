@@ -442,3 +442,24 @@ wedge; all 8 frames baked cleanly in the background; sibling projects untouched.
 - **EHW-4.4 PASS — the GA × HW-SGD memetic inner loop is now a silicon fact:**
   evolution (GA selection/crossover/mutation on NEORV32) and gradient descent
   (loss/leaky'/SGD in fabric hardware) running fused, on-chip, in one power-on.
+
+## EHW-4.5 — same-boot Baldwinian vs Lamarckian A/B on-board (2026-07-03)
+
+- Firmware `memetic_ab_train_mbox.c` (VHD 4232 B, verify-image OK): ONE image, ONE
+  boot — Baldwinian arm (adaptation for fitness only, no writeback) runs first,
+  then Lamarckian (writeback), POP=16 GENS=32 adapt_epochs=1, shared seeding; the
+  only variable between arms is writeback semantics. Both arms drive the
+  EHW-4.3/4.4-verified train-unit MMIO window (0xF0000800).
+- Same rm_memetic_train lineage (impl_1+impl_10 rebuilt, `write_bitstream Complete!` ×2).
+- On EBAZ4205 via `fpga loadb`, mailbox `0x41200000`:
+  - live arm checkpoints observed: `0xF5300027`, `0xF53F0025` (Baldwinian),
+    `0xF6380028`, `0xF63E0025` (Lamarckian);
+  - **final steady `0xF7F02828` (6/6 tail samples) = Baldwinian best 0x28 (40/40)
+    AND Lamarckian best 0x28 (40/40)** — matching the byte-exact host twin
+    (Baldwinian first_40 = gen 29, SSE 4678; Lamarckian first_40 = gen 3, SSE 6116).
+- **EHW-4.5 PASS.** The A/B answers EHW-4's core scientific question on silicon:
+  with 1-epoch HW-SGD adaptation, acquired-weight inheritance (Lamarckian)
+  converges ~10× earlier (gen 3 vs gen 29) at the cost of higher final SSE
+  (6116 vs 4678, saturation pressure), while pure learnability selection
+  (Baldwinian) converges slower but to a lower-SSE genome — both on one boot,
+  same silicon, same seeds.
