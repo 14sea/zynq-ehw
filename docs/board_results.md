@@ -686,3 +686,42 @@ Its opening bare-CR sync also absorbs the residual-`d` intercept gotcha.
 The running PL design was reloaded afterwards (live FCLK divisor changes
 glitch the PL clock — treat any design state from before the switch as
 invalid); mailbox re-confirmed `0xF5F00000` PASS. Tool is board-verified.
+
+## EHW-5.3 board hybrid memetic loop — PASS, first roll (2026-07-04)
+
+**The full hybrid structure+weight memetic GA ran on-chip and matched host
+golden on every acceptance field.** Single arm per docs/ehw5_3_task.md:
+`hybrid_lamarckian_pressure` / `bias_x3`, seed 3, POP 16, GENS 32, ADAPT 1.
+Firmware `sw/ehw/memetic_struct_ga_mbox.c` (ChatGPT, `1ec6ea1`): per-candidate
+fabric evaluation — sr[16] into the VRC window `0xF0000400`, per-sample
+`SR_INPUT`→`SR_OUTPUT` phi with `bias_x3` coupling, weight genome + one HW-SGD
+epoch through the lite train-unit `0xF0000800`, Lamarckian writeback,
+feature-balance pressure in selection.
+
+Pre-board gates (all rerun by Claude, not taken on trust): host gates 18/18
+incl. the new byte-exact curve gate `compare_memetic_struct_ga_train.py`;
+isolated firmware build exe 5580 B, data+bss 3648 B « 16 KiB DMEM,
+`verify-image OK`; clean workspace `ws_53` from tracked sources at `1ec6ea1`
+(manifest_53.txt, IMEM md5 bd3f9f98…); full clean DFX build impl_1+impl_12,
+WNS +1.026, RP LUT 3348/4400, 0 errors. RM untouched (board-verified 5.2
+netlist lineage rebuilt from identical sources).
+
+Board flow (the now-standard recipe): `board-set-fclk50.py` preflight →
+`before/after FPGA0_CLK_CTRL=0x00200a00, PASS` → `fpga loadb` → carousel at
+PS `0x41200000`, 60 samples over ~2.5 min, five distinct words, all steady:
+
+| word | decode | host golden |
+|---|---|---|
+| `0xf5302028` | gen=32 (completion replay tag), best_correct=40 | 40/40 ✓ |
+| `0xf53111a1` | best_sse=4513 | 4513 ✓ |
+| `0xf5320f00` | feature_ones=15, penalty_bucket=0 | 15 / 0 ✓ |
+| `0xf53f0002` | first_40=2 | 2 ✓ |
+| `0xf5f30000` | final verdict PASS | ✓ |
+
+Acceptance per ehw5_3_task.md: host-stub curve byte-exact ✓ (gate),
+board == host-golden summary ✓, FCLK0=50 MHz captured in-session ✓,
+exact words recorded here ✓. Same-set deployment/adaptation metric as the
+whole EHW-5 line — no holdout generalization claim.
+
+First-roll pass with zero board debugging: the 5.2 root-cause work (FCLK0
+pinning + verified RM + preflight tooling) did exactly what it was for.
