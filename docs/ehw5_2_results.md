@@ -172,6 +172,7 @@ Required board-side checks:
 
 ## Next
 
-EHW-5.3 should connect this combined RM to the full hybrid GA loop. The C twin
-from EHW-5.1 remains the firmware-facing golden, and this EHW-5.2 firmware stub
-is the MMIO protocol template.
+EHW-5.3 connected this combined RM to the full hybrid GA loop and was
+board-verified at FCLK0=50 MHz. The C twin from EHW-5.1 remained the
+firmware-facing golden, and this EHW-5.2 firmware stub was the MMIO protocol
+template for the final EHW-5.3 firmware.

@@ -261,30 +261,31 @@ Result:
 
 Detailed task: `docs/ehw5_3_task.md`.
 
-Deliver:
+Delivered:
 
 - board firmware running the selected EHW-5.1 contract;
 - `docs/ehw5_3_results.md`;
 - `docs/board_results.md` section.
 
-Board gate:
+Board gate result:
 
-- one bitstream, one boot;
+- one clean rebuilt bitstream, one boot;
 - FCLK0 verified at 50 MHz before `fpga loadb`;
-- NEORV32 evaluates hybrid candidates;
-- spare-route feature is evaluated in fabric VRC, not software;
-- HW-SGD inner loop uses the board-verified train unit;
-- final mailbox and any carousel rows match host golden encoding bit-for-bit.
+- NEORV32 evaluated hybrid candidates;
+- spare-route feature was evaluated in fabric VRC, not software;
+- HW-SGD inner loop used the board-verified train unit;
+- final mailbox carousel matched host golden encoding bit-for-bit:
+  `0xf5302028 / 0xf53111a1 / 0xf5320f00 / 0xf53f0002 / 0xf5f30000`.
 
-Host-prep result:
+Host + board result:
 
 - `sw/ehw/memetic_struct_ga_mbox.c` implements the single-arm
   `hybrid_lamarckian_pressure / bias_x3` board firmware and host stub.
 - `tests/compare_memetic_struct_ga_train.py` byte-compares the full
   per-generation curve against `sw/ehw/memetic_struct_eval.c`.
-- Expected summary is locked to `40/40`, SSE `4513`, first_40 `2`,
-  feature_ones `15`, penalty `0`.
-- Board result pending; see `docs/ehw5_3_results.md`.
+- Board summary matched the locked host golden: `40/40`, SSE `4513`,
+  first_40 `2`, feature_ones `15`, penalty `0`, final `0xF5F30000`.
+- See `docs/ehw5_3_results.md` and `docs/board_results.md`.
 
 Suggested first parameters:
 
@@ -312,7 +313,8 @@ benefit depends on HW-SGD.
 
 ### EHW-5.5 — Optional ICAP Reveal
 
-If EHW-5.3/5.4 show a useful hybrid result:
+EHW-5.3 already shows a useful first hybrid result. If EHW-5.4 confirms it
+under same-boot ablation:
 
 - bake the best structural feature into the spare-route island;
 - optionally bake the adapted weights into LUT-KCM as in EHW-0.5;

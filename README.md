@@ -253,10 +253,10 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   hybrid structure+weights oracle.
 - `docs/ehw5_2_results.md` — board-verified EHW-5.2 combined spare-route VRC +
   train-unit RM result at FCLK0=50 MHz.
-- `docs/ehw5_3_task.md` — task contract for the next board hybrid memetic GA
-  loop.
-- `docs/ehw5_3_results.md` — host-prep result for the first EHW-5.3 board-bound
-  hybrid memetic GA firmware.
+- `docs/ehw5_3_task.md` — task contract for the board-verified EHW-5.3 hybrid
+  memetic GA loop.
+- `docs/ehw5_3_results.md` — board-verified result for the first full EHW-5.3
+  hybrid structure+weight memetic GA loop.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the

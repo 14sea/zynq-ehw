@@ -65,7 +65,7 @@ feature_ones = 15
 penalty      = 0
 ```
 
-Local isolated firmware build also passes the image tripwire:
+Local isolated firmware build passes the image tripwire:
 
 ```text
 text=5580 data=0 bss=3648
@@ -73,33 +73,35 @@ verify-image OK
 ```
 
 The `.bss` footprint leaves wide headroom under the 16 KiB NEORV32 DMEM limit.
-Claude should still rerun the same check in the board build workspace before
-loading.
 
-## Board Handoff
+## Board Verification
 
-Before any board load, Claude must run:
+Before board load, Claude ran:
 
 ```bash
 python3 scripts/board-set-fclk50.py --port /dev/ebaz-uart
 ```
 
-Acceptance requires:
+Acceptance evidence:
 
 - `tests/run_host_gates.sh` PASS;
 - firmware `verify-image` PASS and 16 KiB DMEM fit;
 - FCLK0 readback `0x00200a00` immediately before `fpga loadb`;
 - final mailbox carousel matches the host-golden fields above.
 
-Suggested final words from `memetic_struct_ga_mbox.c`:
+Observed steady final words:
 
 ```text
-0xF53020xx   final generation heartbeat (gen 32, correct xx)
-0xF5311191   SSE low word for 4513
+0xF5302028   final generation replay tag (gen 32, correct 40)
+0xF53111a1   SSE low word for 4513
 0xF5320f00   feature_ones=15, penalty_bucket=0
 0xF53F0002   first_40=2
 0xF5F30000   PASS
 ```
+
+The board run sampled the carousel 60 times over about 2.5 minutes; all five
+words were steady and matched host golden. See `docs/board_results.md` for the
+full build and board evidence chain.
 
 This remains the same 40-sample deployment/adaptation metric as EHW-5.0/5.1,
 not a holdout generalization claim.
