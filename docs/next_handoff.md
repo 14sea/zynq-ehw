@@ -337,17 +337,18 @@ combined RM with the new IMEM (WNS +1.026), FCLK0 preflight
 `0x00200a00` captured in-session, carousel `0xf5302028 / 0xf53111a1 /
 0xf5320f00 / 0xf53f0002 / 0xf5f30000` == host golden.
 
-EHW-5.4a host-prep is complete in `sw/ehw/memetic_struct_ab_mbox.c`,
-`tests/compare_memetic_struct_ab_train.py`, and `docs/ehw5_4_results.md`.
-It runs four arms in one firmware image and one boot: weight-only Lamarckian,
-hybrid-pressure `bias_x3`, hybrid no-adapt `gate_x3`, and unpressured hybrid
-`bias_x3`. The host gate byte-compares the full per-generation curve for every
-arm against `sw/ehw/memetic_struct_eval.c`. Isolated firmware build passes
-`verify-image` with `text=7472 data=0 bss=6240`.
+EHW-5.4a is BOARD-VERIFIED (2026-07-05, first roll) in
+`sw/ehw/memetic_struct_ab_mbox.c`, `tests/compare_memetic_struct_ab_train.py`,
+and `docs/ehw5_4_results.md`. It ran four arms in one firmware image and one
+boot: weight-only Lamarckian, hybrid-pressure `bias_x3`, hybrid no-adapt
+`gate_x3`, and unpressured hybrid `bias_x3`. Board carousel:
+arm0 `f5400028/f55017e4/f5600003/f5700000`; arm1
+`f5400128/f55111a1/f5600102/f5710f00`; arm2
+`f5400228/f5521207/f560020b/f5722700`; arm3
+`f5400328/f55316cd/f5600305/f5730000`; final `f54f0004/f5f40000`.
 
-Next Claude task: run host gates, build `memetic_struct_ab_mbox.c` into IMEM
-with `verify-image` and 16 KiB DMEM audit, set FCLK0 with
-`scripts/board-set-fclk50.py`, rebuild/load the existing EHW-5.2/5.3 combined
-RM with the new firmware, and compare the `0xF54x/0xF5F4` steady carousel with
-`docs/ehw5_4_results.md`. If EHW-5.4a passes, EHW-5 is strong enough to close;
-EHW-5.5 ICAP reveal is optional polish.
+Decision: close EHW-5 at EHW-5.4a. Do not start 5.4b or 5.5 by default. They
+remain optional future demos only. Release-polish docs are prepared in
+`docs/RELEASE_NOTES_v1.1.0.md`, `docs/WRITEUP.md`, README, and reproduction
+docs. Next work: Claude claim-audits these docs against `docs/board_results.md`,
+then an annotated `v1.1.0` tag can be created after user approval.

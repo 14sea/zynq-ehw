@@ -1,8 +1,8 @@
 # EHW-5.3 Task — Board Hybrid Memetic Loop
 
-Status: **NEXT. Board-bound.** EHW-5.2 proved the combined spare-route VRC +
-lite train-unit RM on silicon at FCLK0=50 MHz. EHW-5.3 now runs the actual
-hybrid GA loop on NEORV32.
+Status: **BOARD-VERIFIED.** EHW-5.2 proved the combined spare-route VRC +
+lite train-unit RM on silicon at FCLK0=50 MHz. EHW-5.3 ran the first actual
+hybrid GA loop on NEORV32 and passed on board; see `docs/board_results.md`.
 
 ## Goal
 

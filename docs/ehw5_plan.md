@@ -1,8 +1,8 @@
 # EHW-5 Plan — Structure + Weights + HW-SGD Hybrid Evolution
 
-Status: **EHW-5.2 combined RM AND EHW-5.3 hybrid memetic GA both board-verified
-at FCLK0=50 MHz (5.3: first roll, 2026-07-04, all acceptance fields == host
-golden — see `docs/board_results.md`).**
+Status: **CLOSED at EHW-5.4a.** EHW-5.2, EHW-5.3, and EHW-5.4a are
+board-verified at FCLK0=50 MHz. EHW-5.4a's same-boot ablation met the stop rule;
+5.4b parameter-window scans and 5.5 ICAP reveal are optional future demos.
 
 EHW-5 is the "complete" hybrid line: combine the EHW-3 safe spare-routing island
 with the EHW-4 HW-SGD memetic loop. A candidate genome carries both a small
@@ -302,9 +302,8 @@ Do not start with POP=32 until firmware `.bss` and stack are audited.
 
 Detailed task: `docs/ehw5_4_task.md`.
 
-Status: **5.4a host-prep complete; board run pending.** Deliverables:
-`sw/ehw/memetic_struct_ab_mbox.c`, `tests/compare_memetic_struct_ab_train.py`,
-and `docs/ehw5_4_results.md`.
+Status: **BOARD-VERIFIED.** Deliverables: `sw/ehw/memetic_struct_ab_mbox.c`,
+`tests/compare_memetic_struct_ab_train.py`, and `docs/ehw5_4_results.md`.
 
 Run a single firmware image with at least three arms:
 
@@ -326,21 +325,22 @@ Preferred first table, locked by `sw/ehw/memetic_struct_eval.c` with seed `3`,
 | S+W pressure `bias_x3` | `40/40`, SSE `4513`, first_40 `2`, feature_ones `15`, penalty `0` |
 | S+W no-adapt `gate_x3` | `40/40`, SSE `4615`, first_40 `11`, feature_ones `39` |
 
-After the fixed same-boot A/B is green, 5.4b should switch the arm/scan table to
+The fixed same-boot A/B is green. A future 5.4b can switch the arm/scan table to
 the board-verified 4.6b parameter window (`PS 0x40000000` ->
-`NEORV32 0xF5000000`) so parameter sweeps do not require firmware rebuilds.
+`NEORV32 0xF5000000`) so parameter sweeps do not require firmware rebuilds, but
+it is optional and not part of the closed EHW-5 claim.
 
 ### EHW-5.5 — Optional ICAP Reveal
 
-EHW-5.3 already shows a useful first hybrid result. If EHW-5.4 confirms it
-under same-boot ablation:
+EHW-5.3 showed a useful first hybrid result, and EHW-5.4a confirmed it under
+same-boot ablation. A future optional demo may:
 
 - bake the best structural feature into the spare-route island;
 - optionally bake the adapted weights into LUT-KCM as in EHW-0.5;
 - show a live transition from baseline to hybrid best without PS/NEORV32 reset.
 
-This should reuse the EHW-3.3 and EHW-0.5 ICAP discipline. It is optional; do not
-mix it into the first board proof.
+This should reuse the EHW-3.3 and EHW-0.5 ICAP discipline. It is optional and
+not required for the v1.1.0 EHW-5 closeout.
 
 ## Mailbox Sketch
 

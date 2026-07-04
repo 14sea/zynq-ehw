@@ -1,6 +1,12 @@
-# EHW-5.4 Results - Same-Boot Hybrid Ablation Prep
+# EHW-5.4 Results - Same-Boot Hybrid Ablation
 
-Status: **HOST-PREP COMPLETE.** No board claim is made here.
+Status: **BOARD-VERIFIED on EBAZ4205 at FCLK0=50 MHz (2026-07-05, first roll).**
+Steady mailbox carousel matched the host golden for all four arms:
+`f5400028 / f55017e4 / f5600003 / f5700000`,
+`f5400128 / f55111a1 / f5600102 / f5710f00`,
+`f5400228 / f5521207 / f560020b / f5722700`,
+`f5400328 / f55316cd / f5600305 / f5730000`, plus `f54f0004`
+and final `f5f40000`. Full evidence is in `docs/board_results.md`.
 
 EHW-5.4a extends the board-verified EHW-5.3 single hybrid arm into a fixed
 same-boot ablation table. The board firmware runs every arm sequentially in one
@@ -76,7 +82,7 @@ text=7472 data=0 bss=6240
 verify-image OK
 ```
 
-The `.bss` footprint stays well under the 16 KiB NEORV32 DMEM limit while
+The `.bss` footprint stayed well under the 16 KiB NEORV32 DMEM limit while
 running all four arms sequentially with shared buffers.
 
 ## Firmware Protocol
@@ -109,22 +115,41 @@ Steady carousel after all arms finish:
 For arm 0, `feature_ones=0` and `penalty_bucket=0` are placeholders; the
 structural fields are not part of that arm's scientific claim.
 
-## Board Handoff
+## Board Verification
 
-Before any board load, Claude must run:
+Before board load, Claude ran:
 
 ```bash
 python3 scripts/board-set-fclk50.py --port /dev/ebaz-uart
 ```
 
-Acceptance requires:
+Acceptance evidence:
 
-- `tests/run_host_gates.sh` PASS;
-- firmware `verify-image` PASS and 16 KiB DMEM fit;
+- `tests/run_host_gates.sh`: 19/19 PASS;
+- firmware `verify-image` PASS and 16 KiB DMEM fit (`text=7472 data=0 bss=6240`);
+- clean `ws_54` build, WNS +1.026, 0 errors;
 - FCLK0 readback `0x00200a00` immediately before `fpga loadb`;
 - same firmware image and same boot for all four arms;
-- steady carousel contains every arm row and matches the host-golden fields
-  above.
+- 70 mailbox samples collected all 18 expected steady words with no strays.
+
+Observed steady carousel:
+
+| Arm | Correct | SSE | First 40/40 | Feature / penalty |
+|---:|---|---|---|---|
+| 0 | `f5400028` = 40 | `f55017e4` = 6116 | `f5600003` = 3 | `f5700000` = 0/0 |
+| 1 | `f5400128` = 40 | `f55111a1` = 4513 | `f5600102` = 2 | `f5710f00` = 15/0 |
+| 2 | `f5400228` = 40 | `f5521207` = 4615 | `f560020b` = 11 | `f5722700` = 39/0 |
+| 3 | `f5400328` = 40 | `f55316cd` = 5837 | `f5600305` = 5 | `f5730000` = 0/0 |
+
+Final words: `f54f0004` (arm count 4), `f5f40000` (PASS).
 
 This remains the same 40-sample deployment/adaptation metric as EHW-5.0-5.3,
 not a holdout generalization claim.
+
+## Closeout
+
+EHW-5.4a satisfies the EHW-5 stop rule. The line is closed after the same-boot
+ablation: structure+pressure, HW-SGD adaptation, and pressure-vs-degeneration
+were all tested without cross-build or cross-boot confounders. EHW-5.4b
+parameter-window scans and EHW-5.5 ICAP reveal remain optional future demos, not
+requirements for the main EHW-5 claim.

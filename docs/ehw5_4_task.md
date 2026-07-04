@@ -1,6 +1,6 @@
 # EHW-5.4 Task - Same-Boot Hybrid Ablation + Param-Window Scan
 
-Status: **HOST-PREP COMPLETE. Board-bound next.** EHW-5.3 proved one full hybrid
+Status: **BOARD-VERIFIED. EHW-5 closed here.** EHW-5.3 proved one full hybrid
 structure+weight+HW-SGD Lamarckian-pressure arm on silicon. EHW-5.4 should turn
 that single-arm proof into a same-boot ablation so the structural contribution is
 visible without cross-build or cross-boot confounders.
@@ -177,6 +177,6 @@ EHW-5.4b is accepted when, in addition:
 
 ## Stop Rule
 
-If EHW-5.4a passes, the EHW-5 line is strong enough to close without 5.5.
-EHW-5.5 ICAP reveal is optional presentation polish, not required for the
-structure+weight+HW-SGD claim.
+EHW-5.4a passed, so the EHW-5 line is closed without 5.5. EHW-5.5 ICAP reveal
+is optional presentation polish, not required for the structure+weight+HW-SGD
+claim.

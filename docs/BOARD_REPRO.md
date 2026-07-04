@@ -30,6 +30,9 @@ python3 /home/test/zynq_ehw/scripts/board-set-fclk50.py --port /dev/ebaz-uart
 - Set and verify **FCLK0=50 MHz before every `fpga loadb`**. A NAND boot or
   power-cycle restores the miner default 125 MHz, which can produce deterministic
   placement-dependent wrong answers even when Vivado timing reports are clean.
+  Historical note: the v1.0.0-era board milestones were produced before this
+  mismatch was diagnosed, at the miner default 125 MHz, and remain valid because
+  their observed board outputs were bit-exact against their host goldens.
 - The target LUT/tile **moves every build** (P&R shifts with firmware size) → always re-extract frames from the freshly built bitstreams; never reuse an old framebank/seqs.
 - **Never run a multi-frame ICAP bake in the foreground** — a tool timeout kills it mid-`writeseq` and corrupts the ICAP FSM. Always background it.
 - Verify `readreg 12 == 0x13722093` and `PCAP_PR==0` before any PS-HWICAP ICAP write. **But an internal-ICAPE2 build (EHW-2) has NO PS HWICAP — do not poke it, it wedges PL-AXI.**
@@ -158,3 +161,61 @@ Expected acceptance: candidate loop emits `E900..` rows and converges to
 PS-HWICAP**; do not run PS-HWICAP readreg/writeseq commands or it can wedge PL-AXI.
 The board-pass four-candidate bank uses 5278 words and is padded to the 16384-word
 EHW-3.4 framebuf.
+
+## EHW-4 / EHW-5 — memetic and hybrid line (v1.1.0)
+
+The v1.1.0 line reuses the DFX static/RM lineage under `vivado/dfx`. The same
+session rules from section 0 apply: build IMEM first, reset to U-Boot, run
+`scripts/board-set-fclk50.py`, then `fpga loadb`.
+
+EHW-4 train-unit lineage:
+
+```sh
+# example: EHW-4.5 same-boot Baldwinian/Lamarckian
+mkdir -p sw_src/ehw_build_m45
+cp sw/ehw/Makefile sw/ehw/memetic_kernel.h sw/ehw/memetic_ab_train_mbox.c sw_src/ehw_build_m45/
+cd sw_src/ehw_build_m45 && make NEORV32_HOME=../../rtl_src/neorv32_tpu/neorv32 \
+    RISCV_PREFIX=riscv64-unknown-elf- USER_FLAGS+="-specs=picolibc.specs" \
+    APP_SRC=memetic_ab_train_mbox.c clean install verify-image
+cd ../../vivado/dfx && vivado -mode batch -source m43_add_memetic.tcl
+# loadb build/dfx.runs/impl_10/dfx_top.bit after FCLK0 preflight
+```
+
+Observed endpoints:
+
+- EHW-4.3 train-unit smoke: `0xF4F00000`.
+- EHW-4.4 Lamarckian GA + HW-SGD: `0xF4F00028`.
+- EHW-4.5 same-boot Baldwinian/Lamarckian A/B: `0xF7F02828`.
+- EHW-4.6a sweep: 48 result words covering 24 point/mode rows; see
+  `docs/board_results.md`.
+- EHW-4.6b parameter window: PS `0x40000000` -> NEORV32 `0xF5000000`, probe
+  `0xFB123456 / 0xFCABCDEF`, live update observed.
+
+EHW-5 combined spare-route VRC + train-unit lineage:
+
+```sh
+# example: EHW-5.4a same-boot hybrid ablation
+mkdir -p sw_src/ehw_build_m54
+cp sw/ehw/Makefile sw/ehw/ehw_kernel.h sw/ehw/memetic_kernel.h \
+   sw/ehw/spare_route_kernel.h sw/ehw/memetic_struct_kernel.h \
+   sw/ehw/memetic_struct_ab_mbox.c sw_src/ehw_build_m54/
+cd sw_src/ehw_build_m54 && make NEORV32_HOME=../../rtl_src/neorv32_tpu/neorv32 \
+    RISCV_PREFIX=riscv64-unknown-elf- USER_FLAGS+="-specs=picolibc.specs" \
+    APP_SRC=memetic_struct_ab_mbox.c clean install verify-image
+cd ../../vivado/dfx && vivado -mode batch -source m52_add_struct.tcl
+# loadb build/dfx.runs/impl_12/dfx_top.bit after FCLK0 preflight
+```
+
+Observed endpoints:
+
+- EHW-5.2 combined RM smoke: `0xF5F00000` at FCLK0=50 MHz.
+- EHW-5.3 full hybrid arm: `0xF5F30000`, with carousel
+  `0xf5302028 / 0xf53111a1 / 0xf5320f00 / 0xf53f0002 / 0xf5f30000`.
+- EHW-5.4a same-boot four-arm ablation: final `0xf5f40000`, arm rows
+  `f5400028/f55017e4/f5600003/f5700000`,
+  `f5400128/f55111a1/f5600102/f5710f00`,
+  `f5400228/f5521207/f560020b/f5722700`,
+  `f5400328/f55316cd/f5600305/f5730000`, plus `f54f0004`.
+
+Exact sampled words, build manifests, and interpretation are in
+`docs/board_results.md`.

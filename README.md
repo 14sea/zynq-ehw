@@ -24,9 +24,10 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
 
 ## Status
 
-- **Design done** — see `docs/`. Decisions: task = the full ladder (EHW-0 evolve
-  weights → EHW-1 evolve a logic circuit); substrate = **VRC first → true-ICAP
-  finish**.
+- **Design done through EHW-5** — see `docs/`. The project now spans weight
+  evolution, logic evolution, live ICAP/per-eval ICAPE2, spare-route recovery,
+  HW-SGD memetic evolution, and the EHW-5 structure+weight+HW-SGD hybrid
+  closeout.
 - **EHW-0.0 done** — `sim/oracle_evolve.py` implements a deterministic GA over the
   M7.5.3-lite 24-byte INT8 weight genome, using the same fixed-point inference
   task as `zynq_xpart`.
@@ -175,12 +176,14 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   full per-generation curve against the EHW-5.1 C twin and locks that same
   summary (`tests/compare_memetic_struct_ga_train.py`, `docs/ehw5_3_results.md`,
   exact board words in `docs/board_results.md`).
-- **EHW-5.4a host-prep done** — `sw/ehw/memetic_struct_ab_mbox.c` runs a
-  same-boot four-arm ablation table: weight-only Lamarckian, EHW-5.3
-  hybrid-pressure `bias_x3`, hybrid no-adapt `gate_x3`, and unpressured
-  hybrid `bias_x3`. The host gate byte-compares every arm's full per-generation
-  curve against `sw/ehw/memetic_struct_eval.c`; board handoff is documented in
-  `docs/ehw5_4_results.md`. Host-only until Claude loads it on the board.
+- **EHW-5.4a BOARD-VERIFIED (2026-07-05, first roll)** — `sw/ehw/memetic_struct_ab_mbox.c`
+  ran a same-image/same-boot four-arm ablation table: weight-only Lamarckian,
+  EHW-5.3 hybrid-pressure `bias_x3`, hybrid no-adapt `gate_x3`, and unpressured
+  hybrid `bias_x3`. The steady carousel matched host golden for every arm:
+  final `0xF5F40000`; arm1 `40/40`, SSE `4513`, first_40 `2`, feature_ones `15`,
+  penalty `0`. Arm3 showed the expected unpressured degeneration
+  (`feature_ones=0`). This closes EHW-5; 5.4b/5.5 are optional future demos
+  (`docs/ehw5_4_results.md`, exact board words in `docs/board_results.md`).
 
 ## Dependencies & reproduction environment
 
@@ -225,6 +228,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   limitations, reproducibility, failure cases.
 - `docs/RELEASE_NOTES_v1.0.0.md` — release summary for the complete board-verified
   EHW-0→EHW-3.4 ladder.
+- `docs/RELEASE_NOTES_v1.1.0.md` — release summary for the EHW-4/EHW-5 memetic
+  and hybrid additions after v1.0.0.
 - `docs/BOARD_REPRO.md` — ordered per-milestone board reproduction checklist.
 - `tests/run_host_gates.sh` — one-command host gate runner (no board/Vivado).
 - `docs/ehw0_4_results.md` — evolution-vs-gradient-training table for EHW-0.
@@ -263,11 +268,11 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   memetic GA loop.
 - `docs/ehw5_3_results.md` — board-verified result for the first full EHW-5.3
   hybrid structure+weight memetic GA loop.
-- `docs/ehw5_4_task.md` — next board-bound same-boot ablation task for EHW-5:
+- `docs/ehw5_4_task.md` — board-verified same-boot ablation task for EHW-5:
   weight-only vs hybrid-pressure vs no-adapt arms, followed by an optional 4.6b
   parameter-window scan.
-- `docs/ehw5_4_results.md` — host-prep result for the EHW-5.4a same-boot
-  hybrid ablation firmware.
+- `docs/ehw5_4_results.md` — board-verified EHW-5.4a same-boot hybrid ablation
+  closeout.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the

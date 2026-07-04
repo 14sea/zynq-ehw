@@ -1,4 +1,4 @@
-# Evolvable Hardware on a recycled Zynq-7010, three ways — a writeup
+# Evolvable Hardware on a recycled Zynq-7010 — a writeup
 
 A short, honest report of what `zynq_ehw` does, what it does not claim, how it
 relates to prior work, how to reproduce it, and where it broke.
@@ -22,7 +22,7 @@ contention-safe?* We constrain every mutation to **LUT-INIT bits (truth tables),
 select functions, and register config** — never raw Xilinx switch-matrix routing — which
 is structurally safe, and we evaluate on real silicon via a soft-core + a PS mailbox.
 
-## 2. Approach — a milestone ladder, VRC→ICAP→internal-ICAPE2
+## 2. Approach - a milestone ladder, VRC -> ICAP -> internal-ICAPE2 -> memetic hybrid
 
 Built on primitives from the sibling project `zynq-xpart` (DFX, live ICAP LUT-INIT edit,
 prjxray bit-location, NEORV32 soft-core, a 4×4 INT8 array, measured-boot, the PS mailbox),
@@ -46,6 +46,15 @@ copied in read-only. The ladder separates *fast search* from *physical instantia
   mutating global routing bits. It first demonstrates fault recovery in host/RTL fabric VRC form
   (EHW-3.0→3.2), then live ICAP repair of a baked broken island (EHW-3.3), then per-eval
   internal-ICAPE2 evolution over the spare-routing genome (EHW-3.4).
+- **EHW-4 (GA x HW-SGD memetic weights).** A fixed-point train-unit from the
+  `zynq-xpart` lineage is copied into this repo, reduced to fit the DFX pblock,
+  and used as a hardware SGD inner loop. NEORV32 runs the GA while candidate
+  adaptation uses the train-unit in fabric; same-boot board A/B compares
+  Baldwinian and Lamarckian inheritance.
+- **EHW-5 (safe structure + weights + HW-SGD).** The EHW-3 spare-route feature
+  genome and EHW-4 INT8 weight genome are co-evolved. Candidate evaluation uses
+  the spare-route VRC feature in fabric and the board-verified HW-SGD train-unit;
+  EHW-5.4a closes the line with a same-image/same-boot four-arm ablation.
 
 ## 3. Results (all board-verified on the EBAZ4205)
 
@@ -59,6 +68,12 @@ copied in read-only. The ladder separates *fast search* from *physical instantia
 | EHW-3.2 | spare-routing fabric VRC recovers injected `DISABLE_NODE(A1)` fault → 8/8, using spare AS |
 | EHW-3.3 | ICAP-baked spare-route repair → broken `c8/7` island becomes `e8/8`, live |
 | EHW-3.4 | per-eval internal-ICAPE2 spare-route evolution → steady `0xec0308e8` (repair, 8/8, mask `0xe8`) |
+| EHW-4.4 | board GA + HW-SGD Lamarckian loop → steady `0xF4F00028` (40/40) |
+| EHW-4.5 | same-boot Baldwinian/Lamarckian A/B → steady `0xF7F02828` (both 40/40; Lamarckian faster, Baldwinian lower SSE) |
+| EHW-4.6a/b | one-boot 12-point parameter sweep, then PS-writable parameter window (`0x40000000` -> `0xF5000000`) |
+| EHW-5.2 | combined spare-route VRC + lite train-unit RM → `0xF5F00000` at FCLK0=50 MHz |
+| EHW-5.3 | full hybrid structure+weight+HW-SGD Lamarckian-pressure arm → `0xF5F30000`, 40/40, SSE 4513 |
+| EHW-5.4a | same-boot four-arm ablation → `0xF5F40000`, all arms match host golden; arm1 best SSE 4513 |
 | EHW-0.4 (host) | on the SAME 40-sample set, the evolved INT8 weights score 40/40 vs the gradient-trained tile's 37/40 |
 
 Every board-bound artifact has a host self-proof (numpy oracle ↔ portable-C twin, bit-exact,
@@ -93,6 +108,13 @@ pure truth-table changes and our results are deterministic and reproducible.
   evolves safe local path-select fields implemented as LUT/select INITs inside a fixed-route
   island, not arbitrary FPGA switch boxes.
 - **EHW-1.1-sw evaluates the LUT grid in software**; only EHW-1.1-fabric puts it in fabric.
+- **EHW-4/EHW-5 are same-set deployment/adaptation metrics.** They show that a
+  fixed-route FPGA design can co-evolve safe local structure and INT8 weights,
+  use a board-verified HW-SGD inner loop for adaptation, and pass same-boot
+  ablations. They do not claim holdout generalization or arbitrary-scale EHW.
+- **EHW-5 does not require ICAP baking to make its main claim.** EHW-5.4b
+  parameter-window sweeps and EHW-5.5 ICAP reveal are optional future demos, not
+  prerequisites for the structure+weight+HW-SGD result.
 
 ## 6. Reproducibility
 
@@ -100,6 +122,9 @@ pure truth-table changes and our results are deterministic and reproducible.
 - Board/ICAP flows need Vivado 2025.2, the RISC-V toolchain, prjxray + the xc7z010 DB, and the
   board; per-milestone steps are in `docs/BOARD_REPRO.md`, exact observed mailbox words in
   `docs/board_results.md`, board facts in `docs/hw_notes.md`. Versions: README "Dependencies".
+  From EHW-5.2 onward, `scripts/board-set-fclk50.py` is mandatory before
+  `fpga loadb`; older v1.0.0 board results were produced at the miner default
+  125 MHz and remain valid because their observed outputs were bit-exact.
 - The project never modifies its sibling source projects; reusable assets are copied in.
 
 ## 7. Failure cases & lessons (caught on silicon)
@@ -127,5 +152,10 @@ The host gates have blind spots; the board build/run is the final gate. Real bug
    EHW-3.4's real spare-route candidate bank required a 64KB frame buffer; the final board-pass
    bank used 5278 words padded to 16384 words. The host stub's tiny fake frame sequences cannot
    prove this resource bound.
+10. **The real PL clock can differ from the Vivado signoff clock.** Miner U-Boot
+    leaves FCLK0 at 125 MHz while the DFX designs sign off 50 MHz. EHW-5.2
+    exposed placement-dependent wrong answers until FCLK0 was pinned to 50 MHz
+    before `loadb`. This does not invalidate the earlier v1.0.0 milestones:
+    those results were bit-exact at the clock they actually ran.
 
 No hardware was damaged: every edit is a reversible LUT-INIT/config change.
