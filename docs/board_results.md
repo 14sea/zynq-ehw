@@ -611,3 +611,58 @@ Handoff: evidence package + next-probe proposal (post-synth funcsim of the
 epoch replay on the RM netlist — attacks synth semantics; then
 cadence-accurate bus tb) in `review.v4.txt`. RM-side diagnosis/fix is
 ChatGPT's lane per workflow; board + build gates stay here.
+
+## EHW-5.2 ROOT CAUSE CONFIRMED ON SILICON: FCLK0 signoff mismatch, 125 MHz vs 50 MHz (2026-07-04)
+
+Continuation of the A/B/C matrix, same day. After ChatGPT's held-rdata RM fix
+(`a327a9f`) passed host gates + my OOC gate (LUT 3455, DSP 18/20) + a clean
+build (`ws_fix`, WNS +1.026, best yet) but STILL failed on board
+(mism=14, got_sse 4738 vs 4560), the elimination went one layer deeper:
+
+1. **P1 post-synth funcsim**: full-epoch replay tb vs the a327a9f OOC netlist
+   (iverilog + unisims) → PASS. Synthesis semantics exonerated.
+2. **P2a post-route funcsim**: same tb vs the *routed RM cell netlist from the
+   very build that failed on board* (`u_soc_wb_tpu_inst_rm_memetic_struct_routed.dcp`)
+   → PASS. Implementation netlist transforms exonerated.
+3. **check_timing on the routed design**: all categories zero, single clock
+   `clk_fpga_0` 20 ns. Nothing unconstrained.
+4. Contradiction spotted: a *functional* bus-cadence bug would diverge
+   identically across placements (NEORV32 cadence is cycle-deterministic),
+   but the four builds diverged differently (+51/−4/+395/+178). That profile
+   demands physics — yet timing was "met"… **unless the signoff clock is not
+   the real clock.**
+5. **SLCR read from U-Boot**: `md 0xF8000170` → `0x00200400` =
+   IOPLL(1000 MHz)/4/2 = **FCLK0 = 125 MHz**. We never run our FSBL; the miner
+   FSBL's 125 MHz has been driving every PL design in this project's history.
+   Signoff is 50 MHz. The PL has been running 2.5× overclocked all along.
+6. **A/B on silicon, both directions, same bitstreams** (SLCR unlock +
+   `mw 0xF8000170 0x00200A00` = 50 MHz, reload, poll):
+   - `ws_fix` (a327a9f): FAIL@125 (mism=14, +178) → **PASS@50**
+     (`0xF5F00000`, mism=0, got_sse=gold_sse=4560, correct=38, delta word 0).
+   - `ws_withfb` (465b9c7, pre-fix control): FAIL@125 (mism=1, −4) →
+     **PASS@50**, identical evidence words.
+
+Verdict revisions this forces (honesty pass on my own earlier sections):
+- "5.2 RM convicted at the physical level" → the RM was the *victim* with the
+  longest paths, not the culprit. No RM bug existed. The a327a9f held-rdata
+  change is kept as hygiene (better WNS, stricter bus protocol), not as a fix.
+- The 2026-07-03 dirty-project 4.3-control FAIL: explained by the same clock
+  lottery (that rebuild's placement had ≥1 path in the 8–20 ns band; leg C's
+  placement didn't). "Stale-netlist artifact" is withdrawn as the explanation;
+  the `reset_run` build-hygiene fix (`933935f`) stays on its own merits.
+- Leg A vs leg B divergence difference (mism 1 vs 7) was placement lottery,
+  not an fb_0 effect. fb_0 remains exonerated.
+- All prior board-verified milestones stand: they were bit-exact vs golden,
+  i.e. genuinely correct at 125 MHz (short-path luck, now understood).
+
+New mandatory recipe (also in hw_notes.md): pin FCLK0 to 50 MHz from U-Boot
+before every loadb session; NAND boot/power-cycle restores 125 MHz.
+
+Board state at close: U-Boot, FCLK0 = 50 MHz, PL = ws_withfb impl_12 PASSING.
+Evidence preserved: /home/test/ehw52_clean/{ws_withfb,ws_nofb,ws_43ctrl,ws_fix}
++ manifests + build logs + check_timing/clocks rpts (ws_fix_check_timing.rpt,
+ws_fix_clocks.rpt); funcsim runs under zynq_ehw/runs/tests/.
+
+**EHW-5.2 board leg: PASS `0xF5F00000` (a327a9f, clean static with fb_0,
+FCLK0=50 MHz) — mism=0, got_sse=gold_sse=4560, correct=38, marker "SRV0",
+mask 0xa0. The combined spare-route-VRC + lite-train-unit RM is board-verified.**

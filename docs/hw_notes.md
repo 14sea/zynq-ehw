@@ -357,3 +357,44 @@ The memetic/dfx static now carries an `axil_framebuf` parameter window:
 - Sweep/param firmware should read its param struct from this window (word 0
   first; define your own ready/len convention, e.g. framebank's word0=len,
   last=ready).
+
+## PL Clock Truth: FCLK0 Is 125 MHz Under Miner-U-Boot Defaults (root cause of the EHW-5.2 board FAILs, confirmed 2026-07-04)
+
+**The single most important hardware fact discovered since the register map.**
+
+- Our DFX designs constrain and sign off `clk_fpga_0` at **50 MHz** (20 ns, PS7
+  BD FCLK0 setting). But this board **never runs our FSBL** — the PL clock is
+  whatever the original miner FSBL/U-Boot left in SLCR. Measured from U-Boot:
+  `md 0xF8000170 1` → `0x00200400` = IOPLL(1000 MHz)/4/2 = **125 MHz**.
+- Consequence: every board run to date executed the PL at 2.5× the signoff
+  clock. Small/short-path RMs (4.3 etc.) passed anyway — their true critical
+  paths are < 8 ns. The EHW-5.2 combined RM (76% LUT, most congested) was the
+  first with real paths in the 8–20 ns band → deterministic-per-build,
+  placement-lottery divergence in the TU arm while timing reports said MET.
+  This one cause retro-explains the whole A/B/C matrix AND the 2026-07-03
+  dirty-project 4.3-control FAIL (that rebuild's placement lost the lottery;
+  "stale-netlist artifact" is withdrawn as the explanation, though the
+  reset_run hygiene fix stays).
+- Silicon proof (both directions, same bitstreams, only the clock changed):
+  ws_fix (a327a9f) and ws_withfb (465b9c7) both FAIL at 125 MHz
+  (mism=14/+178 and mism=1/−4) and both PASS completely at 50 MHz
+  (0xF5F00000, mism=0, got_sse=gold_sse=4560, correct=38).
+- Funcsim/timing exoneration trail (all on the failing netlists): post-synth
+  funcsim PASS, post-route funcsim PASS (same routed netlist that failed on
+  board), `check_timing` zero unconstrained endpoints, single clock.
+
+**MANDATORY board recipe from now on — set FCLK0=50 MHz before ANY loadb run:**
+
+    # from U-Boot (miner defaults reset it on every NAND boot):
+    mw 0xF8000008 0xDF0D        # SLCR unlock
+    mw 0xF8000170 0x00200A00    # FCLK0 = IOPLL(1000)/10/2 = 50 MHz
+    md 0xF8000170 1             # verify 0x00200a00
+
+  (`scripts/uart-poke.py --send 'mw 0xF8000008 0xDF0D; mw 0xF8000170 0x00200A00\r'`
+  from the host. A NAND reboot/power-cycle restores 125 MHz — re-apply every
+  session.)
+- Historical results are NOT retracted: every past PASS was bit-exact vs
+  golden, i.e. genuinely correct at 125 MHz. But all FUTURE signoff-vs-board
+  claims are only valid with FCLK0 pinned to the signoff frequency.
+- The a327a9f held-rdata RM change is reclassified as hygiene (better WNS,
+  stricter bus behavior) — keep it; it was not the root cause.
