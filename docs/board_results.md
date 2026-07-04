@@ -564,7 +564,14 @@ resolving the `a512e8b` OOC HOLD (LUT 5296 → shared lane). Build-infra fix
 found in passing: `m52_add_struct.tcl` must `reset_run rm_memetic_struct_synth_1`
 or impl_12 relinks a stale RM netlist.
 
-## EHW-5.2 clean-repro legs A/B/C: 5.2 RM convicted, fb_0 + static + dirty-project all exonerated (2026-07-04)
+## [SUPERSEDED — RM later exonerated; real culprit = FCLK0 signoff mismatch, see root-cause section below] EHW-5.2 clean-repro legs A/B/C: "5.2 RM convicted", fb_0 + static + dirty-project exonerated (2026-07-04)
+
+> **2026-07-04 later the same day:** the "RM convicted at the physical level"
+> verdict below was itself overturned — the placement-lottery fingerprint was
+> real, but the physics was the PL running at 125 MHz against a 50 MHz signoff
+> (miner-FSBL FCLK0), not an RM race. The A/B/C eliminations of fb_0, the
+> static, and the dirty project remain valid. Kept unedited below for the
+> honest evidence trail.
 
 The pending clean repro above was executed same day as a THREE-leg matrix.
 Every leg: fresh workspace from `git archive` of tracked sources at `465b9c7`,
