@@ -337,8 +337,17 @@ combined RM with the new IMEM (WNS +1.026), FCLK0 preflight
 `0x00200a00` captured in-session, carousel `0xf5302028 / 0xf53111a1 /
 0xf5320f00 / 0xf53f0002 / 0xf5f30000` == host golden.
 
-Next step: open EHW-5.4 rather than closing the line yet. The task is in
-`docs/ehw5_4_task.md`: one-firmware/one-boot same-boot ablation across
-weight-only, hybrid-pressure, and no-adapt arms, then optional 4.6b
-param-window scan (`PS 0x40000000` -> `NEORV32 0xF5000000`). If EHW-5.4a passes,
-EHW-5 is strong enough to close; EHW-5.5 ICAP reveal is optional polish.
+EHW-5.4a host-prep is complete in `sw/ehw/memetic_struct_ab_mbox.c`,
+`tests/compare_memetic_struct_ab_train.py`, and `docs/ehw5_4_results.md`.
+It runs four arms in one firmware image and one boot: weight-only Lamarckian,
+hybrid-pressure `bias_x3`, hybrid no-adapt `gate_x3`, and unpressured hybrid
+`bias_x3`. The host gate byte-compares the full per-generation curve for every
+arm against `sw/ehw/memetic_struct_eval.c`. Isolated firmware build passes
+`verify-image` with `text=7472 data=0 bss=6240`.
+
+Next Claude task: run host gates, build `memetic_struct_ab_mbox.c` into IMEM
+with `verify-image` and 16 KiB DMEM audit, set FCLK0 with
+`scripts/board-set-fclk50.py`, rebuild/load the existing EHW-5.2/5.3 combined
+RM with the new firmware, and compare the `0xF54x/0xF5F4` steady carousel with
+`docs/ehw5_4_results.md`. If EHW-5.4a passes, EHW-5 is strong enough to close;
+EHW-5.5 ICAP reveal is optional polish.

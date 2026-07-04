@@ -302,6 +302,10 @@ Do not start with POP=32 until firmware `.bss` and stack are audited.
 
 Detailed task: `docs/ehw5_4_task.md`.
 
+Status: **5.4a host-prep complete; board run pending.** Deliverables:
+`sw/ehw/memetic_struct_ab_mbox.c`, `tests/compare_memetic_struct_ab_train.py`,
+and `docs/ehw5_4_results.md`.
+
 Run a single firmware image with at least three arms:
 
 | Arm | Structure | Weights | Adaptation |

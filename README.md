@@ -175,6 +175,12 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   full per-generation curve against the EHW-5.1 C twin and locks that same
   summary (`tests/compare_memetic_struct_ga_train.py`, `docs/ehw5_3_results.md`,
   exact board words in `docs/board_results.md`).
+- **EHW-5.4a host-prep done** — `sw/ehw/memetic_struct_ab_mbox.c` runs a
+  same-boot four-arm ablation table: weight-only Lamarckian, EHW-5.3
+  hybrid-pressure `bias_x3`, hybrid no-adapt `gate_x3`, and unpressured
+  hybrid `bias_x3`. The host gate byte-compares every arm's full per-generation
+  curve against `sw/ehw/memetic_struct_eval.c`; board handoff is documented in
+  `docs/ehw5_4_results.md`. Host-only until Claude loads it on the board.
 
 ## Dependencies & reproduction environment
 
@@ -198,7 +204,7 @@ Two large dependencies are kept **out of the repo** (gitignored, regenerable): t
 ## Host tests (no board, no Vivado)
 
 ```sh
-tests/run_host_gates.sh      # runs all 17 host gates: oracle<->C-twin bit-exact + RTL sims
+tests/run_host_gates.sh      # runs all 19 host gates: oracle<->C-twin bit-exact + RTL sims
 ```
 Every board-bound deliverable ships with a host self-proof; this is the gate that must be green before any board run (see `docs/workflow.md`). Board reproduction (build → ICAP/load → mailbox) is in `docs/BOARD_REPRO.md`.
 
@@ -260,6 +266,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `docs/ehw5_4_task.md` — next board-bound same-boot ablation task for EHW-5:
   weight-only vs hybrid-pressure vs no-adapt arms, followed by an optional 4.6b
   parameter-window scan.
+- `docs/ehw5_4_results.md` — host-prep result for the EHW-5.4a same-boot
+  hybrid ablation firmware.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
@@ -345,6 +353,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   spare-route VRC + train-unit RM wrapper and firmware host stub.
 - `tests/compare_memetic_struct_ga_train.py` — verifies the EHW-5.3 hybrid
   structure+weight GA firmware host stub against the EHW-5.1 C twin curve.
+- `tests/compare_memetic_struct_ab_train.py` — verifies the EHW-5.4a same-boot
+  hybrid ablation firmware host stub against the EHW-5.1 C twin curve.
 - `tests/compare_spare_route_vrc.py` — verifies the EHW-3.2 spare-routing fabric
   VRC RTL sim, firmware host stub, wrapper compile, Py/C oracle gate, and optional
   Vivado OOC synth.

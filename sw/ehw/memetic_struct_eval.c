@@ -484,6 +484,20 @@ static void write_curve_row(FILE *f,
     fputc('\n', f);
 }
 
+static void write_weight_curve_row(FILE *f,
+                                   int gen,
+                                   int top_index,
+                                   const mem_eval_t *best) {
+    (void)top_index;
+    fprintf(f, "weight_only_lamarckian,none,%d,%d,%d,%d,%d,,,,,,",
+            gen, best->post_score.correct, best->post_score.sse,
+            best->post_score.fitness, best->select_score.fitness);
+    print_i8_genome(f, best->pre_genome);
+    fputc(',', f);
+    print_i8_genome(f, best->post_genome);
+    fputc('\n', f);
+}
+
 static void run_hybrid_mode(ms_mode_t mode,
                             ms_coupling_t coupling,
                             const ms_options_t *opt,
@@ -589,7 +603,8 @@ static int tournament_pick_mem(const mem_eval_t evaluated[MS_MAX_POP],
     return best_idx;
 }
 
-static void run_weight_baseline(const ms_options_t *opt, mem_mode_result_t *result) {
+static void run_weight_baseline(const ms_options_t *opt, FILE *curve,
+                                mem_mode_result_t *result) {
     int8_t pop[MS_MAX_POP][EHW_GENOME_LEN];
     int8_t next[MS_MAX_POP][EHW_GENOME_LEN];
     mem_eval_t evaluated[MS_MAX_POP];
@@ -613,6 +628,7 @@ static void run_weight_baseline(const ms_options_t *opt, mem_mode_result_t *resu
             best = evaluated[top];
         }
         if (first_40 < 0 && best.post_score.correct >= EHW_NTEST) first_40 = gen;
+        write_weight_curve_row(curve, gen, top, &best);
         if (gen == opt->generations) break;
 
         for (int i = 0; i < opt->elites; i++) {
@@ -701,7 +717,7 @@ int main(int argc, char **argv) {
     mem_mode_result_t baseline;
     ms_result_t results[7];
     int n = 0;
-    run_weight_baseline(&cli.opt, &baseline);
+    run_weight_baseline(&cli.opt, curve, &baseline);
     run_hybrid_mode(MS_MODE_LAMARCKIAN, MS_COUPLING_REPLACE_X3, &cli.opt, curve, &results[n++]);
     run_hybrid_mode(MS_MODE_LAMARCKIAN, MS_COUPLING_GATE_X3, &cli.opt, curve, &results[n++]);
     run_hybrid_mode(MS_MODE_LAMARCKIAN, MS_COUPLING_BIAS_X3, &cli.opt, curve, &results[n++]);

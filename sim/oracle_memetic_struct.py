@@ -381,7 +381,29 @@ def run_hybrid_mode(mode: str, coupling: str, args: argparse.Namespace,
     )
 
 
-def run_weight_baseline(args: argparse.Namespace) -> mem.ModeResult:
+def append_weight_curve_rows(src_rows: list[dict[str, str]],
+                             dst_rows: list[dict[str, str]]) -> None:
+    for row in src_rows:
+        dst_rows.append({
+            "mode": "weight_only_lamarckian",
+            "coupling": "none",
+            "gen": row["gen"],
+            "best_correct": row["best_correct"],
+            "best_sse": row["best_sse"],
+            "best_fitness": row["best_fitness"],
+            "select_fitness": row["best_fitness"],
+            "feature_mask": "",
+            "feature_ones": "",
+            "feature_penalty": "",
+            "top_index": "",
+            "sr_genome": "",
+            "pre_weight": row["pre_genome"],
+            "post_weight": row["post_genome"],
+        })
+
+
+def run_weight_baseline(args: argparse.Namespace,
+                        curve_rows: list[dict[str, str]]) -> mem.ModeResult:
     baseline_args = argparse.Namespace(
         seed=args.seed,
         population=args.population,
@@ -396,7 +418,9 @@ def run_weight_baseline(args: argparse.Namespace) -> mem.ModeResult:
         mutation_step=args.mutation_step,
     )
     rows: list[dict[str, str]] = []
-    return mem.run_evolution_mode("lamarckian", baseline_args, rows)
+    result = mem.run_evolution_mode("lamarckian", baseline_args, rows)
+    append_weight_curve_rows(rows, curve_rows)
+    return result
 
 
 def write_csv(path: Path, rows: list[dict[str, str]]) -> None:
@@ -597,7 +621,7 @@ def main() -> int:
         raise SystemExit("SR_REPAIR self-check failed")
 
     curve_rows: list[dict[str, str]] = []
-    baseline = run_weight_baseline(args)
+    baseline = run_weight_baseline(args, curve_rows)
     results: list[StructResult] = []
     for coupling in COUPLINGS:
         results.append(run_hybrid_mode("hybrid_lamarckian", coupling, args, curve_rows))

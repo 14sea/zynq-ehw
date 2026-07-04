@@ -1,6 +1,6 @@
 # EHW-5.4 Task - Same-Boot Hybrid Ablation + Param-Window Scan
 
-Status: **NEXT. Board-bound.** EHW-5.3 proved one full hybrid
+Status: **HOST-PREP COMPLETE. Board-bound next.** EHW-5.3 proved one full hybrid
 structure+weight+HW-SGD Lamarckian-pressure arm on silicon. EHW-5.4 should turn
 that single-arm proof into a same-boot ablation so the structural contribution is
 visible without cross-build or cross-boot confounders.

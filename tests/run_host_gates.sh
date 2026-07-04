@@ -35,6 +35,7 @@ gates=(
   "compare_memetic_struct_twin.py"       # EHW-5.1: hybrid structure+weight Py<->C bit-exact
   "compare_memetic_struct_train.py --skip-ooc" # EHW-5.2: combined spare-route VRC + train-unit host prep
   "compare_memetic_struct_ga_train.py"   # EHW-5.3: hybrid structure GA firmware stub
+  "compare_memetic_struct_ab_train.py"   # EHW-5.4a: same-boot hybrid ablation firmware stub
 )
 
 fail=0
