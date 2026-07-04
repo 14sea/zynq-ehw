@@ -19,6 +19,12 @@ if {[llength [get_pr_configurations -quiet cfg12]] == 0} {
   create_run impl_12 -parent_run impl_1 -flow [get_property FLOW [get_runs impl_1]] -pr_config cfg12
 }
 reset_run synth_1
+# The RM has its own OOC synth run; without resetting it, impl_12 silently
+# links the stale rm_memetic_struct_synth_1/tpu_rp.dcp after an RM RTL change
+# (bit-identical timing/util across "rebuilds" is the tell-tale).
+if {[llength [get_runs -quiet rm_memetic_struct_synth_1]] > 0} {
+  reset_run rm_memetic_struct_synth_1
+}
 reset_run impl_1
 reset_run impl_12
 launch_runs synth_1 -jobs 8
