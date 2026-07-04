@@ -81,15 +81,23 @@ module tpu_rp (
     );
 
     reg tu_pending;
+    reg signed [31:0] tu_rdata_q;
     wire tu_start = wr_cyc && tu_claim && !tu_pending;
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) tu_pending <= 1'b0;
-        else        tu_pending <= tu_start;
-    end
 
     wire        tu_we    = tu_start && xbus_we && (xbus_sel != 4'b0000);
     wire [6:0]  tu_addr  = off[8:2];
     wire signed [31:0] tu_rdata;
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            tu_pending <= 1'b0;
+            tu_rdata_q <= 32'sd0;
+        end else begin
+            tu_pending <= tu_start;
+            if (tu_start)
+                tu_rdata_q <= tu_rdata;
+        end
+    end
 
     memetic_train_unit_lite u_tu (
         .clk   (clk),
@@ -103,6 +111,6 @@ module tpu_rp (
     assign xbus_ack   = sr_claim ? (sr_pending && sr_ready) :
                         tu_claim ? tu_pending : acc_ack;
     assign xbus_dat_r = sr_claim ? sr_rdata :
-                        tu_claim ? tu_rdata : acc_dat_r;
+                        tu_claim ? tu_rdata_q : acc_dat_r;
     assign xbus_err   = 1'b0;
 endmodule

@@ -317,11 +317,19 @@ good (`SRV0`, mask `0xa0`) and CPU golden matched host (`gold_sse=4560`), but th
 hardware train-unit arm produced `got_sse=4611`, two genome-byte mismatches, and
 35/40 instead of 38/40. Host gate has since been strengthened: host `SR_OUTPUT`
 now follows the same input/output register path as board, and the RTL test replays
-the full 40-sample epoch against Python golden. RTL still passes, so the current
-fix originally tried fully explicit per-register `case` updates, but Claude's OOC
-gate held it: Vivado duplicated the saturating add/sub lane 24 times (`+1210` LUT
-cells, `+308` CARRY4). Current revision keeps one shared `update_value` lane
-(`cur_w/cur_dw -> next_w`) and uses `case` only to write `next_w` back to the
-selected register. Next Claude task: rerun OOC + pblock utilization and then
-board-test this revised shared-lane lite unit. Target pblock LUT utilization is
-`<= ~3800` to leave route headroom.
+the full 40-sample epoch against Python golden.
+
+The follow-up clean A/B/C board matrix (`a51a0f2`, `docs/evidence_ehw52/`)
+exonerated dirty-project/static/fb_0 explanations: clean 5.2 builds failed with
+and without fb_0, while the proven 4.3 train-unit RM passed on a fresh placement.
+The current diagnosis is therefore RM/lite-TU physical-layer sensitivity, likely
+a real-bus-cadence or read-data race at the TU boundary.
+
+Current revision keeps the resource-safe shared `update_value` lane
+(`cur_w/cur_dw -> next_w`, `case` only writes back `next_w`) and hardens the TU
+XBUS read path: the wrapper latches `memetic_train_unit_lite.rdata` when a TU
+request is accepted and returns that held value during the ACK cycle. This removes
+the unsafe combinational read-data sampling edge for `BUSY`, weights, loss, and
+deltas. Next Claude task: rerun OOC + pblock utilization and then board-test this
+held-read-data revision. Target pblock LUT utilization is `<= ~3800` to leave
+route headroom.

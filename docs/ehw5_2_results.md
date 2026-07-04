@@ -97,16 +97,28 @@ fix used fully explicit `case` statements with per-register `update_value(...)`
 arms; Claude's OOC gate correctly held it because Vivado duplicated the
 saturating add/sub lane 24 times (`+1210` LUT cells, `+308` CARRY4).
 
-The current fix keeps one shared arithmetic lane:
+The shared-lane fix keeps one arithmetic lane:
 
 ```text
 cur_w/cur_dw mux -> one update_value(cur_w, cur_dw) -> next_w -> case writeback
 ```
 
 The explicit `case` logic is now only write decode, not 24 arithmetic lanes.
-Host RTL still replays the full epoch and passes; Claude must rerun OOC to confirm
-that the resource footprint returns near the ab53136 lite baseline before any
-board rerun.
+
+A clean A/B/C board matrix then exonerated the static/fb_0 theory and convicted
+the 5.2 RM/lite train-unit arm at the physical layer: clean 5.2 builds failed
+with and without fb_0, while the proven 4.3 train-unit RM passed on a fresh
+placement. The failure is placement-sensitive but deterministic within a build,
+with VRC and CPU-golden paths clean. See `docs/board_results.md` and
+`docs/evidence_ehw52/`.
+
+The current RTL fix keeps the shared update lane and hardens the TU XBUS boundary:
+the wrapper now latches `memetic_train_unit_lite.rdata` when a TU request is
+accepted and returns that held value during the ACK cycle. This removes the
+unsafe pattern where NEORV32 could sample a combinational read-data path on the
+same edge that the lite unit updates `BUSY`, weight, loss, or delta state. Host
+RTL still replays the full epoch and passes; Claude must rerun OOC/pblock
+utilization and then board-test this held-read-data revision.
 
 ## Resource Gate For Board
 
