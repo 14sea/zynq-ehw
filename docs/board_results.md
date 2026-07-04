@@ -673,3 +673,16 @@ ws_fix_clocks.rpt); funcsim runs under zynq_ehw/runs/tests/.
 **EHW-5.2 board leg: PASS `0xF5F00000` (a327a9f, clean static with fb_0,
 FCLK0=50 MHz) — mism=0, got_sse=gold_sse=4560, correct=38, marker "SRV0",
 mask 0xa0. The combined spare-route-VRC + lite-train-unit RM is board-verified.**
+
+## scripts/board-set-fclk50.py — full-path board verification (2026-07-04)
+
+The mandatory pre-loadb tool (ChatGPT-authored at `3059658`, untestable on its
+side) was exercised on the real board through its mutation path, not just the
+verify path: FCLK0 was deliberately reset to the miner default
+(`mw 0xF8000170 0x00200400` = 125 MHz), then the script detected it
+(`before FPGA0_CLK_CTRL=0x00200400`), rewrote and verified
+(`after FPGA0_CLK_CTRL=0x00200a00`, `PASS: FCLK0 pinned to 50 MHz`), exit 0.
+Its opening bare-CR sync also absorbs the residual-`d` intercept gotcha.
+The running PL design was reloaded afterwards (live FCLK divisor changes
+glitch the PL clock — treat any design state from before the switch as
+invalid); mailbox re-confirmed `0xF5F00000` PASS. Tool is board-verified.
