@@ -1,0 +1,11 @@
+EHW-5.2 clean-static build manifest LEG A (fb_0 KEPT) — 2026-07-04T20:19:54Z
+workspace          : /home/test/ehw52_clean/ws_withfb
+source commit      : 465b9c7 (EHW-5.2 share lite train update lane)
+NEORV32 copied from : /home/test/zynq_ehw/rtl_src (15M)
+replaced files      : NONE (static as-tracked at 465b9c7, fb_0 present)
+fb_0 refs in tcl    : 11  (want >=5)
+SoC fb refs         : 9  (want >0)
+target impl         : impl_12 (cfg12 = rm_memetic_struct, 5.2 combined RM)
+firmware VHD size   : 14390 bytes
+firmware VHD md5    : c9beabab9f81c13396867306e200178e
+firmware carousel   : 3 evidence-word refs (want >=2)

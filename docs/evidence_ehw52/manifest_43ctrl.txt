@@ -1,0 +1,9 @@
+EHW-5.2 LEG C manifest — clean 4.3 control (rm_memetic_train) — 2026-07-04T20:47:57Z
+workspace          : /home/test/ehw52_clean/ws_43ctrl
+source commit      : 465b9c7 (4.3 RM+fw verified byte-identical to 7901cc0)
+replaced files      : rtl/neorv32_soc_dfx.vhd, rtl/dfx_top.v (<- 6d2fada~1, pre-fb_0 = 4.3 lineage)
+SoC fb refs         : 0  (want 0)
+target impl         : impl_10 (cfg10 = rm_memetic_train, PROVEN 4.3 config)
+expected mailbox    : 0xF4F00000 (PASS, as board-verified at 7901cc0)
+firmware VHD size   : 12882 bytes
+firmware VHD md5    : 16eb387751268d334ab84f67ad69e98b

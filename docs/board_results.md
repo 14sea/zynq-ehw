@@ -563,3 +563,51 @@ project — `impl12_rp_util.rpt` 2026-07-03 22:57, Slice LUTs 3355/4400 (76.25%)
 resolving the `a512e8b` OOC HOLD (LUT 5296 → shared lane). Build-infra fix
 found in passing: `m52_add_struct.tcl` must `reset_run rm_memetic_struct_synth_1`
 or impl_12 relinks a stale RM netlist.
+
+## EHW-5.2 clean-repro legs A/B/C: 5.2 RM convicted, fb_0 + static + dirty-project all exonerated (2026-07-04)
+
+The pending clean repro above was executed same day as a THREE-leg matrix.
+Every leg: fresh workspace from `git archive` of tracked sources at `465b9c7`,
+own NEORV32 copy, firmware baked from tracked sources with `verify-image OK`,
+manifest persisted, full Vivado build from nothing (synth_1 → impl_1 → impl_N),
+timing met, then `fpga loadb` + carousel sampling at PS `0x41200000`.
+Workspaces + manifests + reports persist under `/home/test/ehw52_clean/`
+(`ws_withfb`/`ws_nofb`/`ws_43ctrl`, `manifest_*.txt`, `clean_build_*.log`,
+`impl1*_*_{rp_util,timing}.rpt`); manifests also copied to
+`docs/evidence_ehw52/` in-repo.
+
+| leg | static | RM / firmware | build | board verdict |
+|---|---|---|---|---|
+| A `ws_withfb` | clean, fb_0 KEPT | 5.2 `rm_memetic_struct` + struct fw | WNS +0.869, LUT 3355/4400 | **FAIL** `0xF5F00001` — mism=1, correct=38, got_sse 4556 vs gold 4560 (−4) |
+| B `ws_nofb` | clean, fb_0 stripped (pre-`6d2fada` SoC/top) | 5.2 same | WNS +0.776, LUT 3354/4400 | **FAIL** `0xF5F00001` — mism=7, correct=20, got_sse 4955 vs gold 4560 (+395; delta word `f562fe75` = −395 self-consistent) |
+| C `ws_43ctrl` | clean, fb_0 stripped | **proven 4.3** `rm_memetic_train` + 4.3 fw (both byte-identical to `7901cc0`, verified by git diff) | WNS +0.166 | **PASS** `0xF4F00000`, 30/30 reads |
+
+All legs' VRC island evidence stayed perfect where applicable (marker "SRV0",
+mask 0xa0); the CPU-golden path matched host throughout.
+
+Verdicts, each now backed by a persisted artifact chain:
+- **Dirty-project 4.3 control FAIL (2026-07-03) was an ARTIFACT.** Leg C: the
+  same proven config passes on a *freshly re-placed* clean static. The previous
+  section's "static/build lineage prime suspect" is withdrawn.
+- **fb_0 EXONERATED** (A vs B: both fail, stripping fb_0 made it *worse*).
+  4.6b remains a board-verified feature.
+- **Static re-place is safe** for a known-good RM (leg C is a brand-new
+  placement and passes).
+- **The 5.2 combined RM (`rm_memetic_struct` + lite TU) is CONVICTED at the
+  physical level.** It fails on every clean build, with placement-dependent
+  divergence magnitude across four independent builds/placements:
+  mism=2/+51 (dirty impl_12, ab53136-era RM) → mism=1/−4 (leg A) →
+  mism=7/+395 (leg B), each perfectly deterministic *within* a build.
+  Timing is formally met everywhere (WNS ≥ +0.166), and the full-epoch RTL
+  replay gate (a512e8b) passes at ideal cadence — so this is not a plain
+  logic bug and not a reported timing violation: the profile fits an
+  unconstrained/race path or real-bus-cadence handshake marginality inside
+  (or at the boundary of) the lite train-unit arm. Caveat: the dirty-run RM
+  predates the shared-lane rework, so the RM-internal *location* may have
+  moved between runs; the *class* (placement-sensitive, TU-arm-only) is
+  consistent.
+
+Handoff: evidence package + next-probe proposal (post-synth funcsim of the
+epoch replay on the RM netlist — attacks synth semantics; then
+cadence-accurate bus tb) in `review.v4.txt`. RM-side diagnosis/fix is
+ChatGPT's lane per workflow; board + build gates stay here.
