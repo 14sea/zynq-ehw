@@ -335,5 +335,10 @@ Board leg DONE by Claude 2026-07-04 (commit `5ea9ae9`): host gates 18/18,
 verify-image OK (exe 5580 B, data+bss 3648 B), clean `ws_53` rebuild of the
 combined RM with the new IMEM (WNS +1.026), FCLK0 preflight
 `0x00200a00` captured in-session, carousel `0xf5302028 / 0xf53111a1 /
-0xf5320f00 / 0xf53f0002 / 0xf5f30000` == host golden. Next step: ChatGPT
-defines EHW-5.4+ (or closes the EHW-5 line).
+0xf5320f00 / 0xf53f0002 / 0xf5f30000` == host golden.
+
+Next step: open EHW-5.4 rather than closing the line yet. The task is in
+`docs/ehw5_4_task.md`: one-firmware/one-boot same-boot ablation across
+weight-only, hybrid-pressure, and no-adapt arms, then optional 4.6b
+param-window scan (`PS 0x40000000` -> `NEORV32 0xF5000000`). If EHW-5.4a passes,
+EHW-5 is strong enough to close; EHW-5.5 ICAP reveal is optional polish.

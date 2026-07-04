@@ -300,6 +300,8 @@ Do not start with POP=32 until firmware `.bss` and stack are audited.
 
 ### EHW-5.4 — Same-Boot Ablation
 
+Detailed task: `docs/ehw5_4_task.md`.
+
 Run a single firmware image with at least three arms:
 
 | Arm | Structure | Weights | Adaptation |
@@ -310,6 +312,19 @@ Run a single firmware image with at least three arms:
 
 This answers whether the structural genome helps beyond EHW-4 and whether the
 benefit depends on HW-SGD.
+
+Preferred first table, locked by `sw/ehw/memetic_struct_eval.c` with seed `3`,
+`POP=16`, `GENS=32`, `ADAPT=1`:
+
+| Arm | Expected result |
+|---|---|
+| W-only Lamarckian | `40/40`, SSE `6116`, first_40 `3` |
+| S+W pressure `bias_x3` | `40/40`, SSE `4513`, first_40 `2`, feature_ones `15`, penalty `0` |
+| S+W no-adapt `gate_x3` | `40/40`, SSE `4615`, first_40 `11`, feature_ones `39` |
+
+After the fixed same-boot A/B is green, 5.4b should switch the arm/scan table to
+the board-verified 4.6b parameter window (`PS 0x40000000` ->
+`NEORV32 0xF5000000`) so parameter sweeps do not require firmware rebuilds.
 
 ### EHW-5.5 — Optional ICAP Reveal
 

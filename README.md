@@ -257,6 +257,9 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   memetic GA loop.
 - `docs/ehw5_3_results.md` — board-verified result for the first full EHW-5.3
   hybrid structure+weight memetic GA loop.
+- `docs/ehw5_4_task.md` — next board-bound same-boot ablation task for EHW-5:
+  weight-only vs hybrid-pressure vs no-adapt arms, followed by an optional 4.6b
+  parameter-window scan.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
