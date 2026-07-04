@@ -1,6 +1,12 @@
-# EHW-5.2 Results — Combined Spare-Route VRC + Train-Unit RM Prep
+# EHW-5.2 Results — Combined Spare-Route VRC + Train-Unit RM
 
-Status: **HOST-PREP ONLY.** No board claim is made here.
+Status: **HW-VERIFIED on EBAZ4205 at FCLK0=50 MHz.** Final mailbox:
+`0xF5F00000` (`mism=0`, `got_sse=gold_sse=4560`, `correct=38`, VRC marker
+`SRV0`, mask `0xa0`).
+
+Important board precondition: miner U-Boot leaves FCLK0 at 125 MHz, while the
+Vivado DFX design signs off `clk_fpga_0` at 50 MHz. Run
+`scripts/board-set-fclk50.py` before `fpga loadb`; see `docs/hw_notes.md`.
 
 EHW-5.2 combines the two hardware paths needed by the EHW-5 hybrid line:
 
@@ -105,20 +111,44 @@ cur_w/cur_dw mux -> one update_value(cur_w, cur_dw) -> next_w -> case writeback
 
 The explicit `case` logic is now only write decode, not 24 arithmetic lanes.
 
-A clean A/B/C board matrix then exonerated the static/fb_0 theory and convicted
-the 5.2 RM/lite train-unit arm at the physical layer: clean 5.2 builds failed
-with and without fb_0, while the proven 4.3 train-unit RM passed on a fresh
-placement. The failure is placement-sensitive but deterministic within a build,
-with VRC and CPU-golden paths clean. See `docs/board_results.md` and
-`docs/evidence_ehw52/`.
+A clean A/B/C board matrix then exonerated the static/fb_0 theory and temporarily
+pointed at the 5.2 RM/lite train-unit arm: clean 5.2 builds failed with and
+without fb_0, while the proven 4.3 train-unit RM passed on a fresh placement.
+That intermediate conclusion is superseded by the final clock root cause below;
+the A/B/C matrix still usefully excludes fb_0/static/dirty-project explanations.
+See `docs/board_results.md` and `docs/evidence_ehw52/`.
 
-The current RTL fix keeps the shared update lane and hardens the TU XBUS boundary:
+The retained RTL hygiene fix keeps the shared update lane and hardens the TU XBUS boundary:
 the wrapper now latches `memetic_train_unit_lite.rdata` when a TU request is
 accepted and returns that held value during the ACK cycle. This removes the
 unsafe pattern where NEORV32 could sample a combinational read-data path on the
 same edge that the lite unit updates `BUSY`, weight, loss, or delta state. Host
-RTL still replays the full epoch and passes; Claude must rerun OOC/pblock
-utilization and then board-test this held-read-data revision.
+RTL still replays the full epoch and passes. Later board evidence showed this
+was not the root cause, but it improves bus protocol discipline and was kept.
+
+## Board Result And Root Cause
+
+Claude ran the retained RTL through host gates, OOC (`LUT 3455`, `DSP 18/20`),
+clean DFX build, and board load. At the miner default FCLK0 it still failed. The
+decisive checks were:
+
+- post-synth full-epoch funcsim PASS;
+- post-route funcsim of the routed RM cell from the failing build PASS;
+- `check_timing` clean with one 20 ns `clk_fpga_0`;
+- SLCR `FPGA0_CLK_CTRL` readback showed miner U-Boot had FCLK0 at 125 MHz, not
+  the 50 MHz signoff clock.
+
+Same-bitstream silicon proof:
+
+| Bitstream | 125 MHz miner default | 50 MHz signoff clock |
+|---|---|---|
+| `ws_fix` (`a327a9f`) | FAIL, `mism=14`, `got_sse=4738` | PASS `0xF5F00000`, `mism=0`, `4560/4560` |
+| `ws_withfb` (`465b9c7`) | FAIL, `mism=1` | PASS `0xF5F00000`, same evidence words |
+
+Conclusion: the previous failures were overclocking beyond the signed-off PL
+clock, not an RM logic bug. Historical board PASSes remain valid because they
+were bit-exact at the clock they actually ran; future board claims must pin
+FCLK0 to the signoff frequency first.
 
 ## Resource Gate For Board
 

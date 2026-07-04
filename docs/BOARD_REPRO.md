@@ -21,10 +21,15 @@ cd /home/test/xilinx
 openocd -f ebaz4205.cfg -c init -c halt \
     -c "mww phys 0xF8000008 0xDF0D" -c "mww phys 0xF8000200 1" -c shutdown
 # after intercept: send a bare \r to flush the residual 'd' before the next command
+# miner U-Boot leaves FCLK0 at 125 MHz; all DFX builds sign off 50 MHz
+python3 /home/test/zynq_ehw/scripts/board-set-fclk50.py --port /dev/ebaz-uart
 ```
 
 **Hard rules (learned on silicon — see board_results gotchas):**
 - Build the firmware into IMEM **before** the Vivado build (else the bitstream runs stale firmware).
+- Set and verify **FCLK0=50 MHz before every `fpga loadb`**. A NAND boot or
+  power-cycle restores the miner default 125 MHz, which can produce deterministic
+  placement-dependent wrong answers even when Vivado timing reports are clean.
 - The target LUT/tile **moves every build** (P&R shifts with firmware size) → always re-extract frames from the freshly built bitstreams; never reuse an old framebank/seqs.
 - **Never run a multi-frame ICAP bake in the foreground** — a tool timeout kills it mid-`writeseq` and corrupts the ICAP FSM. Always background it.
 - Verify `readreg 12 == 0x13722093` and `PCAP_PR==0` before any PS-HWICAP ICAP write. **But an internal-ICAPE2 build (EHW-2) has NO PS HWICAP — do not poke it, it wedges PL-AXI.**

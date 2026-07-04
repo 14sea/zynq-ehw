@@ -1,6 +1,7 @@
 # EHW-5 Plan — Structure + Weights + HW-SGD Hybrid Evolution
 
-Status: **EHW-5.2 combined RM host-prep done. No board claim yet.**
+Status: **EHW-5.2 combined RM board-verified at FCLK0=50 MHz. EHW-5.3 is the
+next board-bound rung.**
 
 EHW-5 is the "complete" hybrid line: combine the EHW-3 safe spare-routing island
 with the EHW-4 HW-SGD memetic loop. A candidate genome carries both a small
@@ -211,7 +212,7 @@ Result:
   bias_x3` reaches `40/40`, SSE `4513`, first_40 `2`.
 - See `docs/ehw5_1_results.md`.
 
-### EHW-5.2 — Combined VRC + Train-Unit RM — DONE (HOST-PREP)
+### EHW-5.2 — Combined VRC + Train-Unit RM — DONE (HW-VERIFIED)
 
 Deliver:
 
@@ -247,9 +248,17 @@ Result:
   a dataset feature from EHW-5.0b, not the EHW-3 majority target `0xe8`.
 - Vivado is unavailable in the ChatGPT host environment, so OOC/place/resource
   gates remain mandatory Claude-side checks via `tests/vivado_ooc_memetic_struct.tcl`.
-- See `docs/ehw5_2_results.md`.
+- Board result: PASS at the real signoff clock after pinning FCLK0 to 50 MHz from
+  U-Boot. Final mailbox `0xF5F00000`: `mism=0`, `got_sse=gold_sse=4560`,
+  `correct=38`, VRC marker `SRV0`, mask `0xa0`.
+- Root cause of the earlier board FAILs was not the RM: miner U-Boot left FCLK0
+  at 125 MHz while Vivado signed off 50 MHz. Future board claims must run
+  `scripts/board-set-fclk50.py` before `fpga loadb`.
+- See `docs/ehw5_2_results.md`, `docs/board_results.md`, and `docs/hw_notes.md`.
 
 ### EHW-5.3 — Board Hybrid Memetic Loop
+
+Detailed task: `docs/ehw5_3_task.md`.
 
 Deliver:
 
@@ -260,6 +269,7 @@ Deliver:
 Board gate:
 
 - one bitstream, one boot;
+- FCLK0 verified at 50 MHz before `fpga loadb`;
 - NEORV32 evaluates hybrid candidates;
 - spare-route feature is evaluated in fabric VRC, not software;
 - HW-SGD inner loop uses the board-verified train unit;

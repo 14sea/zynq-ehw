@@ -156,12 +156,15 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   gate byte-compares full per-generation curves and summaries across all hybrid
   arms, including structural-pressure penalties (`tests/compare_memetic_struct_twin.py`,
   `docs/ehw5_1_results.md`). Host-only, no board claim.
-- **EHW-5.2 host-prep done** — `rtl/dfx/tpu_rp_rm_memetic_struct.v` combines the
+- **EHW-5.2 board-verified** — `rtl/dfx/tpu_rp_rm_memetic_struct.v` combines the
   spare-route VRC feature window (`0xF0000400`) with the board-verified memetic
   train-unit window (`0xF0000800`). The host gate simulates the combined RM wrapper
-  and verifies the firmware MMIO stub against a CPU golden
-  (`tests/compare_memetic_struct_train.py`, `docs/ehw5_2_results.md`). Host-prep
-  only; Vivado OOC/place/resource gates are mandatory before any board claim.
+  and verifies the firmware MMIO stub against a CPU golden; Claude's OOC/place
+  gate and board run then passed at the real signoff clock (`FCLK0=50 MHz`) with
+  mailbox `0xF5F00000`, `mism=0`, `got_sse=gold_sse=4560`, `correct=38`
+  (`tests/compare_memetic_struct_train.py`, `docs/ehw5_2_results.md`,
+  `docs/board_results.md`). Miner U-Boot defaults FCLK0 to 125 MHz, so
+  `scripts/board-set-fclk50.py` is mandatory before future `fpga loadb` runs.
 
 ## Dependencies & reproduction environment
 
@@ -238,8 +241,10 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   structure+weights oracle.
 - `docs/ehw5_1_results.md` — host-only EHW-5.1 Python/C bit-exact twin for the
   hybrid structure+weights oracle.
-- `docs/ehw5_2_results.md` — host-prep EHW-5.2 combined spare-route VRC +
-  train-unit RM result.
+- `docs/ehw5_2_results.md` — board-verified EHW-5.2 combined spare-route VRC +
+  train-unit RM result at FCLK0=50 MHz.
+- `docs/ehw5_3_task.md` — task contract for the next board hybrid memetic GA
+  loop.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
@@ -335,6 +340,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   candidate framebank from same-route `.bit` files and prjxray `.bits` outputs.
 - `scripts/ehw34-framebank-pack.py` / `scripts/ehw34-build-framebank-from-bits.py`
   — generalized EHW-3.4 16-byte-genome framebank tooling.
+- `scripts/board-set-fclk50.py` — U-Boot UART helper that pins/verifies FCLK0 at
+  the 50 MHz PL signoff clock before board `loadb` runs.
 - `vivado/icap_ehw2/build_ehw2_icap.tcl` — EHW-2 T2.3-style static build and
   same-route INIT bitstreams for frame extraction.
 - `external/` — local snapshots of selected reference files copied from

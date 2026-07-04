@@ -390,9 +390,8 @@ The memetic/dfx static now carries an `axil_framebuf` parameter window:
     mw 0xF8000170 0x00200A00    # FCLK0 = IOPLL(1000)/10/2 = 50 MHz
     md 0xF8000170 1             # verify 0x00200a00
 
-  (`scripts/uart-poke.py --send 'mw 0xF8000008 0xDF0D; mw 0xF8000170 0x00200A00\r'`
-  from the host. A NAND reboot/power-cycle restores 125 MHz — re-apply every
-  session.)
+  Or run `python3 scripts/board-set-fclk50.py --port /dev/ebaz-uart` from this
+  repo. A NAND reboot/power-cycle restores 125 MHz — re-apply every session.
 - Historical results are NOT retracted: every past PASS was bit-exact vs
   golden, i.e. genuinely correct at 125 MHz. But all FUTURE signoff-vs-board
   claims are only valid with FCLK0 pinned to the signoff frequency.

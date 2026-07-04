@@ -303,7 +303,7 @@ curves and summary rows across the weight baseline, all pressured/unpressured
 hybrid couplings, and the no-adapt ablation; structural-pressure penalties are
 part of the golden.
 
-EHW-5.2 is host-prep complete in `rtl/dfx/tpu_rp_rm_memetic_struct.v`,
+EHW-5.2 is board-verified in `rtl/dfx/tpu_rp_rm_memetic_struct.v`,
 `rtl/memetic_train_unit_lite.v`, `sw/ehw/memetic_struct_train_mbox.c`,
 `tests/compare_memetic_struct_train.py`, and `tests/vivado_ooc_memetic_struct.tcl`
 (`docs/ehw5_2_results.md`). The combined RM keeps the train-unit window at
@@ -312,24 +312,15 @@ stub pass. First review failed OOC LUT budget (`5049/4400`) with the full
 train-unit, so the current handoff uses the lite train unit: fixed `LR_SHIFT=7`,
 fixed `K=2`, serialized W1/W2 updates, and `TU_BUSY` at word 77.
 
-First board run of the lite wrapper failed deterministically: VRC marker/mask were
-good (`SRV0`, mask `0xa0`) and CPU golden matched host (`gold_sse=4560`), but the
-hardware train-unit arm produced `got_sse=4611`, two genome-byte mismatches, and
-35/40 instead of 38/40. Host gate has since been strengthened: host `SR_OUTPUT`
-now follows the same input/output register path as board, and the RTL test replays
-the full 40-sample epoch against Python golden.
+First board runs failed in several placement-dependent ways, while VRC marker/mask
+and CPU-golden paths stayed clean. The final root cause was outside the RM:
+miner U-Boot leaves FCLK0 at 125 MHz, but the DFX design signs off `clk_fpga_0`
+at 50 MHz. Same bitstreams failed at 125 MHz and passed at 50 MHz. Final EHW-5.2
+board result: `0xF5F00000`, `mism=0`, `got_sse=gold_sse=4560`, `correct=38`,
+marker `SRV0`, mask `0xa0`. The held-read-data wrapper change is kept as bus
+hygiene, not as the root-cause fix.
 
-The follow-up clean A/B/C board matrix (`a51a0f2`, `docs/evidence_ehw52/`)
-exonerated dirty-project/static/fb_0 explanations: clean 5.2 builds failed with
-and without fb_0, while the proven 4.3 train-unit RM passed on a fresh placement.
-The current diagnosis is therefore RM/lite-TU physical-layer sensitivity, likely
-a real-bus-cadence or read-data race at the TU boundary.
-
-Current revision keeps the resource-safe shared `update_value` lane
-(`cur_w/cur_dw -> next_w`, `case` only writes back `next_w`) and hardens the TU
-XBUS read path: the wrapper latches `memetic_train_unit_lite.rdata` when a TU
-request is accepted and returns that held value during the ACK cycle. This removes
-the unsafe combinational read-data sampling edge for `BUSY`, weights, loss, and
-deltas. Next Claude task: rerun OOC + pblock utilization and then board-test this
-held-read-data revision. Target pblock LUT utilization is `<= ~3800` to leave
-route headroom.
+From now on, Claude must set and verify FCLK0=50 MHz before any board `loadb`
+(`scripts/board-set-fclk50.py`; see `docs/hw_notes.md`). Next EHW step is 5.3:
+connect the board-verified combined RM to the full EHW-5.1 hybrid GA loop, with
+the same host-golden discipline and FCLK0 preflight.
