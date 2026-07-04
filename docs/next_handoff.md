@@ -323,15 +323,17 @@ hygiene, not as the root-cause fix.
 From now on, Claude must set and verify FCLK0=50 MHz before any board `loadb`
 (`scripts/board-set-fclk50.py`; see `docs/hw_notes.md`).
 
-EHW-5.3 host-prep is complete in `sw/ehw/memetic_struct_ga_mbox.c`,
-`tests/compare_memetic_struct_ga_train.py`, and `docs/ehw5_3_results.md`. It runs
-the first full board-bound hybrid GA arm:
+EHW-5.3 is BOARD-VERIFIED (2026-07-04, first roll): `sw/ehw/memetic_struct_ga_mbox.c`
+ran on-chip and the steady carousel matched the host golden on every acceptance
+field (see `docs/board_results.md`). The arm:
 `hybrid_lamarckian_pressure / bias_x3`, seed `3`, `POP=16`, `GENS=32`, one
 adaptation epoch. The host gate byte-compares the entire per-generation firmware
 stub curve against `sw/ehw/memetic_struct_eval.c`; expected summary is `40/40`,
 SSE `4513`, first_40 `2`, feature_ones `15`, penalty `0`.
 
-Next Claude task: pull this commit, run `tests/run_host_gates.sh`, build
-`memetic_struct_ga_mbox.c` into IMEM with `verify-image` and 16 KiB DMEM audit,
-set FCLK0 with `scripts/board-set-fclk50.py`, load the existing EHW-5.2 combined
-RM bitstream, and compare the mailbox carousel with the host-golden fields.
+Board leg DONE by Claude 2026-07-04 (commit `5ea9ae9`): host gates 18/18,
+verify-image OK (exe 5580 B, data+bss 3648 B), clean `ws_53` rebuild of the
+combined RM with the new IMEM (WNS +1.026), FCLK0 preflight
+`0x00200a00` captured in-session, carousel `0xf5302028 / 0xf53111a1 /
+0xf5320f00 / 0xf53f0002 / 0xf5f30000` == host golden. Next step: ChatGPT
+defines EHW-5.4+ (or closes the EHW-5 line).

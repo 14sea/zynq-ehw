@@ -165,12 +165,16 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   (`tests/compare_memetic_struct_train.py`, `docs/ehw5_2_results.md`,
   `docs/board_results.md`). Miner U-Boot defaults FCLK0 to 125 MHz, so
   `scripts/board-set-fclk50.py` is mandatory before future `fpga loadb` runs.
-- **EHW-5.3 host-prep done** — `sw/ehw/memetic_struct_ga_mbox.c` runs the first
-  full hybrid memetic GA arm (`hybrid_lamarckian_pressure / bias_x3`) through the
-  board-facing VRC + lite-train-unit MMIO protocol. The host gate byte-compares
-  the full per-generation curve against the EHW-5.1 C twin and locks the expected
-  summary: `40/40`, SSE `4513`, first_40 `2`, feature_ones `15`, penalty `0`
-  (`tests/compare_memetic_struct_ga_train.py`, `docs/ehw5_3_results.md`).
+- **EHW-5.3 BOARD-VERIFIED (2026-07-04, first roll)** — `sw/ehw/memetic_struct_ga_mbox.c`
+  ran the first full hybrid memetic GA arm (`hybrid_lamarckian_pressure / bias_x3`)
+  on-chip: per-candidate fabric-VRC feature evaluation + one HW-SGD epoch through
+  the lite train-unit + Lamarckian pressure selection. Steady mailbox carousel
+  matched the host golden on every acceptance field — `40/40`, SSE `4513`,
+  first_40 `2`, feature_ones `15`, penalty `0`, final `0xF5F30000` — at
+  FCLK0=50 MHz (preflight captured in-session). The host gate byte-compares the
+  full per-generation curve against the EHW-5.1 C twin and locks that same
+  summary (`tests/compare_memetic_struct_ga_train.py`, `docs/ehw5_3_results.md`,
+  exact board words in `docs/board_results.md`).
 
 ## Dependencies & reproduction environment
 

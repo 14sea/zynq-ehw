@@ -1,6 +1,13 @@
-# EHW-5.3 Results — Board Hybrid Memetic Loop Prep
+# EHW-5.3 Results — Board Hybrid Memetic Loop
 
-Status: **HOST-PREP COMPLETE.** No board claim is made here.
+Status: **BOARD-VERIFIED on EBAZ4205 at FCLK0=50 MHz (2026-07-04, first roll).**
+Steady mailbox carousel matched the host golden on every acceptance field:
+`0xf5302028` (gen=32 completion replay tag, best_correct=40) /
+`0xf53111a1` (SSE 4513) / `0xf5320f00` (feature_ones=15, penalty=0) /
+`0xf53f0002` (first_40=2) / `0xf5f30000` (final PASS). FCLK0 preflight
+captured in-session; full evidence and build manifest trail in
+`docs/board_results.md`. Same-set deployment/adaptation metric — no holdout
+generalization claim.
 
 EHW-5.3 connects the board-verified EHW-5.2 combined RM to the first full hybrid
 GA loop. The selected first arm is intentionally narrow:

@@ -1,7 +1,8 @@
 # EHW-5 Plan — Structure + Weights + HW-SGD Hybrid Evolution
 
-Status: **EHW-5.2 combined RM board-verified at FCLK0=50 MHz. EHW-5.3 host-prep
-is complete and awaits board verification.**
+Status: **EHW-5.2 combined RM AND EHW-5.3 hybrid memetic GA both board-verified
+at FCLK0=50 MHz (5.3: first roll, 2026-07-04, all acceptance fields == host
+golden — see `docs/board_results.md`).**
 
 EHW-5 is the "complete" hybrid line: combine the EHW-3 safe spare-routing island
 with the EHW-4 HW-SGD memetic loop. A candidate genome carries both a small
