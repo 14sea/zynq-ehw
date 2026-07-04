@@ -165,6 +165,12 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   (`tests/compare_memetic_struct_train.py`, `docs/ehw5_2_results.md`,
   `docs/board_results.md`). Miner U-Boot defaults FCLK0 to 125 MHz, so
   `scripts/board-set-fclk50.py` is mandatory before future `fpga loadb` runs.
+- **EHW-5.3 host-prep done** — `sw/ehw/memetic_struct_ga_mbox.c` runs the first
+  full hybrid memetic GA arm (`hybrid_lamarckian_pressure / bias_x3`) through the
+  board-facing VRC + lite-train-unit MMIO protocol. The host gate byte-compares
+  the full per-generation curve against the EHW-5.1 C twin and locks the expected
+  summary: `40/40`, SSE `4513`, first_40 `2`, feature_ones `15`, penalty `0`
+  (`tests/compare_memetic_struct_ga_train.py`, `docs/ehw5_3_results.md`).
 
 ## Dependencies & reproduction environment
 
@@ -245,6 +251,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   train-unit RM result at FCLK0=50 MHz.
 - `docs/ehw5_3_task.md` — task contract for the next board hybrid memetic GA
   loop.
+- `docs/ehw5_3_results.md` — host-prep result for the first EHW-5.3 board-bound
+  hybrid memetic GA firmware.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
@@ -328,6 +336,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   feature-pressure selection penalties.
 - `tests/compare_memetic_struct_train.py` — verifies the EHW-5.2 combined
   spare-route VRC + train-unit RM wrapper and firmware host stub.
+- `tests/compare_memetic_struct_ga_train.py` — verifies the EHW-5.3 hybrid
+  structure+weight GA firmware host stub against the EHW-5.1 C twin curve.
 - `tests/compare_spare_route_vrc.py` — verifies the EHW-3.2 spare-routing fabric
   VRC RTL sim, firmware host stub, wrapper compile, Py/C oracle gate, and optional
   Vivado OOC synth.

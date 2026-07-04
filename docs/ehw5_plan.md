@@ -1,7 +1,7 @@
 # EHW-5 Plan — Structure + Weights + HW-SGD Hybrid Evolution
 
-Status: **EHW-5.2 combined RM board-verified at FCLK0=50 MHz. EHW-5.3 is the
-next board-bound rung.**
+Status: **EHW-5.2 combined RM board-verified at FCLK0=50 MHz. EHW-5.3 host-prep
+is complete and awaits board verification.**
 
 EHW-5 is the "complete" hybrid line: combine the EHW-3 safe spare-routing island
 with the EHW-4 HW-SGD memetic loop. A candidate genome carries both a small
@@ -274,6 +274,16 @@ Board gate:
 - spare-route feature is evaluated in fabric VRC, not software;
 - HW-SGD inner loop uses the board-verified train unit;
 - final mailbox and any carousel rows match host golden encoding bit-for-bit.
+
+Host-prep result:
+
+- `sw/ehw/memetic_struct_ga_mbox.c` implements the single-arm
+  `hybrid_lamarckian_pressure / bias_x3` board firmware and host stub.
+- `tests/compare_memetic_struct_ga_train.py` byte-compares the full
+  per-generation curve against `sw/ehw/memetic_struct_eval.c`.
+- Expected summary is locked to `40/40`, SSE `4513`, first_40 `2`,
+  feature_ones `15`, penalty `0`.
+- Board result pending; see `docs/ehw5_3_results.md`.
 
 Suggested first parameters:
 

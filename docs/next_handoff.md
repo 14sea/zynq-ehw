@@ -321,6 +321,17 @@ marker `SRV0`, mask `0xa0`. The held-read-data wrapper change is kept as bus
 hygiene, not as the root-cause fix.
 
 From now on, Claude must set and verify FCLK0=50 MHz before any board `loadb`
-(`scripts/board-set-fclk50.py`; see `docs/hw_notes.md`). Next EHW step is 5.3:
-connect the board-verified combined RM to the full EHW-5.1 hybrid GA loop, with
-the same host-golden discipline and FCLK0 preflight.
+(`scripts/board-set-fclk50.py`; see `docs/hw_notes.md`).
+
+EHW-5.3 host-prep is complete in `sw/ehw/memetic_struct_ga_mbox.c`,
+`tests/compare_memetic_struct_ga_train.py`, and `docs/ehw5_3_results.md`. It runs
+the first full board-bound hybrid GA arm:
+`hybrid_lamarckian_pressure / bias_x3`, seed `3`, `POP=16`, `GENS=32`, one
+adaptation epoch. The host gate byte-compares the entire per-generation firmware
+stub curve against `sw/ehw/memetic_struct_eval.c`; expected summary is `40/40`,
+SSE `4513`, first_40 `2`, feature_ones `15`, penalty `0`.
+
+Next Claude task: pull this commit, run `tests/run_host_gates.sh`, build
+`memetic_struct_ga_mbox.c` into IMEM with `verify-image` and 16 KiB DMEM audit,
+set FCLK0 with `scripts/board-set-fclk50.py`, load the existing EHW-5.2 combined
+RM bitstream, and compare the mailbox carousel with the host-golden fields.

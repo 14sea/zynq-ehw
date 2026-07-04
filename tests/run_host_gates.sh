@@ -34,6 +34,7 @@ gates=(
   "check_memetic_struct_oracle.py"       # EHW-5.0: deterministic hybrid structure+weight oracle
   "compare_memetic_struct_twin.py"       # EHW-5.1: hybrid structure+weight Py<->C bit-exact
   "compare_memetic_struct_train.py --skip-ooc" # EHW-5.2: combined spare-route VRC + train-unit host prep
+  "compare_memetic_struct_ga_train.py"   # EHW-5.3: hybrid structure GA firmware stub
 )
 
 fail=0
