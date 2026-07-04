@@ -503,3 +503,63 @@ wedge; all 8 frames baked cleanly in the background; sibling projects untouched.
   bitstream, unlimited re-parameterization. (One power-cycle was needed before
   this run — board wedged during a failed first load attempt, cause consistent
   with a CH340-brownout-missed intercept; recovered by Type-C replug, standard.)
+
+## EHW-5.2 — combined VRC + lite-train-unit RM: board FAIL; static/build lineage SUSPECTED, clean repro pending (2026-07-04)
+
+Status: **board FAIL, not root-caused.** The control experiment below shifts
+suspicion from the RM RTL toward the static/build side, but does NOT convict
+fb_0 specifically — see the confounds paragraph. No board claim for 5.2.
+
+Board result (deterministic across reloads + a full power-cycle):
+- `impl_12` (combined RM, firmware `memetic_struct_train_mbox.c`) → mailbox
+  `0xF5F00001` FAIL; the HW-train-unit arm diverged from the CPU golden
+  (mism=2 genome bytes, got_sse 4611 vs gold 4560). VRC island itself PERFECT
+  (marker "SRV0", mask 0xa0); board CPU-golden path bit-exact to host stub.
+
+Control experiment (workflow rule #6 — same-firmware cross-build):
+- Rebuilt the **proven EHW-4.3** config on the **current** static:
+  `rm_memetic_train` RTL unchanged since 4.2 (`440f6ee`), same 4.3 firmware
+  (`verify-image` OK), reused RM netlist (`rm_memetic_train_synth_1` dated
+  2026-07-03 05:41, predates the rebuild). Expected `0xF4F00000` (14/14
+  bit-exact, as board-verified at `7901cc0`). **Got `0xF4F00001` FAIL,
+  12–13/13 reads.**
+- **User power-cycled the whole board; reloaded the same 4.3 `impl_10` unchanged
+  → still 12/12 FAIL. Physical board ruled out.**
+
+What this establishes vs what it doesn't:
+| layer | verdict | evidence |
+|---|---|---|
+| physical board | exonerated | full power-cycle → same deterministic FAIL |
+| 4.3 RM RTL | likely exonerated | RTL unchanged since 4.2; post-synth + post-route funcsim (RM cell + ideal XBUS tb) PASS; same netlist previously board-PASS |
+| 5.2 RM RTL | suspicion reduced, NOT cleared | its divergence (mism=2) is a separate observation; only the 4.3 RM was cross-checked |
+| **current static/build lineage** | **prime suspect** | a previously board-verified config now reproducibly FAILs on it |
+| fb_0 specifically | **suspected, unproven** | see confounds |
+
+Confounds that block a "root-caused to fb_0" verdict:
+1. The control ran in the **dirty incremental live project**, where stale-RM
+   netlist relinking has already been caught once this session (the
+   `m52_add_struct.tcl` reset_run fix exists because of it).
+2. The control rebuilt static `impl_1` from scratch (2026-07-03 23:11) — vs the
+   4.3-era PASS static, the delta is fb_0 **plus a wholesale re-place/re-route**.
+   fb_0-the-module and rebuild placement variance are not separated.
+3. The clean-workspace repro (`/home/test/ehw52_clean/prepare_clean_52.sh`) was
+   written but **never executed** — no `ws/`, no `manifest.txt`, no build
+   products exist. Until it runs and its artifacts persist, this section stays
+   "suspected".
+
+Still-plausible mechanism (hypothesis only): `6d2fada` added `or fb_ack` to the
+`xbus_ack` aggregation, shifting real XBUS ack timing so the RM's
+`tu_pending`/`sr_pending` handshake goes borderline under the real NEORV32 bus
+cadence (the blind spot flagged in `review.v1.txt`: RM handshake never verified
+at real bus cadence, only against an ideal tb).
+
+Ownership + next steps: fb_0 is a Claude solo-lane change (`6d2fada`); Claude
+drives the repro. Decision order: (1) clean DFX build **with** fb_0 at `465b9c7`
+— if it PASSes, the dirty project was the fault, fb_0 walks; (2) clean build
+**without** fb_0 (prepare_clean_52.sh as written) — only the pair attributes
+blame; (3) board retest; workspace + manifest must persist for re-audit.
+Note: the shared-lane RM (`465b9c7`) already routed in the RP on the live
+project — `impl12_rp_util.rpt` 2026-07-03 22:57, Slice LUTs 3355/4400 (76.25%),
+resolving the `a512e8b` OOC HOLD (LUT 5296 → shared lane). Build-infra fix
+found in passing: `m52_add_struct.tcl` must `reset_run rm_memetic_struct_synth_1`
+or impl_12 relinks a stale RM netlist.
