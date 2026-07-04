@@ -725,3 +725,43 @@ whole EHW-5 line — no holdout generalization claim.
 
 First-roll pass with zero board debugging: the 5.2 root-cause work (FCLK0
 pinning + verified RM + preflight tooling) did exactly what it was for.
+
+## EHW-5.4a same-boot hybrid ablation — PASS, first roll (2026-07-05)
+
+**The structural-contribution ablation ran as one image / one boot / one seed
+and every arm matched host golden.** Four arms per docs/ehw5_4_task.md
+(seed 3, POP 16, GENS 32, ADAPT 1), firmware
+`sw/ehw/memetic_struct_ab_mbox.c` (ChatGPT, `2a0481a`), shared population
+buffers across arms (data+bss 6240 B), RM untouched (5.2/5.3 lineage).
+
+Pre-board gates rerun by Claude: host gates 19/19 incl. the four-arm
+byte-exact curve gate `compare_memetic_struct_ab_train.py`; oracle/eval diff
+audited (weight-only curve emission is additive, GA semantics untouched);
+isolated build exe 7472 B, `verify-image OK`; clean workspace `ws_54` at
+`2a0481a` (manifest_54.txt), full DFX build WNS +1.026, 0 errors;
+`board-set-fclk50.py` preflight `0x00200a00` in-session.
+
+Steady carousel (70 samples, all 18 expected words, no strays):
+
+| arm | mode/coupling | correct | SSE | first_40 | ones/penalty |
+|---|---|---|---|---|---|
+| 0 | weight_only_lamarckian/none | `f5400028`=40 | `f55017e4`=6116 | `f5600003`=3 | `f5700000`=0/0 |
+| 1 | hybrid_lamarckian_pressure/bias_x3 | `f5400128`=40 | `f55111a1`=4513 | `f5600102`=2 | `f5710f00`=15/0 |
+| 2 | hybrid_no_adapt/gate_x3 | `f5400228`=40 | `f5521207`=4615 | `f560020b`=11 | `f5722700`=39/0 |
+| 3 | hybrid_lamarckian/bias_x3 | `f5400328`=40 | `f55316cd`=5837 | `f5600305`=5 | `f5730000`=0/0 |
+
+plus `f54f0004` (arm count 4) and `f5f40000` (final PASS). Per-arm heartbeats
+(`0xF51x/0xF52x`) observed during the run (arm0 hit 40/40 within the first
+poll window).
+
+Same-boot science readout (same-set deployment/adaptation metric, no holdout
+claim), all three now cross-build-confound-free:
+- structure+pressure improves both convergence and SSE (arm1 vs arm0:
+  first_40 2 vs 3, SSE 4513 vs 6116);
+- HW-SGD adaptation drives convergence speed (arm1 vs arm2: first_40 2 vs 11);
+- the pressure term prevents feature degeneration and yields the best SSE
+  (arm1 vs arm3: feature_ones 15 vs 0, SSE 4513 vs 5837).
+
+Acceptance per ehw5_4_task.md: all met. Per the task's stop rule, EHW-5.4a
+passing means the EHW-5 line is strong enough to close; 5.4b (param-window
+scan) and 5.5 (ICAP reveal) remain optional.
