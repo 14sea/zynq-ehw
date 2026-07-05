@@ -765,3 +765,45 @@ claim), all three now cross-build-confound-free:
 Acceptance per ehw5_4_task.md: all met. Per the task's stop rule, EHW-5.4a
 passing means the EHW-5 line is strong enough to close; 5.4b (param-window
 scan) and 5.5 (ICAP reveal) remain optional.
+
+## EHW-5.4b param-window staging — PASS, both legs (2026-07-05)
+
+**A single bitstream re-parameterized from the PS without rebuild or reload.**
+Firmware `memetic_struct_ab_mbox.c` at `8e28a77` reads the 4.6b window once at
+boot: magic `0xE5400001` present → staged table; absent → built-in 5.4a table;
+present-but-invalid → explicit FAIL. Clean build `ws_54b` (WNS +0.281), host
+gates 21/21, verify-image OK (exe 8220 B, bss 6336 B), FCLK0 preflight
+`0x00200a00` in-session.
+
+Leg 1 — built-in (no magic): all 19 expected words steady — the full 5.4a
+18-word set verbatim (all four arms == host golden) plus source word
+`f54e0001` (staged=0, valid=1).
+
+Leg 2 — staged short scan (single arm `hybrid_lamarckian_pressure/bias_x3`,
+GENS=4, the exact block the host gate validated): staged 9 words to
+`0x40000000`, verified by `md`, then **restarted the NEORV32 without touching
+the bitstream** via a PL logic reset — SLCR unlock + `mw 0xF8000240 1` /
+`mw 0xF8000240 0` (FPGA_RST_CTRL pulses FCLK_RESET0_N → `rst_0`; BRAM contents
+incl. IMEM and the staged fb_0 block survive, only logic resets). Steady
+carousel, all 7 expected words:
+`f5400028` (arm0 40/40), `f55011a1` (SSE 4513), `f5600002` (first_40=2),
+`f5700f00` (ones=15, penalty=0), `f54e0101` (staged=1, valid=1),
+`f54f0001` (arm count 1), `f5f40000` (PASS) — matching the host-gate golden
+for the staged block (converges to the same summary as the full run by gen 2;
+the gate separately proves the 4-gen curve differs byte-wise from the 32-gen
+curve, so the parameter change demonstrably changed the run).
+
+Acceptance (ehw5_4_task.md 5.4b): PS staged at `0x40000000` ✓, NEORV32 read
+via `0xF5000000` ✓, staged parameters changed the subsequent run without
+rebuilding or reloading the bitstream ✓.
+
+### Board gotchas caught this leg (worth keeping)
+1. **`ehw2-framebank-load.py` is big-endian-word oriented** (framebank format).
+   Staging the little-endian `ehw54-param-pack.py` image through it byte-swaps
+   every word — the window ended up with `0x010040E5` instead of the magic.
+   For ≤~16-word param blocks, stage with direct U-Boot `mw` per word (done
+   here); for bulk use, the loader needs an LE mode or the pack tool a BE flag.
+2. **The restart step was undocumented**: the firmware reads the window once at
+   boot, and a full `fpga loadb` would wipe the staged BRAM back to zeros. The
+   FPGA_RST_CTRL logic-reset (above) is the correct — and now board-verified —
+   mechanism, satisfying the "no rebuild, no reload" acceptance clause.
