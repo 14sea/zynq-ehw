@@ -1,10 +1,33 @@
-/* EHW-5.4a firmware: same-boot hybrid structure ablation on the board.
+/* EHW-5.4 firmware: same-boot hybrid structure ablation on the board.
  *
- * Runs four EHW-5 arms in one firmware image and one boot:
+ * Default mode runs four EHW-5 arms in one firmware image and one boot:
  *   arm0 weight_only_lamarckian / none
  *   arm1 hybrid_lamarckian_pressure / bias_x3
  *   arm2 hybrid_no_adapt / gate_x3
  *   arm3 hybrid_lamarckian / bias_x3
+ *
+ * EHW-5.4b parameter-window contract:
+ *   word0  magic = 0xE5400001
+ *   word1  n_arms (1..8)
+ *   word2  seed
+ *   word3  population (2..16, fixed static buffer ceiling)
+ *   word4  generations
+ *   word5  adapt_epochs
+ *   word6  feature_min_balance
+ *   word7  feature_penalty
+ *   word8+ arm descriptor = mode | coupling<<8 | flags<<16
+ *
+ * Descriptor mode:
+ *   0 hybrid_lamarckian, 1 hybrid_lamarckian_pressure,
+ *   2 hybrid_no_adapt, 3 weight_only_lamarckian
+ * Descriptor coupling:
+ *   0 replace_x3, 1 gate_x3, 2 bias_x3, 3 none
+ * Descriptor flags:
+ *   bit0 uses_structure, bit1 uses_adapt, bit2 uses_pressure.
+ *
+ * If magic is absent, the firmware uses the board-verified built-in table.
+ * If magic is present but invalid, the run publishes FAIL rather than silently
+ * falling back.
  *
  * Candidate evaluation uses the EHW-5.2 hardware paths:
  *   - spare-route VRC feature island at 0xF0000400
@@ -29,6 +52,7 @@ typedef void FILE;
 
 #define SR_BASE 0xF0000400U
 #define TU_BASE 0xF0000800U
+#define FB_BASE 0xF5000000U
 
 #define SR_INPUT       2u
 #define SR_OUTPUT      3u
@@ -52,10 +76,12 @@ typedef void FILE;
 #define TU_CMD_UPD_L1  0x08u
 #define TU_CMD_CLR     0x10u
 
+#define EHW54_PARAM_MAGIC 0xE5400001U
 #define EHW54_SEED        3
 #define EHW54_POP         16
 #define EHW54_GENS        32
 #define EHW54_ADAPT       1
+#define EHW54_MAX_ARMS    8
 #define EHW54_INIT_SPAN   32
 #define EHW54_ELITES      2
 #define EHW54_TOURN       3
@@ -75,14 +101,16 @@ typedef enum {
 } ehw54_arm_id_t;
 
 typedef struct {
-    ehw54_arm_id_t id;
+    uint8_t id;
     const char *mode;
     const char *coupling;
     ms_mode_t ms_mode;
     ms_coupling_t ms_coupling;
+    uint8_t weight_only;
     uint8_t uses_structure;
     uint8_t uses_adapt;
     uint8_t uses_pressure;
+    uint8_t has_expect;
     int expect_correct;
     int expect_sse;
     int expect_first40;
@@ -100,15 +128,28 @@ typedef struct {
     int sat_count;
 } ehw54_result_t;
 
+typedef struct {
+    int n_arms;
+    int seed;
+    int population;
+    int generations;
+    int adapt_epochs;
+    int feature_min_balance;
+    int feature_penalty;
+    uint8_t staged;
+    uint8_t valid;
+    ehw54_arm_t arms[EHW54_MAX_ARMS];
+} ehw54_run_cfg_t;
+
 static const ehw54_arm_t EHW54_ARMS[EHW54_NARMS] = {
     { EHW54_ARM_WEIGHT_ONLY, "weight_only_lamarckian", "none",
-      MS_MODE_LAMARCKIAN, MS_COUPLING_BIAS_X3, 0, 1, 0, 40, 6116, 3, 0, 0, 0 },
+      MS_MODE_LAMARCKIAN, MS_COUPLING_BIAS_X3, 1, 0, 1, 0, 1, 40, 6116, 3, 0, 0, 0 },
     { EHW54_ARM_PRESSURE_BIAS, "hybrid_lamarckian_pressure", "bias_x3",
-      MS_MODE_LAMARCKIAN_PRESSURE, MS_COUPLING_BIAS_X3, 1, 1, 1, 40, 4513, 2, 15, 0, 0 },
+      MS_MODE_LAMARCKIAN_PRESSURE, MS_COUPLING_BIAS_X3, 0, 1, 1, 1, 1, 40, 4513, 2, 15, 0, 0 },
     { EHW54_ARM_NO_ADAPT_GATE, "hybrid_no_adapt", "gate_x3",
-      MS_MODE_NO_ADAPT, MS_COUPLING_GATE_X3, 1, 0, 0, 40, 4615, 11, 39, 0, 0 },
+      MS_MODE_NO_ADAPT, MS_COUPLING_GATE_X3, 0, 1, 0, 0, 1, 40, 4615, 11, 39, 0, 0 },
     { EHW54_ARM_LAMARCKIAN_BIAS, "hybrid_lamarckian", "bias_x3",
-      MS_MODE_LAMARCKIAN, MS_COUPLING_BIAS_X3, 1, 1, 0, 40, 5837, 5, 0, 0, 0 },
+      MS_MODE_LAMARCKIAN, MS_COUPLING_BIAS_X3, 0, 1, 1, 0, 1, 40, 5837, 5, 0, 0, 0 },
 };
 
 #ifdef MEMETIC_STRUCT_GA_HOST_STUB
@@ -116,6 +157,7 @@ static uint8_t sr_genome_model[SR_GENOME_LEN];
 static uint8_t sr_input_model;
 static int32_t tu_ina[4], tu_z[4], tu_t[4], tu_dw[16], tu_w1[16], tu_w2[8];
 static int32_t tu_d2_reg[2], tu_d1_reg[4], tu_loss;
+static uint32_t fb_model[2048];
 
 static int32_t tu_qmul(int32_t a, int32_t b) {
     return (int32_t)((((int64_t)a * (int64_t)b) + (1 << (MEM_FRAC - 1))) >> MEM_FRAC);
@@ -179,6 +221,10 @@ static int32_t tu_read(uint32_t word) {
     if (word == TU_BUSY) return 0;
     return 0;
 }
+
+static uint32_t fb_read(uint32_t word) {
+    return word < 2048u ? fb_model[word] : 0;
+}
 #else
 static void sr_write(uint32_t word, uint32_t value) {
     *(volatile uint32_t *)(SR_BASE + word * 4u) = value;
@@ -195,6 +241,10 @@ static void tu_write(uint32_t word, int32_t value) {
 static int32_t tu_read(uint32_t word) {
     return (int32_t)*(volatile uint32_t *)(TU_BASE + word * 4u);
 }
+
+static uint32_t fb_read(uint32_t word) {
+    return *(volatile uint32_t *)(FB_BASE + word * 4u);
+}
 #endif
 
 static ms_candidate_t pop[EHW54_POP];
@@ -204,7 +254,7 @@ static int8_t mem_pop[EHW54_POP][EHW_GENOME_LEN];
 static int8_t mem_next_pop[EHW54_POP][EHW_GENOME_LEN];
 static mem_eval_t mem_evaluated[EHW54_POP];
 static int ranked_idx[EHW54_POP];
-static ehw54_result_t arm_results[EHW54_NARMS];
+static ehw54_result_t arm_results[EHW54_MAX_ARMS];
 
 #ifndef MEMETIC_STRUCT_GA_HOST_STUB
 static void publish(uint32_t word) {
@@ -221,6 +271,104 @@ static void tu_wait_idle(void) {
 
 static void copy_sr(uint8_t dst[SR_GENOME_LEN], const uint8_t src[SR_GENOME_LEN]) {
     memcpy(dst, src, SR_GENOME_LEN);
+}
+
+static const char *mode_name_for(ms_mode_t mode) {
+    switch (mode) {
+        case MS_MODE_LAMARCKIAN: return "hybrid_lamarckian";
+        case MS_MODE_LAMARCKIAN_PRESSURE: return "hybrid_lamarckian_pressure";
+        case MS_MODE_NO_ADAPT: return "hybrid_no_adapt";
+    }
+    return "?";
+}
+
+static const char *coupling_name_for(ms_coupling_t coupling) {
+    switch (coupling) {
+        case MS_COUPLING_REPLACE_X3: return "replace_x3";
+        case MS_COUPLING_GATE_X3: return "gate_x3";
+        case MS_COUPLING_BIAS_X3: return "bias_x3";
+    }
+    return "?";
+}
+
+static void load_builtin_cfg(ehw54_run_cfg_t *cfg) {
+    cfg->n_arms = EHW54_NARMS;
+    cfg->seed = EHW54_SEED;
+    cfg->population = EHW54_POP;
+    cfg->generations = EHW54_GENS;
+    cfg->adapt_epochs = EHW54_ADAPT;
+    cfg->feature_min_balance = MS_DEFAULT_FEATURE_MIN_BALANCE;
+    cfg->feature_penalty = MS_DEFAULT_FEATURE_PENALTY;
+    cfg->staged = 0;
+    cfg->valid = 1;
+    for (int i = 0; i < EHW54_NARMS; i++) cfg->arms[i] = EHW54_ARMS[i];
+}
+
+static int decode_param_arm(uint32_t desc, int index, ehw54_arm_t *arm) {
+    uint8_t mode = (uint8_t)(desc & 0xffu);
+    uint8_t coupling = (uint8_t)((desc >> 8) & 0xffu);
+    uint8_t flags = (uint8_t)((desc >> 16) & 0xffu);
+    memset(arm, 0, sizeof(*arm));
+    arm->id = (uint8_t)index;
+    arm->has_expect = 0;
+    arm->uses_structure = (flags & 0x01u) != 0;
+    arm->uses_adapt = (flags & 0x02u) != 0;
+    arm->uses_pressure = (flags & 0x04u) != 0;
+
+    if (mode == 3u) {
+        if (coupling != 3u || arm->uses_structure || !arm->uses_adapt || arm->uses_pressure) return 0;
+        arm->weight_only = 1;
+        arm->mode = "weight_only_lamarckian";
+        arm->coupling = "none";
+        arm->ms_mode = MS_MODE_LAMARCKIAN;
+        arm->ms_coupling = MS_COUPLING_BIAS_X3;
+        return 1;
+    }
+
+    if (mode > 2u || coupling > 2u) return 0;
+    arm->weight_only = 0;
+    arm->ms_mode = (ms_mode_t)mode;
+    arm->ms_coupling = (ms_coupling_t)coupling;
+    arm->mode = mode_name_for(arm->ms_mode);
+    arm->coupling = coupling_name_for(arm->ms_coupling);
+    if (!arm->uses_structure) return 0;
+    if (arm->ms_mode == MS_MODE_NO_ADAPT && arm->uses_adapt) return 0;
+    if (arm->ms_mode != MS_MODE_NO_ADAPT && !arm->uses_adapt) return 0;
+    if ((arm->ms_mode == MS_MODE_LAMARCKIAN_PRESSURE) != (arm->uses_pressure != 0)) return 0;
+    return 1;
+}
+
+static void load_runtime_cfg(ehw54_run_cfg_t *cfg) {
+    load_builtin_cfg(cfg);
+    if (fb_read(0) != EHW54_PARAM_MAGIC) return;
+
+    cfg->staged = 1;
+    cfg->valid = 0;
+    int n_arms = (int)fb_read(1);
+    int seed = (int)fb_read(2);
+    int population = (int)fb_read(3);
+    int generations = (int)fb_read(4);
+    int adapt_epochs = (int)fb_read(5);
+    int feature_min_balance = (int)fb_read(6);
+    int feature_penalty = (int)fb_read(7);
+    if (n_arms <= 0 || n_arms > EHW54_MAX_ARMS) return;
+    if (population < EHW54_ELITES || population > EHW54_POP) return;
+    if (generations < 0 || generations > 64) return;
+    if (adapt_epochs < 0 || adapt_epochs > 8) return;
+    if (feature_min_balance < 0 || feature_min_balance > EHW_NTEST) return;
+    if (feature_penalty < 0 || feature_penalty > 1000000) return;
+
+    cfg->n_arms = n_arms;
+    cfg->seed = seed;
+    cfg->population = population;
+    cfg->generations = generations;
+    cfg->adapt_epochs = adapt_epochs;
+    cfg->feature_min_balance = feature_min_balance;
+    cfg->feature_penalty = feature_penalty;
+    for (int i = 0; i < n_arms; i++) {
+        if (!decode_param_arm(fb_read(8u + (uint32_t)i), i, &cfg->arms[i])) return;
+    }
+    cfg->valid = 1;
 }
 
 static void sr_load(const uint8_t genome[SR_GENOME_LEN]) {
@@ -350,6 +498,7 @@ static int32_t adapt_tu(const int8_t weight[EHW_GENOME_LEN],
                         const uint8_t sr[SR_GENOME_LEN],
                         ms_coupling_t coupling,
                         uint8_t uses_structure,
+                        const ehw54_run_cfg_t *cfg,
                         int seed,
                         int8_t out_weight[EHW_GENOME_LEN]) {
     int32_t w1[EHW_NH][EHW_NIN], w2[EHW_NOUT][EHW_NH];
@@ -360,7 +509,7 @@ static int32_t adapt_tu(const int8_t weight[EHW_GENOME_LEN],
     if (uses_structure) sr_load(sr);
     for (int i = 0; i < EHW_NTEST; i++) order[i] = i;
     mem_rng_t rng = { (uint32_t)seed };
-    for (int ep = 0; ep < EHW54_ADAPT; ep++) {
+    for (int ep = 0; ep < cfg->adapt_epochs; ep++) {
         for (int i = EHW_NTEST - 1; i > 0; i--) {
             int j = mem_rng_range(&rng, i + 1);
             int tmp = order[i]; order[i] = order[j]; order[j] = tmp;
@@ -396,6 +545,7 @@ static ehw_score_t evaluate_hw(const int8_t weight[EHW_GENOME_LEN],
 }
 
 static void eval_candidate(const ehw54_arm_t *arm,
+                           const ehw54_run_cfg_t *cfg,
                            const uint8_t sr[SR_GENOME_LEN],
                            const int8_t weight[EHW_GENOME_LEN],
                            int seed,
@@ -403,7 +553,7 @@ static void eval_candidate(const ehw54_arm_t *arm,
     out->pre_score = evaluate_hw(weight, sr, arm->ms_coupling, arm->uses_structure);
     mem_copy_genome(out->pre_weight, weight);
     if (arm->uses_adapt) {
-        adapt_tu(weight, sr, arm->ms_coupling, arm->uses_structure, seed, out->post_weight);
+        adapt_tu(weight, sr, arm->ms_coupling, arm->uses_structure, cfg, seed, out->post_weight);
         out->post_score = evaluate_hw(out->post_weight, sr, arm->ms_coupling, arm->uses_structure);
     } else {
         mem_copy_genome(out->post_weight, weight);
@@ -413,8 +563,8 @@ static void eval_candidate(const ehw54_arm_t *arm,
     out->feature_mask = arm->uses_structure ? feature_mask_hw(sr) : 0;
     out->feature_ones = arm->uses_structure ? ms_feature_ones(out->feature_mask) : 0;
     out->feature_penalty = arm->uses_pressure ? ms_structural_penalty(out->feature_mask, &(ms_options_t){
-        .feature_min_balance = MS_DEFAULT_FEATURE_MIN_BALANCE,
-        .feature_penalty = MS_DEFAULT_FEATURE_PENALTY,
+        .feature_min_balance = cfg->feature_min_balance,
+        .feature_penalty = cfg->feature_penalty,
     }) : 0;
     out->select_score = out->post_score;
     out->select_score.fitness -= out->feature_penalty;
@@ -505,10 +655,11 @@ static void crossover_hybrid(const ms_candidate_t *a,
     mem_crossover(a->weight, b->weight, out->weight, rng);
 }
 
-static void seed_hybrid_population(mem_rng_t *rng) {
+static void seed_hybrid_population(mem_rng_t *rng, const ehw54_run_cfg_t *cfg) {
     int8_t weight_seeds[8][EHW_GENOME_LEN];
     uint8_t sr_seeds[4][SR_GENOME_LEN];
-    mem_seed_population(rng, 8, EHW54_INIT_SPAN, weight_seeds);
+    int weight_seed_count = cfg->population < 8 ? cfg->population : 8;
+    mem_seed_population(rng, weight_seed_count, EHW54_INIT_SPAN, weight_seeds);
     copy_sr(sr_seeds[0], MS_SR_MAJORITY);
     copy_sr(sr_seeds[1], MS_SR_REPAIR);
     sr_scaffold_genome(rng, 0, sr_seeds[2]);
@@ -516,16 +667,18 @@ static void seed_hybrid_population(mem_rng_t *rng) {
 
     int n = 0;
     for (int s = 0; s < 4; s++) {
-        for (int w = 0; w < 2; w++) {
-            copy_sr(pop[n].sr, sr_seeds[s]);
-            mem_copy_genome(pop[n].weight, weight_seeds[w]);
-            n++;
+        for (int w = 0; w < 2 && w < weight_seed_count; w++) {
+            if (n < cfg->population) {
+                copy_sr(pop[n].sr, sr_seeds[s]);
+                mem_copy_genome(pop[n].weight, weight_seeds[w]);
+                n++;
+            }
         }
     }
-    while (n < EHW54_POP) {
+    while (n < cfg->population) {
         int s = mem_rng_range(rng, 4);
         sr_mutate_genome(sr_seeds[s], pop[n].sr, rng);
-        int w = mem_rng_range(rng, 8);
+        int w = mem_rng_range(rng, weight_seed_count);
         int8_t tmp[EHW_GENOME_LEN];
         mem_mutate(weight_seeds[w], tmp, rng, EHW54_MUT_PPM, EHW54_MUT_STEP);
         mem_copy_genome(pop[n].weight, tmp);
@@ -538,9 +691,10 @@ static int better_score_idx(const ehw_score_t *as, int ai, const ehw_score_t *bs
     return ai < bi;
 }
 
-static void sort_ranked(void) {
-    for (int i = 0; i < EHW54_POP; i++) ranked_idx[i] = i;
+static void sort_ranked(const ehw54_run_cfg_t *cfg) {
+    for (int i = 0; i < cfg->population; i++) ranked_idx[i] = i;
     for (int i = 1; i < EHW54_POP; i++) {
+        if (i >= cfg->population) break;
         int item = ranked_idx[i];
         int j = i - 1;
         while (j >= 0 && better_score_idx(&evaluated[item].select_score, item,
@@ -553,11 +707,11 @@ static void sort_ranked(void) {
     }
 }
 
-static int tournament_pick(mem_rng_t *rng) {
-    int best_pos = mem_rng_range(rng, EHW54_POP);
+static int tournament_pick(mem_rng_t *rng, const ehw54_run_cfg_t *cfg) {
+    int best_pos = mem_rng_range(rng, cfg->population);
     int best_idx = ranked_idx[best_pos];
     for (int i = 1; i < EHW54_TOURN; i++) {
-        int cur_pos = mem_rng_range(rng, EHW54_POP);
+        int cur_pos = mem_rng_range(rng, cfg->population);
         int cur_idx = ranked_idx[cur_pos];
         if (better_score_idx(&evaluated[cur_idx].select_score, cur_idx,
                              &evaluated[best_idx].select_score, best_idx)) {
@@ -568,19 +722,20 @@ static int tournament_pick(mem_rng_t *rng) {
 }
 
 static void eval_weight_candidate(const int8_t weight[EHW_GENOME_LEN],
+                                  const ehw54_run_cfg_t *cfg,
                                   int seed,
                                   mem_eval_t *out) {
     out->pre_score = evaluate_hw(weight, MS_SR_MAJORITY, MS_COUPLING_BIAS_X3, 0);
     mem_copy_genome(out->pre_genome, weight);
-    adapt_tu(weight, MS_SR_MAJORITY, MS_COUPLING_BIAS_X3, 0, seed, out->post_genome);
+    adapt_tu(weight, MS_SR_MAJORITY, MS_COUPLING_BIAS_X3, 0, cfg, seed, out->post_genome);
     out->post_score = evaluate_hw(out->post_genome, MS_SR_MAJORITY, MS_COUPLING_BIAS_X3, 0);
     out->select_score = out->post_score;
     mem_copy_genome(out->genome_for_next, out->post_genome);
 }
 
-static void sort_ranked_mem(void) {
-    for (int i = 0; i < EHW54_POP; i++) ranked_idx[i] = i;
-    for (int i = 1; i < EHW54_POP; i++) {
+static void sort_ranked_mem(const ehw54_run_cfg_t *cfg) {
+    for (int i = 0; i < cfg->population; i++) ranked_idx[i] = i;
+    for (int i = 1; i < cfg->population; i++) {
         int item = ranked_idx[i];
         int j = i - 1;
         while (j >= 0 && better_score_idx(&mem_evaluated[item].select_score, item,
@@ -593,11 +748,11 @@ static void sort_ranked_mem(void) {
     }
 }
 
-static int tournament_pick_mem(mem_rng_t *rng) {
-    int best_pos = mem_rng_range(rng, EHW54_POP);
+static int tournament_pick_mem(mem_rng_t *rng, const ehw54_run_cfg_t *cfg) {
+    int best_pos = mem_rng_range(rng, cfg->population);
     int best_idx = ranked_idx[best_pos];
     for (int i = 1; i < EHW54_TOURN; i++) {
-        int cur_pos = mem_rng_range(rng, EHW54_POP);
+        int cur_pos = mem_rng_range(rng, cfg->population);
         int cur_idx = ranked_idx[cur_pos];
         if (better_score_idx(&mem_evaluated[cur_idx].select_score, cur_idx,
                              &mem_evaluated[best_idx].select_score, best_idx)) {
@@ -672,21 +827,21 @@ static void publish_result_words(const ehw54_arm_t *arm, const ehw54_result_t *r
 }
 #endif
 
-static void run_hybrid_ga(const ehw54_arm_t *arm, FILE *curve,
+static void run_hybrid_ga(const ehw54_arm_t *arm, const ehw54_run_cfg_t *cfg, FILE *curve,
                           ms_eval_t *best_out, int *first_40_out) {
     int seed_offset = arm->ms_mode == MS_MODE_LAMARCKIAN ? 303 :
         (arm->ms_mode == MS_MODE_NO_ADAPT ? 404 : 505);
-    mem_rng_t rng = { (uint32_t)(EHW54_SEED + seed_offset) };
-    seed_hybrid_population(&rng);
-    eval_candidate(arm, pop[0].sr, pop[0].weight, EHW54_SEED, &evaluated[0]);
+    mem_rng_t rng = { (uint32_t)(cfg->seed + seed_offset) };
+    seed_hybrid_population(&rng, cfg);
+    eval_candidate(arm, cfg, pop[0].sr, pop[0].weight, cfg->seed, &evaluated[0]);
     ms_eval_t best = evaluated[0];
     int first_40 = -1;
 
-    for (int gen = 0; gen <= EHW54_GENS; gen++) {
-        for (int i = 0; i < EHW54_POP; i++) {
-            eval_candidate(arm, pop[i].sr, pop[i].weight, EHW54_SEED + gen * 1009 + i, &evaluated[i]);
+    for (int gen = 0; gen <= cfg->generations; gen++) {
+        for (int i = 0; i < cfg->population; i++) {
+            eval_candidate(arm, cfg, pop[i].sr, pop[i].weight, cfg->seed + gen * 1009 + i, &evaluated[i]);
         }
-        sort_ranked();
+        sort_ranked(cfg);
         int top = ranked_idx[0];
         if (evaluated[top].select_score.fitness > best.select_score.fitness) {
             best = evaluated[top];
@@ -697,7 +852,7 @@ static void run_hybrid_ga(const ehw54_arm_t *arm, FILE *curve,
 #else
         publish_arm_heartbeat(arm, gen, best.post_score.correct);
 #endif
-        if (gen == EHW54_GENS) break;
+        if (gen == cfg->generations) break;
 
         for (int i = 0; i < EHW54_ELITES; i++) {
             int src = ranked_idx[i];
@@ -705,13 +860,13 @@ static void run_hybrid_ga(const ehw54_arm_t *arm, FILE *curve,
             mem_copy_genome(next_pop[i].weight, evaluated[src].weight_for_next);
         }
         int nnext = EHW54_ELITES;
-        while (nnext < EHW54_POP) {
-            int p1 = tournament_pick(&rng);
+        while (nnext < cfg->population) {
+            int p1 = tournament_pick(&rng, cfg);
             ms_candidate_t parent, child;
             copy_sr(parent.sr, evaluated[p1].sr);
             mem_copy_genome(parent.weight, evaluated[p1].weight_for_next);
             if (mem_rng_chance(&rng, EHW54_CROSS_PPM)) {
-                int p2 = tournament_pick(&rng);
+                int p2 = tournament_pick(&rng, cfg);
                 ms_candidate_t mate;
                 copy_sr(mate.sr, evaluated[p2].sr);
                 mem_copy_genome(mate.weight, evaluated[p2].weight_for_next);
@@ -728,21 +883,22 @@ static void run_hybrid_ga(const ehw54_arm_t *arm, FILE *curve,
     *first_40_out = first_40;
 }
 
-static void run_weight_ga(FILE *curve, mem_eval_t *best_out, int *first_40_out) {
-#ifndef MEMETIC_STRUCT_GA_HOST_STUB
-    const ehw54_arm_t *arm = &EHW54_ARMS[EHW54_ARM_WEIGHT_ONLY];
+static void run_weight_ga(const ehw54_arm_t *arm, const ehw54_run_cfg_t *cfg,
+                          FILE *curve, mem_eval_t *best_out, int *first_40_out) {
+#ifdef MEMETIC_STRUCT_GA_HOST_STUB
+    (void)arm;
 #endif
-    mem_rng_t rng = { (uint32_t)(EHW54_SEED + 202) };
-    mem_seed_population(&rng, EHW54_POP, EHW54_INIT_SPAN, mem_pop);
-    eval_weight_candidate(mem_pop[0], EHW54_SEED, &mem_evaluated[0]);
+    mem_rng_t rng = { (uint32_t)(cfg->seed + 202) };
+    mem_seed_population(&rng, cfg->population, EHW54_INIT_SPAN, mem_pop);
+    eval_weight_candidate(mem_pop[0], cfg, cfg->seed, &mem_evaluated[0]);
     mem_eval_t best = mem_evaluated[0];
     int first_40 = -1;
 
-    for (int gen = 0; gen <= EHW54_GENS; gen++) {
-        for (int i = 0; i < EHW54_POP; i++) {
-            eval_weight_candidate(mem_pop[i], EHW54_SEED + gen * 1009 + i, &mem_evaluated[i]);
+    for (int gen = 0; gen <= cfg->generations; gen++) {
+        for (int i = 0; i < cfg->population; i++) {
+            eval_weight_candidate(mem_pop[i], cfg, cfg->seed + gen * 1009 + i, &mem_evaluated[i]);
         }
-        sort_ranked_mem();
+        sort_ranked_mem(cfg);
         int top = ranked_idx[0];
         if (mem_evaluated[top].select_score.fitness > best.select_score.fitness) {
             best = mem_evaluated[top];
@@ -753,17 +909,17 @@ static void run_weight_ga(FILE *curve, mem_eval_t *best_out, int *first_40_out) 
 #else
         publish_arm_heartbeat(arm, gen, best.post_score.correct);
 #endif
-        if (gen == EHW54_GENS) break;
+        if (gen == cfg->generations) break;
 
         for (int i = 0; i < EHW54_ELITES; i++) {
             mem_copy_genome(mem_next_pop[i], mem_evaluated[ranked_idx[i]].genome_for_next);
         }
         int nnext = EHW54_ELITES;
-        while (nnext < EHW54_POP) {
-            int p1 = tournament_pick_mem(&rng);
+        while (nnext < cfg->population) {
+            int p1 = tournament_pick_mem(&rng, cfg);
             int8_t child[EHW_GENOME_LEN];
             if (mem_rng_chance(&rng, EHW54_CROSS_PPM)) {
-                int p2 = tournament_pick_mem(&rng);
+                int p2 = tournament_pick_mem(&rng, cfg);
                 mem_crossover(mem_evaluated[p1].genome_for_next,
                               mem_evaluated[p2].genome_for_next, child, &rng);
             } else {
@@ -785,9 +941,40 @@ static const char *arg_value(int argc, char **argv, const char *name, const char
     }
     return fallback;
 }
+
+static int load_param_bin(const char *path) {
+    if (!path) return 0;
+    FILE *f = fopen(path, "rb");
+    if (!f) {
+        perror(path);
+        return -1;
+    }
+    memset(fb_model, 0, sizeof(fb_model));
+    uint8_t bytes[4];
+    size_t n = 0;
+    while (n < 2048u) {
+        size_t got = fread(bytes, 1, 4, f);
+        if (got == 0) break;
+        if (got != 4) {
+            fprintf(stderr, "FAIL: truncated param image %s\n", path);
+            fclose(f);
+            return -1;
+        }
+        fb_model[n++] = (uint32_t)bytes[0] | ((uint32_t)bytes[1] << 8) |
+            ((uint32_t)bytes[2] << 16) | ((uint32_t)bytes[3] << 24);
+    }
+    if (fgetc(f) != EOF) {
+        fprintf(stderr, "FAIL: param image %s exceeds 2048 words\n", path);
+        fclose(f);
+        return -1;
+    }
+    fclose(f);
+    return 0;
+}
 #endif
 
 static int result_matches(const ehw54_arm_t *arm, const ehw54_result_t *r) {
+    if (!arm->has_expect) return r->correct == EHW_NTEST;
     if (r->correct != arm->expect_correct) return 0;
     if (r->sse != arm->expect_sse) return 0;
     if (r->first_40 != arm->expect_first40) return 0;
@@ -815,23 +1002,28 @@ static void result_from_hybrid(const ms_eval_t *best, int first_40, ehw54_result
     out->sat_count = mem_sat_count(best->post_weight);
 }
 
-static uint32_t run_all_arms(FILE *curve) {
+static uint32_t run_all_arms(const ehw54_run_cfg_t *cfg, FILE *curve) {
     uint32_t pass = 1;
+    if (!cfg->valid) pass = 0;
 #ifdef MEMETIC_STRUCT_GA_HOST_STUB
     write_curve_header(curve);
 #endif
 
-    for (int ai = 0; ai < EHW54_NARMS; ai++) {
-        const ehw54_arm_t *arm = &EHW54_ARMS[ai];
-        if (arm->id == EHW54_ARM_WEIGHT_ONLY) {
+    for (int ai = 0; ai < cfg->n_arms; ai++) {
+        const ehw54_arm_t *arm = &cfg->arms[ai];
+        if (!cfg->valid) {
+            memset(&arm_results[ai], 0, sizeof(arm_results[ai]));
+            continue;
+        }
+        if (arm->weight_only) {
             mem_eval_t best;
             int first_40;
-            run_weight_ga(curve, &best, &first_40);
+            run_weight_ga(arm, cfg, curve, &best, &first_40);
             result_from_weight(&best, first_40, &arm_results[ai]);
         } else {
             ms_eval_t best;
             int first_40;
-            run_hybrid_ga(arm, curve, &best, &first_40);
+            run_hybrid_ga(arm, cfg, curve, &best, &first_40);
             result_from_hybrid(&best, first_40, &arm_results[ai]);
         }
         if (!result_matches(arm, &arm_results[ai])) pass = 0;
@@ -840,11 +1032,12 @@ static uint32_t run_all_arms(FILE *curve) {
 }
 
 #ifndef MEMETIC_STRUCT_GA_HOST_STUB
-static void publish_all_results(uint32_t pass) {
-    for (int ai = 0; ai < EHW54_NARMS; ai++) {
-        publish_result_words(&EHW54_ARMS[ai], &arm_results[ai]);
+static void publish_all_results(const ehw54_run_cfg_t *cfg, uint32_t pass) {
+    for (int ai = 0; ai < cfg->n_arms; ai++) {
+        publish_result_words(&cfg->arms[ai], &arm_results[ai]);
     }
-    publish(0xF54F0000u | (uint32_t)EHW54_NARMS);
+    publish(0xF54E0000u | ((uint32_t)(cfg->staged & 1u) << 8) | (uint32_t)(cfg->valid & 1u));
+    publish(0xF54F0000u | (uint32_t)(cfg->n_arms & 0xff));
     publish(pass ? 0xF5F40000u : 0xF5F40001u);
 }
 #endif
@@ -854,24 +1047,30 @@ int main(int argc, char **argv) {
 #else
 int main(void) {
 #endif
+    ehw54_run_cfg_t cfg;
 #ifdef MEMETIC_STRUCT_GA_HOST_STUB
     const char *curve_path = arg_value(argc, argv, "--curve-csv", "runs/ehw5_4_struct_ab_curve.csv");
+    const char *param_path = arg_value(argc, argv, "--param-bin", 0);
+    if (load_param_bin(param_path) != 0) return 1;
     FILE *curve = fopen(curve_path, "w");
     if (!curve) {
         perror(curve_path);
         return 1;
     }
-    uint32_t pass = run_all_arms(curve);
+    load_runtime_cfg(&cfg);
+    uint32_t pass = run_all_arms(&cfg, curve);
     fclose(curve);
 #else
     publish(0xF5000004u);
-    uint32_t pass = run_all_arms(0);
+    load_runtime_cfg(&cfg);
+    publish(0xF5300000u | ((uint32_t)(cfg.staged & 1u) << 8) | (uint32_t)(cfg.valid & 1u));
+    uint32_t pass = run_all_arms(&cfg, 0);
 #endif
 
 #ifdef MEMETIC_STRUCT_GA_HOST_STUB
     if (!pass) {
-        for (int ai = 0; ai < EHW54_NARMS; ai++) {
-            const ehw54_arm_t *arm = &EHW54_ARMS[ai];
+        for (int ai = 0; ai < cfg.n_arms; ai++) {
+            const ehw54_arm_t *arm = &cfg.arms[ai];
             const ehw54_result_t *r = &arm_results[ai];
             fprintf(stderr, "FAIL: arm%d %s/%s got %d/40 sse=%d first_40=%d ones=%d penalty=%d sat=%d\n",
                     ai, arm->mode, arm->coupling, r->correct, r->sse, r->first_40,
@@ -879,11 +1078,12 @@ int main(void) {
         }
         return 1;
     }
-    printf("PASS: EHW-5.4 same-boot A/B host stub curves generated for %d arms\n", EHW54_NARMS);
+    printf("PASS: EHW-5.4 same-boot A/B host stub curves generated for %d arms (staged=%u)\n",
+           cfg.n_arms, (unsigned)cfg.staged);
     return 0;
 #else
     while (1) {
-        publish_all_results(pass);
+        publish_all_results(&cfg, pass);
     }
 #endif
 }

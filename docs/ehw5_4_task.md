@@ -76,6 +76,11 @@ summary rows.
 
 ## 5.4b Deliverables - 4.6b Param-Window Scan
 
+Implementation note: host prep is complete in
+`sw/ehw/memetic_struct_ab_mbox.c`, `tests/compare_memetic_struct_ab_train.py`,
+and `scripts/ehw54-param-pack.py`. Board staging/live-update acceptance remains
+pending.
+
 After 5.4a is green, add a parameter-source switch:
 
 - default source: built-in arm table, so the firmware is still self-contained;
@@ -96,7 +101,7 @@ Recommended param-block shape, little-endian words:
 word0  magic = 0xE5400001
 word1  n_arms
 word2  seed
-word3  population
+word3  population (2..16 for current firmware)
 word4  generations
 word5  adapt_epochs
 word6  feature_min_balance

@@ -1,6 +1,8 @@
 # EHW-5.4 Results - Same-Boot Hybrid Ablation
 
-Status: **BOARD-VERIFIED on EBAZ4205 at FCLK0=50 MHz (2026-07-05, first roll).**
+Status: **EHW-5.4a BOARD-VERIFIED on EBAZ4205 at FCLK0=50 MHz
+(2026-07-05, first roll). EHW-5.4b param-window host prep is complete; board
+staging is pending.**
 Steady mailbox carousel matched the host golden for all four arms:
 `f5400028 / f55017e4 / f5600003 / f5700000`,
 `f5400128 / f55111a1 / f5600102 / f5710f00`,
@@ -39,6 +41,7 @@ feature channel even though it still reaches 40/40.
 
 - `sw/ehw/memetic_struct_ab_mbox.c`
 - `tests/compare_memetic_struct_ab_train.py`
+- `scripts/ehw54-param-pack.py`
 - `docs/ehw5_4_results.md`
 
 The RM is unchanged: the board path must reuse the EHW-5.2/EHW-5.3 combined
@@ -55,12 +58,23 @@ Result:
 ```text
 PASS: EHW-5.4a same-boot A/B firmware stub curves are byte-exact
 PASS: EHW-5.4a four-arm expected summary fields match
+PASS: EHW-5.4b staged default param block matches the built-in table
+PASS: EHW-5.4b staged short scan changes the run and remains byte-exact
 ```
 
 The gate compares the full per-generation curve for all four arms against
 `sw/ehw/memetic_struct_eval.c`. Arm 0 is now emitted in the C/Python twin curve
 CSV as `weight_only_lamarckian,none`, so the baseline is no longer checked only
 by final summary.
+
+For EHW-5.4b, the same gate also exercises the 4.6b parameter-window path in
+host-stub mode:
+
+- a staged block containing the same four arms must byte-match the built-in
+  5.4a curve exactly;
+- a staged single-arm short scan (`hybrid_lamarckian_pressure/bias_x3`,
+  `generations=4`) must change the run and still byte-match the C reference
+  curve for that staged parameter block.
 
 `tests/run_host_gates.sh` includes this gate.
 
@@ -107,13 +121,89 @@ Steady carousel after all arms finish:
 0xF5500000 | (arm << 16) | (sse & 0xffff)
 0xF5600000 | (arm << 8)  | first_40_or_0xff
 0xF5700000 | (arm << 16) | (feature_ones << 8) | penalty_bucket
-0xF54F0004
+0xF54E0000 | (staged << 8) | valid
+0xF54F0000 | arm_count
 0xF5F40000   PASS
 0xF5F40001   FAIL
 ```
 
 For arm 0, `feature_ones=0` and `penalty_bucket=0` are placeholders; the
 structural fields are not part of that arm's scientific claim.
+
+## EHW-5.4b Parameter Window
+
+The firmware now supports the board-verified 4.6b parameter window without
+changing the RM:
+
+```text
+PS AXI write/read:  0x40000000
+NEORV32 XBUS read: 0xF5000000 + 4*word
+capacity:          2048 words / 8 KiB
+```
+
+Param block, little-endian words:
+
+```text
+word0  magic = 0xE5400001
+word1  n_arms (1..8)
+word2  seed
+word3  population (2..16; current firmware buffer ceiling and elite count)
+word4  generations (0..64)
+word5  adapt_epochs (0..8)
+word6  feature_min_balance
+word7  feature_penalty
+word8+ arm descriptor = mode | (coupling << 8) | (flags << 16)
+```
+
+Descriptor mode values:
+
+```text
+0 hybrid_lamarckian
+1 hybrid_lamarckian_pressure
+2 hybrid_no_adapt
+3 weight_only_lamarckian
+```
+
+Descriptor coupling values:
+
+```text
+0 replace_x3
+1 gate_x3
+2 bias_x3
+3 none
+```
+
+Descriptor flags:
+
+```text
+bit0 uses_structure
+bit1 uses_adapt
+bit2 uses_pressure
+```
+
+If magic is absent, firmware runs the board-verified built-in 5.4a four-arm
+table. If magic is present but invalid, it reports FAIL rather than silently
+falling back. `scripts/ehw54-param-pack.py` generates staged images, for
+example:
+
+```bash
+python3 scripts/ehw54-param-pack.py --preset default \
+  --out runs/ehw54/param_default.bin
+python3 scripts/ehw54-param-pack.py --preset pressure-short --generations 4 \
+  --out runs/ehw54/param_pressure_short.bin
+```
+
+Board staging should reuse the existing loader:
+
+```bash
+python3 scripts/ehw2-framebank-load.py runs/ehw54/param_default.bin 0x40000000
+```
+
+EHW-5.4b does not yet have a board claim. The board acceptance item is to stage
+one of these blocks while the 5.4 firmware is running, confirm the steady
+carousel source word changes to staged/valid (`0xF54E0101`), and confirm the arm
+rows match the host-golden fields for the staged block without rebuilding or
+reloading the bitstream.
 
 ## Board Verification
 
@@ -148,8 +238,8 @@ not a holdout generalization claim.
 
 ## Closeout
 
-EHW-5.4a satisfies the EHW-5 stop rule. The line is closed after the same-boot
+EHW-5.4a satisfies the EHW-5 stop rule. The line was closed after the same-boot
 ablation: structure+pressure, HW-SGD adaptation, and pressure-vs-degeneration
-were all tested without cross-build or cross-boot confounders. EHW-5.4b
-parameter-window scans and EHW-5.5 ICAP reveal remain optional future demos, not
-requirements for the main EHW-5 claim.
+were all tested without cross-build or cross-boot confounders. EHW-5.4b is
+additional parameter-window polish and remains outside the main EHW-5 claim
+until Claude performs the board staging check above.

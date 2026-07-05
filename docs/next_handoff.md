@@ -347,8 +347,29 @@ arm0 `f5400028/f55017e4/f5600003/f5700000`; arm1
 `f5400228/f5521207/f560020b/f5722700`; arm3
 `f5400328/f55316cd/f5600305/f5730000`; final `f54f0004/f5f40000`.
 
-Decision: close EHW-5 at EHW-5.4a. Do not start 5.4b or 5.5 by default. They
-remain optional future demos only. Release-polish docs are prepared in
-`docs/RELEASE_NOTES_v1.1.0.md`, `docs/WRITEUP.md`, README, and reproduction
-docs. Next work: Claude claim-audits these docs against `docs/board_results.md`,
-then an annotated `v1.1.0` tag can be created after user approval.
+Decision: close the main EHW-5 claim at EHW-5.4a. After v1.1.0, EHW-5.4b was
+started as optional post-release polish. Host prep is implemented in
+`sw/ehw/memetic_struct_ab_mbox.c`, `tests/compare_memetic_struct_ab_train.py`,
+and `scripts/ehw54-param-pack.py`.
+
+5.4b board handoff:
+
+- rebuild the same EHW-5.4 firmware/RM lineage;
+- run `python3 scripts/board-set-fclk50.py --port /dev/ebaz-uart` immediately
+  before `fpga loadb`;
+- with no param magic, confirm the built-in 5.4a table still publishes the known
+  four-arm carousel;
+- generate a staged block, for example:
+
+```bash
+python3 scripts/ehw54-param-pack.py --preset pressure-short --generations 4 \
+  --out runs/ehw54/param_pressure_short.bin
+python3 scripts/ehw2-framebank-load.py runs/ehw54/param_pressure_short.bin 0x40000000
+```
+
+- confirm the steady carousel source word becomes staged/valid
+  (`0xF54E0101`), arm count changes to the staged block, and result rows match
+  the host-golden curve fields for that block without rebuilding or reloading.
+
+5.5 remains optional ICAP reveal polish. It requires fresh routed bitstreams and
+frame extraction; do not claim board evidence from host-prep alone.

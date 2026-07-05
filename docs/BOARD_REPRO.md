@@ -216,6 +216,20 @@ Observed endpoints:
   `f5400128/f55111a1/f5600102/f5710f00`,
   `f5400228/f5521207/f560020b/f5722700`,
   `f5400328/f55316cd/f5600305/f5730000`, plus `f54f0004`.
+- EHW-5.4b parameter-window host prep: generate staged blocks with
+  `scripts/ehw54-param-pack.py` and stage them through the board-verified 4.6b
+  AXI window:
+
+```sh
+python3 scripts/ehw54-param-pack.py --preset pressure-short --generations 4 \
+  --out runs/ehw54/param_pressure_short.bin
+python3 scripts/ehw2-framebank-load.py runs/ehw54/param_pressure_short.bin 0x40000000
+```
+
+  The board acceptance target is source word `0xf54e0101` (staged+valid) plus
+  arm rows matching the host golden for the staged block, without rebuilding or
+  reloading the bitstream. No 5.4b board claim is recorded until that run is
+  captured in `docs/board_results.md`.
 
 Exact sampled words, build manifests, and interpretation are in
 `docs/board_results.md`.

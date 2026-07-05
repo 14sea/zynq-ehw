@@ -1,8 +1,10 @@
 # EHW-5 Plan — Structure + Weights + HW-SGD Hybrid Evolution
 
-Status: **CLOSED at EHW-5.4a.** EHW-5.2, EHW-5.3, and EHW-5.4a are
-board-verified at FCLK0=50 MHz. EHW-5.4a's same-boot ablation met the stop rule;
-5.4b parameter-window scans and 5.5 ICAP reveal are optional future demos.
+Status: **CLOSED at EHW-5.4a for the main claim.** EHW-5.2, EHW-5.3, and
+EHW-5.4a are board-verified at FCLK0=50 MHz. EHW-5.4a's same-boot ablation met
+the stop rule. EHW-5.4b parameter-window host prep is implemented as optional
+post-release polish; board staging is pending. EHW-5.5 ICAP reveal remains an
+optional demo.
 
 EHW-5 is the "complete" hybrid line: combine the EHW-3 safe spare-routing island
 with the EHW-4 HW-SGD memetic loop. A candidate genome carries both a small
@@ -325,15 +327,19 @@ Preferred first table, locked by `sw/ehw/memetic_struct_eval.c` with seed `3`,
 | S+W pressure `bias_x3` | `40/40`, SSE `4513`, first_40 `2`, feature_ones `15`, penalty `0` |
 | S+W no-adapt `gate_x3` | `40/40`, SSE `4615`, first_40 `11`, feature_ones `39` |
 
-The fixed same-boot A/B is green. A future 5.4b can switch the arm/scan table to
-the board-verified 4.6b parameter window (`PS 0x40000000` ->
-`NEORV32 0xF5000000`) so parameter sweeps do not require firmware rebuilds, but
-it is optional and not part of the closed EHW-5 claim.
+The fixed same-boot A/B is green. EHW-5.4b host prep now switches the arm/scan
+table to the board-verified 4.6b parameter window (`PS 0x40000000` ->
+`NEORV32 0xF5000000`) so parameter sweeps do not require firmware rebuilds. The
+host gate proves both the built-in table and staged blocks against
+`memetic_struct_eval.c`; the remaining acceptance item is Claude-side board
+staging and live-update observation.
 
 ### EHW-5.5 — Optional ICAP Reveal
 
 EHW-5.3 showed a useful first hybrid result, and EHW-5.4a confirmed it under
-same-boot ablation. A future optional demo may:
+same-boot ablation. EHW-5.5 is presentation polish, not part of the main claim.
+The host contract and board handoff are in `docs/ehw5_5_task.md`. An optional
+demo may:
 
 - bake the best structural feature into the spare-route island;
 - optionally bake the adapted weights into LUT-KCM as in EHW-0.5;

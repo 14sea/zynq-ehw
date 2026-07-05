@@ -182,8 +182,11 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   hybrid `bias_x3`. The steady carousel matched host golden for every arm:
   final `0xF5F40000`; arm1 `40/40`, SSE `4513`, first_40 `2`, feature_ones `15`,
   penalty `0`. Arm3 showed the expected unpressured degeneration
-  (`feature_ones=0`). This closes EHW-5; 5.4b/5.5 are optional future demos
-  (`docs/ehw5_4_results.md`, exact board words in `docs/board_results.md`).
+  (`feature_ones=0`). This closes the main EHW-5 claim. EHW-5.4b
+  parameter-window host prep is implemented after v1.1.0; board staging is
+  pending. EHW-5.5 optional ICAP reveal has a host contract/task, but no board
+  claim yet (`docs/ehw5_4_results.md`, `docs/ehw5_5_task.md`, exact board words
+  in `docs/board_results.md`).
 
 ## Dependencies & reproduction environment
 
@@ -272,7 +275,9 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   weight-only vs hybrid-pressure vs no-adapt arms, followed by an optional 4.6b
   parameter-window scan.
 - `docs/ehw5_4_results.md` — board-verified EHW-5.4a same-boot hybrid ablation
-  closeout.
+  closeout plus EHW-5.4b parameter-window host prep.
+- `docs/ehw5_5_task.md` — optional EHW-5 ICAP reveal contract and board
+  handoff requirements.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
@@ -358,8 +363,11 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   spare-route VRC + train-unit RM wrapper and firmware host stub.
 - `tests/compare_memetic_struct_ga_train.py` — verifies the EHW-5.3 hybrid
   structure+weight GA firmware host stub against the EHW-5.1 C twin curve.
-- `tests/compare_memetic_struct_ab_train.py` — verifies the EHW-5.4a same-boot
-  hybrid ablation firmware host stub against the EHW-5.1 C twin curve.
+- `tests/compare_memetic_struct_ab_train.py` — verifies the EHW-5.4 same-boot
+  hybrid ablation and staged parameter-window firmware host stub against the
+  EHW-5.1 C twin curve.
+- `tests/compare_ehw55_reveal_contract.py` — freezes the optional EHW-5.5
+  structural ICAP-reveal champion and exact INIT-diff contract.
 - `tests/compare_spare_route_vrc.py` — verifies the EHW-3.2 spare-routing fabric
   VRC RTL sim, firmware host stub, wrapper compile, Py/C oracle gate, and optional
   Vivado OOC synth.

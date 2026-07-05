@@ -113,8 +113,9 @@ pure truth-table changes and our results are deterministic and reproducible.
   use a board-verified HW-SGD inner loop for adaptation, and pass same-boot
   ablations. They do not claim holdout generalization or arbitrary-scale EHW.
 - **EHW-5 does not require ICAP baking to make its main claim.** EHW-5.4b
-  parameter-window sweeps and EHW-5.5 ICAP reveal are optional future demos, not
-  prerequisites for the structure+weight+HW-SGD result.
+  parameter-window host prep is optional post-release polish with board staging
+  pending; EHW-5.5 ICAP reveal remains an optional future demo, not a
+  prerequisite for the structure+weight+HW-SGD result.
 
 ## 6. Reproducibility
 
