@@ -34,11 +34,12 @@ def cmd(ser: serial.Serial, line: str, timeout: float = 1.0) -> bytes:
     return buf
 
 
-def read_words(path: str) -> list[int]:
+def read_words(path: str, little_endian: bool = False) -> list[int]:
     data = open(path, "rb").read()
     if len(data) % 4:
         raise SystemExit(f"{path}: size is not a multiple of 4")
-    return list(struct.unpack(f">{len(data) // 4}I", data))
+    fmt = "<" if little_endian else ">"
+    return list(struct.unpack(f"{fmt}{len(data) // 4}I", data))
 
 
 def main() -> int:
@@ -46,9 +47,15 @@ def main() -> int:
     ap.add_argument("image")
     ap.add_argument("base", type=lambda s: int(s, 16))
     ap.add_argument("--port", default=PORT)
+    ap.add_argument("--le", action="store_true",
+                    help="image words are little-endian (e.g. ehw54-param-pack.py "
+                         "output); default is big-endian framebank format. "
+                         "Board-caught gotcha: staging an LE param image without "
+                         "this flag byte-swaps every word (magic 0xE5400001 "
+                         "arrives as 0x010040E5).")
     args = ap.parse_args()
 
-    words = read_words(args.image)
+    words = read_words(args.image, little_endian=args.le)
     if not words:
         raise SystemExit("empty image")
 

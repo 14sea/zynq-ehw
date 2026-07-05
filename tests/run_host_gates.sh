@@ -37,6 +37,7 @@ gates=(
   "compare_memetic_struct_ga_train.py"   # EHW-5.3: hybrid structure GA firmware stub
   "compare_memetic_struct_ab_train.py"   # EHW-5.4: same-boot hybrid ablation + staged param-window firmware stub
   "compare_ehw55_reveal_contract.py"     # EHW-5.5: optional ICAP reveal structural contract
+  "compare_ehw55_baked.py"               # EHW-5.5: no-fault baked target RTL + POST fw stub
 )
 
 fail=0

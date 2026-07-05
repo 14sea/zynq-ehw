@@ -36,6 +36,10 @@ vivado/dfx/build/
 vivado/dfx/build_sr/
 vivado/dfx/build_srb/
 vivado/dfx/spare_route_icap/
+vivado/dfx/build_e55/
+vivado/dfx/build_e55_src/
+vivado/dfx/ehw55_icap/
+vivado/dfx/build_e55*.log
 vivado/**/hd_visual/
 vivado/icap_ehw2/ehw2_seqs*/
 vivado/**/cgp_icap/

@@ -41,6 +41,9 @@ endmodule
 `endif
 
 module spare_route_baked #(
+    // EHW-5.5: NO_FAULT=1 removes the hard DISABLE_NODE(A1) fault (A1 reaches
+    // the output muxes). Default 0 preserves the EHW-3.3 board-verified fault.
+    parameter NO_FAULT = 1'b0,
     parameter [7:0] G0  = 8'h0a,
     parameter [7:0] G1  = 8'h08,
     parameter [7:0] G2  = 8'h01,
@@ -111,7 +114,7 @@ module spare_route_baked #(
     (* DONT_TOUCH = "yes" *) LUT2 #(.INIT(G2[3:0])) g2 (.O(a2),     .I0(a2_i0), .I1(a2_i1));
     (* DONT_TOUCH = "yes" *) LUT2 #(.INIT(G3[3:0])) g3 (.O(as_node),.I0(as_i0), .I1(as_i1));
 
-    assign a1_disabled = 1'b0;
+    assign a1_disabled = NO_FAULT ? a1_raw : 1'b0;
 
     (* DONT_TOUCH = "yes" *) LUT4 #(.INIT(out_mux_init(G13))) g13 (.O(o_i0), .I0(a0), .I1(a1_disabled), .I2(a2), .I3(as_node));
     (* DONT_TOUCH = "yes" *) LUT4 #(.INIT(out_mux_init(G14))) g14 (.O(o_i1), .I0(a0), .I1(a1_disabled), .I2(a2), .I3(as_node));
@@ -120,6 +123,7 @@ module spare_route_baked #(
 endmodule
 
 module wb_spare_route_baked #(
+    parameter NO_FAULT = 1'b0,
     parameter [31:0] MARKER = 32'h5352_4230, // "SRB0"
     parameter [7:0] G0  = 8'h0a,
     parameter [7:0] G1  = 8'h08,
@@ -160,6 +164,7 @@ module wb_spare_route_baked #(
     assign dbg_leds = {3'd0, out_bit};
 
     spare_route_baked #(
+        .NO_FAULT(NO_FAULT),
         .G0(G0), .G1(G1), .G2(G2), .G3(G3), .G4(G4), .G5(G5), .G6(G6), .G7(G7),
         .G8(G8), .G9(G9), .G10(G10), .G11(G11), .G12(G12), .G13(G13), .G14(G14), .G15(G15)
     ) u_baked (

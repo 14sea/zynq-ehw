@@ -807,3 +807,55 @@ rebuilding or reloading the bitstream ✓.
    boot, and a full `fpga loadb` would wipe the staged BRAM back to zeros. The
    FPGA_RST_CTRL logic-reset (above) is the correct — and now board-verified —
    mechanism, satisfying the "no rebuild, no reload" acceptance clause.
+
+## EHW-5.5 ICAP reveal — PASS: EHW-5 champion feature baked into the live island (2026-07-05)
+
+**The EHW-5.4a arm1 structural champion now exists as baked fabric INITs,
+installed by a live ICAP edit with no PS/NEORV32 reset.** Closes the reveal
+lineage of EHW-0.5 / 1.2 / 3.3 for the EHW-5 line. Run under the user-mandated
+staged-gate discipline (HOLD on any dirt); one HOLD was actually taken.
+
+Gate 1 — no-fault target + host/OOC contract (all green):
+- `rtl/spare_route_baked.v` gains `NO_FAULT` (default 0 = EHW-3.3 behavior;
+  tb regression c8 proves bit-identical); new RM `tpu_rp_rm_ehw55_baked.v`
+  (marker "SR55", MS_SR_MAJORITY baseline, NO_FAULT=1); POST firmware
+  `sw/ehw/ehw55_reveal_post.c` (truth mask + 40-sample feature mask, steady
+  republish); gate `tests/compare_ehw55_baked.py` = contract + iverilog
+  e8/a0/c8 + firmware stub both variants; OOC synth: 16/16 g-cells survive,
+  INITs == contract BASE mapping exactly.
+- **HOLD taken and cleared:** first firmware cut published the feature-mask
+  high bits as a 24-bit payload under a 16-bit tag — the OR overlap silently
+  destroyed 3 of 40 mask bits (0xfb would read as 0xff). Caught while deriving
+  the board expectations; protocol reworked to all-16-bit payloads
+  (E551/E552 marker hi/lo, E553 truth, E554/E555 fm lo/mid, E556 fm-hi|ones)
+  and the host stub now asserts the EXACT published word sequence (the
+  values-only stub was the blind spot that let this through). Firmware
+  rebaked, full fresh rebuild, frames re-extracted per the never-reuse rule.
+Gate 2 — fresh routed build + frame extraction (all green):
+- `build_ehw55_baked.tcl` (fresh project, PS-only BD; uses the pinned
+  pre-fb_0 `6d2fada~1` soc/top pair — the current fb_0 dfx_top expects BD
+  ports this BD doesn't have; first build failed exactly there, fixed via
+  in-tcl `git show` export) → impl_1 + impl_55 Complete, DRC clean;
+  `ehw55_edit_champion.tcl` set exactly the six contract INITs on the routed
+  dcp (g0→8, g1→0, g7→0, g8→0, g12→CCCC…, g14→FF00).
+- prjxray `bitread -y` diff baseline↔champion: 40 set + 112+8 clr = 160 bits
+  across exactly **12 FARs in 3 slice-column groups** (0x4014a0-a3,
+  0x40159a-9d, 0x4015a0-a3) — 6 LUTs × 4 frames each, no strays;
+  `m75-build-frameseqs.py` → 12 envelopes, **12/12 self-checked**, strictly
+  monotonic distinct starts (341629…348396).
+Gate 3 — board (all green, first roll):
+- `board-set-fclk50.py` preflight — which caught FCLK0 back at 125
+  (`0x00200400`) after another spontaneous NAND reboot, and re-pinned 50;
+- `fpga loadb` baseline → steady six words:
+  `e5515352 e5523535` (marker "SR55") `e55300e8` (truth 0xe8)
+  `e554bfc7 e555c5da e556fb1c` (feature 0xfbc5dabfc7, ones 28);
+- `PCAP_PR=0` → `readreg 12 = 0x13722093` → **background uninterrupted**
+  writeseq of all 12 envelopes (each 233 words, SR=0x5/CR=0 clean) →
+  `readreg 12 = 0x13722093` → `PCAP_PR=1` restored;
+- post-ICAP steady six words, same firmware run, **no reset**:
+  `e5515352 e5523535` (marker UNCHANGED) `e55300a0` (truth **0xa0**)
+  `e5542a42 e555c1d0 e556d20f` (feature **0xd2c1d02a42**, ones **15**).
+
+Acceptance per docs/ehw5_5_task.md: all six criteria met. Also this leg:
+`ehw2-framebank-load.py` gained `--le` (unit-checked against the exact 5.4b
+param image; default BE unchanged).

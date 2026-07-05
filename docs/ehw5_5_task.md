@@ -1,6 +1,9 @@
 # EHW-5.5 Task - Optional ICAP Reveal
 
-Status: **OPTIONAL HOST CONTRACT COMPLETE; board/Vivado work pending.**
+Status: **BOARD-VERIFIED on EBAZ4205 (2026-07-05).** Baseline truth 0xe8 /
+feature 0xfbc5dabfc7 (28 ones) -> live ICAP edit of exactly g0/g1/g7/g8/g12/g14
+-> champion truth 0xa0 / feature 0xd2c1d02a42 (15 ones), marker "SR55"
+unchanged, no PS/NEORV32 reset. Exact words in `docs/board_results.md`.
 
 EHW-5.5 is presentation polish after the main EHW-5 line closed at EHW-5.4a. It
 should not change the claim: EHW-5 already demonstrated structure+weight
