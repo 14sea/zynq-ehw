@@ -1,8 +1,9 @@
 # EHW-5.4 Results - Same-Boot Hybrid Ablation
 
-Status: **EHW-5.4a BOARD-VERIFIED on EBAZ4205 at FCLK0=50 MHz
-(2026-07-05, first roll). EHW-5.4b param-window host prep is complete; board
-staging is pending.**
+Status: **BOARD-VERIFIED on EBAZ4205 at FCLK0=50 MHz.** EHW-5.4a passed on
+2026-07-05 (first roll). EHW-5.4b parameter-window staging also passed on
+2026-07-05: one bitstream, PS-staged parameter block, PL logic reset, no rebuild
+and no reload.
 Steady mailbox carousel matched the host golden for all four arms:
 `f5400028 / f55017e4 / f5600003 / f5700000`,
 `f5400128 / f55111a1 / f5600102 / f5710f00`,
@@ -89,7 +90,7 @@ make -C runs/fw_ehw54 APP_SRC=memetic_struct_ab_mbox.c \
   clean install verify-image
 ```
 
-Result:
+5.4a result:
 
 ```text
 text=7472 data=0 bss=6240
@@ -98,6 +99,13 @@ verify-image OK
 
 The `.bss` footprint stayed well under the 16 KiB NEORV32 DMEM limit while
 running all four arms sequentially with shared buffers.
+
+5.4b result after adding the parameter-window reader:
+
+```text
+text=8220 data=0 bss=6336
+verify-image OK
+```
 
 ## Firmware Protocol
 
@@ -193,17 +201,25 @@ python3 scripts/ehw54-param-pack.py --preset pressure-short --generations 4 \
   --out runs/ehw54/param_pressure_short.bin
 ```
 
-Board staging should reuse the existing loader:
+Board staging can use the existing loader in little-endian mode:
 
 ```bash
-python3 scripts/ehw2-framebank-load.py runs/ehw54/param_default.bin 0x40000000
+python3 scripts/ehw2-framebank-load.py --le runs/ehw54/param_default.bin 0x40000000
 ```
 
-EHW-5.4b does not yet have a board claim. The board acceptance item is to stage
-one of these blocks while the 5.4 firmware is running, confirm the steady
-carousel source word changes to staged/valid (`0xF54E0101`), and confirm the arm
-rows match the host-golden fields for the staged block without rebuilding or
-reloading the bitstream.
+Board-caught gotcha: the framebank loader's default word format is big-endian,
+because EHW-2/EHW-3 framebanks are big-endian word streams. EHW-5.4b param
+images are little-endian, so use `--le` or direct U-Boot `mw` writes. Without
+that, the magic `0xE5400001` appears byte-swapped as `0x010040E5`.
+
+EHW-5.4b was board-verified with a staged short scan. The firmware reads the
+parameter window once at boot, so the no-rebuild/no-reload sequence is:
+
+1. stage the little-endian parameter words into `0x40000000`;
+2. pulse `SLCR FPGA_RST_CTRL` (`0xF8000240`) to reset PL logic while preserving
+   the framebuf BRAM contents;
+3. observe the steady carousel source word `0xF54E0101` (staged=1, valid=1) and
+   staged arm rows.
 
 ## Board Verification
 
@@ -215,7 +231,7 @@ python3 scripts/board-set-fclk50.py --port /dev/ebaz-uart
 
 Acceptance evidence:
 
-- `tests/run_host_gates.sh`: 19/19 PASS;
+- `tests/run_host_gates.sh`: PASS;
 - firmware `verify-image` PASS and 16 KiB DMEM fit (`text=7472 data=0 bss=6240`);
 - clean `ws_54` build, WNS +1.026, 0 errors;
 - FCLK0 readback `0x00200a00` immediately before `fpga loadb`;
@@ -233,13 +249,30 @@ Observed steady carousel:
 
 Final words: `f54f0004` (arm count 4), `f5f40000` (PASS).
 
+EHW-5.4b staged short-scan board evidence:
+
+```text
+f5400028  arm0 correct 40/40
+f55011a1  SSE 4513
+f5600002  first_40 = 2
+f5700f00  feature_ones 15, penalty bucket 0
+f54e0101  staged=1, valid=1
+f54f0001  arm count 1
+f5f40000  PASS
+```
+
+The staged run changed the firmware from the built-in four-arm `GENS=32` table
+to a single-arm `GENS=4` scan using one bitstream and one staged parameter
+block. The host gate separately proves the staged 4-generation curve differs
+byte-wise from the built-in 32-generation curve while matching its own golden.
+
 This remains the same 40-sample deployment/adaptation metric as EHW-5.0-5.3,
 not a holdout generalization claim.
 
 ## Closeout
 
-EHW-5.4a satisfies the EHW-5 stop rule. The line was closed after the same-boot
-ablation: structure+pressure, HW-SGD adaptation, and pressure-vs-degeneration
-were all tested without cross-build or cross-boot confounders. EHW-5.4b is
-additional parameter-window polish and remains outside the main EHW-5 claim
-until Claude performs the board staging check above.
+EHW-5.4a satisfies the EHW-5 stop rule. EHW-5.4b adds the engineering proof that
+the same bitstream can be re-parameterized from the PS through the 4.6b window,
+then restarted by PL logic reset without rebuilding or reloading. This improves
+reproducibility and scan ergonomics; it does not change the same-set scientific
+claim.

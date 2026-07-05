@@ -73,7 +73,8 @@ copied in read-only. The ladder separates *fast search* from *physical instantia
 | EHW-4.6a/b | one-boot 12-point parameter sweep, then PS-writable parameter window (`0x40000000` -> `0xF5000000`) |
 | EHW-5.2 | combined spare-route VRC + lite train-unit RM → `0xF5F00000` at FCLK0=50 MHz |
 | EHW-5.3 | full hybrid structure+weight+HW-SGD Lamarckian-pressure arm → `0xF5F30000`, 40/40, SSE 4513 |
-| EHW-5.4a | same-boot four-arm ablation → `0xF5F40000`, all arms match host golden; arm1 best SSE 4513 |
+| EHW-5.4a/b | same-boot four-arm ablation → `0xF5F40000`; PS-staged parameter window switches to a single-arm scan with no rebuild/reload |
+| EHW-5.5 | live ICAP reveal of EHW-5 structural champion → truth `0xe8` to `0xa0`, feature mask `0xfbc5dabfc7` to `0xd2c1d02a42`, no reset |
 | EHW-0.4 (host) | on the SAME 40-sample set, the evolved INT8 weights score 40/40 vs the gradient-trained tile's 37/40 |
 
 Every board-bound artifact has a host self-proof (numpy oracle ↔ portable-C twin, bit-exact,
@@ -112,10 +113,10 @@ pure truth-table changes and our results are deterministic and reproducible.
   fixed-route FPGA design can co-evolve safe local structure and INT8 weights,
   use a board-verified HW-SGD inner loop for adaptation, and pass same-boot
   ablations. They do not claim holdout generalization or arbitrary-scale EHW.
-- **EHW-5 does not require ICAP baking to make its main claim.** EHW-5.4b
-  parameter-window host prep is optional post-release polish with board staging
-  pending; EHW-5.5 ICAP reveal remains an optional future demo, not a
-  prerequisite for the structure+weight+HW-SGD result.
+- **EHW-5 does not require ICAP baking to make its main claim.** EHW-5.4b and
+  EHW-5.5 are now board-verified polish: the former improves scan ergonomics,
+  the latter physically instantiates the selected structural feature. They are
+  not prerequisites for the structure+weight+HW-SGD scientific result.
 
 ## 6. Reproducibility
 

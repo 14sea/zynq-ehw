@@ -182,11 +182,18 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   hybrid `bias_x3`. The steady carousel matched host golden for every arm:
   final `0xF5F40000`; arm1 `40/40`, SSE `4513`, first_40 `2`, feature_ones `15`,
   penalty `0`. Arm3 showed the expected unpressured degeneration
-  (`feature_ones=0`). This closes the main EHW-5 claim. EHW-5.4b
-  parameter-window host prep is implemented after v1.1.0; board staging is
-  pending. EHW-5.5 optional ICAP reveal has a host contract/task, but no board
-  claim yet (`docs/ehw5_4_results.md`, `docs/ehw5_5_task.md`, exact board words
-  in `docs/board_results.md`).
+  (`feature_ones=0`). This closes the main EHW-5 claim.
+- **EHW-5.4b BOARD-VERIFIED (2026-07-05)** — the same 5.4 firmware reads a
+  PS-staged parameter block through the 4.6b window. One bitstream was switched
+  from the built-in four-arm `GENS=32` table to a staged single-arm `GENS=4`
+  run by PL logic reset, with no rebuild and no reload. Final staged carousel:
+  `f54e0101 / f54f0001 / f5f40000`, arm result `40/40`, SSE `4513`.
+- **EHW-5.5 BOARD-VERIFIED (2026-07-05)** — live ICAP reveal of the EHW-5
+  structural champion into a no-fault baked spare-route island. Baseline marker
+  `SR55`, truth `0xe8`, feature mask `0xfbc5dabfc7` (28 ones) became champion
+  truth `0xa0`, feature mask `0xd2c1d02a42` (15 ones) by editing only the
+  contracted structural INIT cells, with marker unchanged and no PS/NEORV32
+  reset (`docs/ehw5_5_task.md`, exact board words in `docs/board_results.md`).
 
 ## Dependencies & reproduction environment
 
@@ -233,6 +240,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   EHW-0→EHW-3.4 ladder.
 - `docs/RELEASE_NOTES_v1.1.0.md` — release summary for the EHW-4/EHW-5 memetic
   and hybrid additions after v1.0.0.
+- `docs/RELEASE_NOTES_v1.2.0.md` — release summary for the board-verified
+  EHW-5.4b parameter window and EHW-5.5 ICAP reveal polish.
 - `docs/BOARD_REPRO.md` — ordered per-milestone board reproduction checklist.
 - `tests/run_host_gates.sh` — one-command host gate runner (no board/Vivado).
 - `docs/ehw0_4_results.md` — evolution-vs-gradient-training table for EHW-0.
@@ -275,9 +284,9 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   weight-only vs hybrid-pressure vs no-adapt arms, followed by an optional 4.6b
   parameter-window scan.
 - `docs/ehw5_4_results.md` — board-verified EHW-5.4a same-boot hybrid ablation
-  closeout plus EHW-5.4b parameter-window host prep.
-- `docs/ehw5_5_task.md` — optional EHW-5 ICAP reveal contract and board
-  handoff requirements.
+  closeout plus board-verified EHW-5.4b parameter-window staging.
+- `docs/ehw5_5_task.md` — board-verified EHW-5 ICAP reveal contract and board
+  result.
 - `docs/ehw3_0_results.md` — host-only EHW-3.0 spare-routing recovery result:
   no-fault `8/8`, injected `DISABLE_NODE(A1)` degradation, and repaired `8/8`.
 - `docs/ehw3_1_results.md` — host-only EHW-3.1 Python/C bit-exact twin for the
@@ -366,8 +375,10 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `tests/compare_memetic_struct_ab_train.py` — verifies the EHW-5.4 same-boot
   hybrid ablation and staged parameter-window firmware host stub against the
   EHW-5.1 C twin curve.
-- `tests/compare_ehw55_reveal_contract.py` — freezes the optional EHW-5.5
-  structural ICAP-reveal champion and exact INIT-diff contract.
+- `tests/compare_ehw55_reveal_contract.py` — freezes the EHW-5.5 structural
+  ICAP-reveal champion and exact INIT-diff contract.
+- `tests/compare_ehw55_baked.py` — verifies the EHW-5.5 no-fault baked target
+  RTL, structural reveal contract, and POST firmware stub.
 - `tests/compare_spare_route_vrc.py` — verifies the EHW-3.2 spare-routing fabric
   VRC RTL sim, firmware host stub, wrapper compile, Py/C oracle gate, and optional
   Vivado OOC synth.

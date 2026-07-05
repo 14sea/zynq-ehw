@@ -347,29 +347,17 @@ arm0 `f5400028/f55017e4/f5600003/f5700000`; arm1
 `f5400228/f5521207/f560020b/f5722700`; arm3
 `f5400328/f55316cd/f5600305/f5730000`; final `f54f0004/f5f40000`.
 
-Decision: close the main EHW-5 claim at EHW-5.4a. After v1.1.0, EHW-5.4b was
-started as optional post-release polish. Host prep is implemented in
-`sw/ehw/memetic_struct_ab_mbox.c`, `tests/compare_memetic_struct_ab_train.py`,
-and `scripts/ehw54-param-pack.py`.
+Decision: close the main EHW-5 claim at EHW-5.4a. After v1.1.0, the optional
+post-release polish rungs also completed:
 
-5.4b board handoff:
+- EHW-5.4b is BOARD-VERIFIED: built-in 5.4a table reproduced, then PS-staged
+  little-endian parameter block changed the run to a single-arm `GENS=4` scan
+  after PL logic reset, with no rebuild and no reload. Staged source word
+  `0xf54e0101`, arm count `0xf54f0001`, final `0xf5f40000`.
+- EHW-5.5 is BOARD-VERIFIED: live ICAP reveal of the EHW-5 structural champion
+  into a no-fault baked island. Baseline truth/feature `0xe8` /
+  `0xfbc5dabfc7` became champion truth/feature `0xa0` / `0xd2c1d02a42`, marker
+  `SR55` unchanged, no reset.
 
-- rebuild the same EHW-5.4 firmware/RM lineage;
-- run `python3 scripts/board-set-fclk50.py --port /dev/ebaz-uart` immediately
-  before `fpga loadb`;
-- with no param magic, confirm the built-in 5.4a table still publishes the known
-  four-arm carousel;
-- generate a staged block, for example:
-
-```bash
-python3 scripts/ehw54-param-pack.py --preset pressure-short --generations 4 \
-  --out runs/ehw54/param_pressure_short.bin
-python3 scripts/ehw2-framebank-load.py runs/ehw54/param_pressure_short.bin 0x40000000
-```
-
-- confirm the steady carousel source word becomes staged/valid
-  (`0xF54E0101`), arm count changes to the staged block, and result rows match
-  the host-golden curve fields for that block without rebuilding or reloading.
-
-5.5 remains optional ICAP reveal polish. It requires fresh routed bitstreams and
-frame extraction; do not claim board evidence from host-prep alone.
+Current recommended next step: v1.2.0 release polish/tag only. No mandatory
+EHW ladder item remains.

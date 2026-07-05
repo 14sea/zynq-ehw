@@ -1,9 +1,8 @@
 # EHW-5.4 Task - Same-Boot Hybrid Ablation + Param-Window Scan
 
-Status: **BOARD-VERIFIED. EHW-5 closed here.** EHW-5.3 proved one full hybrid
-structure+weight+HW-SGD Lamarckian-pressure arm on silicon. EHW-5.4 should turn
-that single-arm proof into a same-boot ablation so the structural contribution is
-visible without cross-build or cross-boot confounders.
+Status: **BOARD-VERIFIED.** EHW-5.4a closed the main EHW-5 claim with same-boot
+ablation. EHW-5.4b later completed the optional parameter-window scan path on
+board.
 
 ## Decision
 
@@ -76,10 +75,9 @@ summary rows.
 
 ## 5.4b Deliverables - 4.6b Param-Window Scan
 
-Implementation note: host prep is complete in
+Implementation note: host prep and board staging are complete in
 `sw/ehw/memetic_struct_ab_mbox.c`, `tests/compare_memetic_struct_ab_train.py`,
-and `scripts/ehw54-param-pack.py`. Board staging/live-update acceptance remains
-pending.
+`scripts/ehw54-param-pack.py`, and `docs/ehw5_4_results.md`.
 
 After 5.4a is green, add a parameter-source switch:
 
@@ -180,8 +178,12 @@ EHW-5.4b is accepted when, in addition:
 - changing a staged scan parameter changes the subsequent run without rebuilding
   or reloading the bitstream.
 
+Status: accepted on board. The staged leg used a single-arm `GENS=4` block and
+reported `0xF54E0101`, `0xF54F0001`, and `0xF5F40000`.
+
 ## Stop Rule
 
-EHW-5.4a passed, so the EHW-5 line is closed without 5.5. EHW-5.5 ICAP reveal
-is optional presentation polish, not required for the structure+weight+HW-SGD
-claim.
+EHW-5.4a passed, so the main EHW-5 scientific claim was already closed. EHW-5.4b
+and EHW-5.5 were subsequently completed as optional engineering/reveal polish;
+they are useful release evidence but not prerequisites for the
+structure+weight+HW-SGD claim.

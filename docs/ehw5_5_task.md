@@ -1,4 +1,4 @@
-# EHW-5.5 Task - Optional ICAP Reveal
+# EHW-5.5 Task - ICAP Reveal
 
 Status: **BOARD-VERIFIED on EBAZ4205 (2026-07-05).** Baseline truth 0xe8 /
 feature 0xfbc5dabfc7 (28 ones) -> live ICAP edit of exactly g0/g1/g7/g8/g12/g14
@@ -71,14 +71,17 @@ needs a no-fault baked target matching the EHW-5 feature path:
 
 ## Board Acceptance
 
-Claude-side acceptance should record:
+Claude-side acceptance recorded:
 
 - `scripts/board-set-fclk50.py` readback `0x00200a00` before load;
-- baseline no-fault baked target reports the baseline feature;
-- ICAP edit applies only the g0/g1/g7/g8/g12/g14 INIT frames;
+- baseline no-fault baked target reports marker `SR55`, truth `0xe8`, and
+  feature mask `0xfbc5dabfc7` with 28 ones;
+- ICAP edit applies only the g0/g1/g7/g8/g12/g14 INIT frames, extracted from a
+  fresh routed build;
 - live target reports champion truth mask `0xa0`;
 - the EHW-5 40-sample feature mask is `0xd2c1d02a42` with 15 ones;
 - no PS/NEORV32 reset between baseline observation and post-ICAP observation.
 
-Until those board words are captured in `docs/board_results.md`, EHW-5.5 remains
-host-prep only.
+Exact board words and frame-extraction details are captured in
+`docs/board_results.md`. EHW-5.5 is board-verified, but remains a reveal/demo
+step rather than a prerequisite for the EHW-5 scientific claim.

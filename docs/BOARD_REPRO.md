@@ -162,9 +162,9 @@ PS-HWICAP**; do not run PS-HWICAP readreg/writeseq commands or it can wedge PL-A
 The board-pass four-candidate bank uses 5278 words and is padded to the 16384-word
 EHW-3.4 framebuf.
 
-## EHW-4 / EHW-5 — memetic and hybrid line (v1.1.0)
+## EHW-4 / EHW-5 — memetic and hybrid line (v1.1.0 / v1.2.0)
 
-The v1.1.0 line reuses the DFX static/RM lineage under `vivado/dfx`. The same
+The v1.1.0/v1.2.0 line reuses the DFX static/RM lineage under `vivado/dfx`. The same
 session rules from section 0 apply: build IMEM first, reset to U-Boot, run
 `scripts/board-set-fclk50.py`, then `fpga loadb`.
 
@@ -216,20 +216,28 @@ Observed endpoints:
   `f5400128/f55111a1/f5600102/f5710f00`,
   `f5400228/f5521207/f560020b/f5722700`,
   `f5400328/f55316cd/f5600305/f5730000`, plus `f54f0004`.
-- EHW-5.4b parameter-window host prep: generate staged blocks with
+- EHW-5.4b parameter-window staging: generate staged blocks with
   `scripts/ehw54-param-pack.py` and stage them through the board-verified 4.6b
   AXI window:
 
 ```sh
 python3 scripts/ehw54-param-pack.py --preset pressure-short --generations 4 \
   --out runs/ehw54/param_pressure_short.bin
-python3 scripts/ehw2-framebank-load.py runs/ehw54/param_pressure_short.bin 0x40000000
+python3 scripts/ehw2-framebank-load.py --le runs/ehw54/param_pressure_short.bin 0x40000000
 ```
 
-  The board acceptance target is source word `0xf54e0101` (staged+valid) plus
-  arm rows matching the host golden for the staged block, without rebuilding or
-  reloading the bitstream. No 5.4b board claim is recorded until that run is
-  captured in `docs/board_results.md`.
+- The firmware reads the parameter window once at boot. After staging, pulse
+  `SLCR FPGA_RST_CTRL` (`mw 0xF8000240 1; mw 0xF8000240 0`) to reset PL logic
+  without wiping the framebuf BRAM or reloading the bitstream.
+- EHW-5.4b board-verified target: source word `0xf54e0101` (staged+valid),
+  `f54f0001` (one staged arm), final `f5f40000`, and arm rows matching the
+  host golden for the staged block.
+- Loader gotcha: `ehw2-framebank-load.py` defaults to big-endian framebank words.
+  Use `--le` for `ehw54-param-pack.py` images.
+- EHW-5.5 ICAP reveal: no-fault baked target baseline reports marker `SR55`,
+  truth `0xe8`, feature mask `0xfbc5dabfc7` (28 ones). ICAP edit of exactly
+  g0/g1/g7/g8/g12/g14 changes the live island to truth `0xa0`, feature mask
+  `0xd2c1d02a42` (15 ones), marker unchanged, no PS/NEORV32 reset.
 
 Exact sampled words, build manifests, and interpretation are in
 `docs/board_results.md`.
