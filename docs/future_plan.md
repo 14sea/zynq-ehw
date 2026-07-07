@@ -93,32 +93,148 @@ symbolic model, such as `Cyclone_CRAM_Mapper`'s FASM/per-pip-cell map, the
 symbolic model should be inherited and the behavioral map should record
 measurements, stability, compatibility, and blacklist evidence around it.
 
+## Research Claims And Falsification
+
+Future work should keep the same claim discipline as `zynq-ehw`: every major
+line needs a defendable claim, explicit non-claims, and a falsification test.
+
+### Claim M1: Autonomous Runtime Is New Work
+
+Claim:
+
+> A board can run a multi-hour evolutionary hardware loop without a PC in the
+> decision loop, while preserving persistent champions, replay logs, and
+> self-recovery from bad candidates.
+
+This is not the same claim as EHW-2 or EHW-3.4. Those already proved per-eval
+on-chip ICAPE2 reconfiguration. The new work is the runtime property:
+
+- long-running operation;
+- persistent champion/log storage;
+- no PC-side candidate selection or fitness computation;
+- automatic recovery without power-cycling;
+- replayable evidence after the run;
+- explicit write budget for whatever non-volatile storage holds the champion.
+
+Falsification:
+
+- a bad candidate can wedge the board so only physical power cycling recovers;
+- the PC is still choosing candidates or computing fitness;
+- the champion cannot be replayed from the saved artifacts;
+- telemetry cannot distinguish slow progress from a stuck run;
+- champion persistence relies on unbounded NAND, SD, flash, or EPCS writes.
+
+Replay must distinguish two modes:
+
+- deterministic replay: same recorded search seed, same artifacts, same
+  trajectory;
+- autonomous discovery: the board may derive the seed from a local entropy
+  source, but the chosen seed is recorded at run start and becomes part of the
+  replay bundle. A seed supplied by the PC is a test mode, not the headline
+  autonomy claim.
+
+### Claim M2: Local Maps Can Drive Evolution
+
+Claim:
+
+> A device-local map, learned or inherited inside a constrained island, can
+> guide later hardware evolution more safely than raw bit mutation.
+
+Falsification:
+
+- candidates selected from the map do not beat random safe baselines;
+- map entries are not replayable across cold boot or reload;
+- compatibility records drift without detection;
+- the map cannot reject known-bad composition cases.
+
+### Claim M3: Generalization Is Measured, Not Assumed
+
+Claim:
+
+> Adaptation improves a held-out stimulus distribution, not only the exact
+> evolution cases.
+
+Falsification:
+
+- the evolved phenotype improves only the training/evolution set;
+- holdout performance regresses while training fitness improves;
+- temperature, clock, seed, or stimulus changes destroy the reported behavior;
+- reward-hacking phenotypes pass the narrow fitness harness but fail the task.
+
+## Benchmark Driver
+
+The next project needs one committed benchmark before hardware work expands.
+The recommended first benchmark is a controlled UART-like stream generated
+inside PL:
+
+```text
+PL stimulus generator -> noisy/drifting UART-like bitstream
+-> evolvable sampler/decoder/filter -> CRC/pass-rate fitness
+```
+
+Why this benchmark:
+
+- no dependency on the dead Ethernet path or a new external peripheral board;
+- the drift/noise source is controlled and replayable;
+- fitness is simple: CRC pass rate, frame error rate, latency, and timeout
+  count;
+- holdout cases are natural: unseen baud offsets, jitter patterns, seeds,
+  packet lengths, and temperature/clock points;
+- it exercises the same adaptation pattern needed for real peripherals.
+
+The first benchmark package should define:
+
+- training stimulus set;
+- holdout stimulus set;
+- adversarial/noise stimulus set;
+- pass/fail thresholds;
+- replay seeds;
+- expected telemetry words or log records.
+
+Do not start a compute-adaptation demo until at least one peripheral-style
+benchmark has passed holdout tests. Compute adaptation is higher ambiguity and
+easier to overfit.
+
 ## Execution Roadmap
 
-The execution order should reduce risk before increasing phenotype freedom.
-The recommended sequence is:
+There are two reasonable orderings. The safety-first order starts with Cyclone
+IV because it has low board risk and an existing non-prjxray map. The
+research-first order starts with a technical report and the Zynq autonomous
+runtime because that is the strongest new claim.
+
+The default recommendation is research-first:
 
 ```text
 0. Preserve zynq-ehw as the completed reference ladder.
-1. Start a new repo and define common artifacts: local-map schema, run log,
-   replay bundle, safety whitelist, and recovery protocol.
-2. Run the Cyclone IV autonomous-continuation line first, inheriting the
-   already-validated `Cyclone_CRAM_Mapper` map/toolchain and adding the closed
-   loop around it.
-3. Build the Zynq autonomous node using already-safe phenotype mechanisms.
-4. Add open-routing evolution on the XC7K70T line after the safety/runtime
-   vocabulary exists. Keep the single Zynq/EBAZ board to replay-only route
-   validation unless a sacrificial duplicate board exists.
-5. Feed route tokens into the autonomous node and run peripheral adaptation.
-6. Add compute adaptation only after the control plane and map format are
-   stable.
-7. Treat Intel/Altera PR/CvP backends and multi-board work as later ports.
+M0. Write the technical report first: claims, baselines, non-claims,
+    falsification tests, and benchmark definition.
+M1. Build `zynq-autoehw`: autonomous Zynq runtime using already-safe phenotype
+    mechanisms and the UART-like benchmark.
+M2. In parallel or next, build `cyclone-fabric-cartographer` as an autonomous
+    continuation of `Cyclone_CRAM_Mapper`.
+M3. Add XC7K70T/Kintex-7 open-routing evolution on sacrificial boards.
+M4. Feed validated route tokens into the autonomous runtime.
+M5. Add compute adaptation only after the control plane, map format, and
+    holdout benchmark discipline are stable.
+M6. Treat Intel/Altera PR/CvP backends and multi-board work as later ports.
 ```
 
 This means the first concrete work should not be new open-routing mutation and
-should not be a large compute demo. The first concrete work should be a small,
-auditable cartography loop that proves the map/log/replay abstraction on top of
-an already validated backend.
+should not be a large compute demo.
+
+Safety-first alternative:
+
+```text
+0. Preserve zynq-ehw.
+1. Define common artifacts.
+2. Run the Cyclone IV autonomous-continuation line first.
+3. Then build the Zynq autonomous node.
+4. Then K7 open routing.
+```
+
+This order is valid if the priority is minimizing board risk. It is not the
+strongest research-ordering because Cyclone IV cannot demonstrate the live,
+long-running autonomous reconfiguration claim as directly as Zynq.
 
 The reason to put Cyclone IV early is practical: `Cyclone_CRAM_Mapper` and
 `rot_tpu_handoff` already provide a non-prjxray, low-resource fabric-surgery
@@ -129,6 +245,98 @@ configure -> stimulate -> measure -> attest -> blacklist -> champion/replay
 ```
 
 Zynq then becomes the stronger platform for the long-running autonomous node.
+
+## Milestones And Kill Criteria
+
+Every milestone should have a PASS/HOLD/KILL result, not just a task list.
+
+### M0: Technical Report
+
+PASS:
+
+- claims ledger exists;
+- baselines and prior-art comparison are written;
+- non-claims are explicit;
+- the UART-like benchmark and holdout split are specified;
+- replay/log/manifest schemas have version numbers.
+
+KILL/HOLD:
+
+- no single benchmark can be committed;
+- claims cannot be distinguished from already completed EHW-2/3.4/5.x work;
+- recovery and safety claims cannot be tested.
+
+### M1: Zynq Autonomous Runtime
+
+PASS:
+
+- PC does not select candidates or compute fitness;
+- evals/sec is measured on the real reconfiguration plus stimulus path before
+  the long run;
+- the run window is derived from measured evals/sec and a target generation or
+  candidate budget, not an arbitrary wall-clock number;
+- champion survives reset or reload and can be replayed;
+- champion store is named explicitly, and its write budget is enforced;
+- search seed is recorded as a first-class run-log field;
+- champion beats a random-search-equal-budget baseline on holdout stimuli;
+- a deliberately bad but safe candidate is rejected and logged;
+- recovery avoids physical power cycling and does not rely on a wedged PS path.
+
+KILL/HOLD:
+
+- any candidate can wedge configuration control so recovery requires unplugging
+  Type-C;
+- saved logs are insufficient to reproduce the champion;
+- PC-side code remains in the decision loop;
+- evals/sec is too low to reach the benchmark's convergence budget;
+- evolution does not beat random search under the same evaluation budget;
+- persistence writes are unbounded or lack a wear budget.
+
+### M2: Cyclone IV Autonomous Continuation
+
+PASS:
+
+- copied artifacts from `Cyclone_CRAM_Mapper` have provenance and conformance
+  checks;
+- map/log/replay schema works with at least one real candidate lifecycle;
+- flash-budget state is enforced;
+- known DO_NOT_FLASH composition failures are blocked by the wrapper.
+
+KILL/HOLD:
+
+- the new repo modifies `Cyclone_CRAM_Mapper` or `rot_tpu_handoff` directly;
+- flash writes are used as the high-frequency evaluation path;
+- composition failures cannot be represented or blocked.
+
+### M3: XC7K70T Open Routing
+
+PASS:
+
+- experiments run on sacrificial K7 hardware, not the only Zynq/EBAZ board;
+- Vivado-generated legal variants are extracted into route templates;
+- pre-write validity checker rejects incompatible template compositions;
+- readback/attestation and golden reload are exercised before GA.
+
+KILL/HOLD:
+
+- raw routing mutation is proposed before a template/validity layer exists;
+- the board has no tested golden reload path;
+- a template composition cannot be checked before write.
+
+### M4/M5: Peripheral And Compute Adaptation
+
+PASS:
+
+- improvement is measured on holdout stimuli, not only training stimuli;
+- power/temperature/clock sensitivity is reported;
+- a baseline hand-coded or static phenotype is included;
+- reward-hacking cases are explicitly tested.
+
+KILL/HOLD:
+
+- only same-set fitness improves;
+- the task has no reproducible stimulus generator;
+- the fitness cannot distinguish useful adaptation from artifact exploitation.
 
 ## Technical Lines
 
@@ -165,6 +373,16 @@ Required safety features:
 - persistent champion and run log;
 - replay bundle for any reported champion;
 - explicit PASS/HOLD publication words.
+
+Persistence policy:
+
+- keep per-generation telemetry in RAM during the hot loop;
+- write non-volatile storage only on bounded events such as new champion,
+  periodic checkpoint, final report, or explicit operator request;
+- record the physical store, for example NAND partition, SD file, QSPI/EPCS, or
+  external controller storage;
+- record write counters and enforce a per-run write budget;
+- never make "persistent champion" depend on unbounded flash/NAND writes.
 
 ### A2: Peripheral Adaptation Demo
 
@@ -543,10 +761,12 @@ k7-openroute-ehw
   boards using prjxray-db coverage and zynq-ehw-derived safety contracts
 ```
 
-Do not create all of these immediately. Start with `cyclone-fabric-cartographer`
-if the goal is to validate autonomous fabric cartography first. Start
-`zynq-autoehw` after the map/log/replay contracts have survived the Cyclone IV
-continuation. Split tools only after the contracts are stable.
+Do not create all of these immediately. Start with the M0 technical report and
+contract schemas. Then choose the first implementation repo based on priority:
+`zynq-autoehw` if the priority is the strongest autonomous-runtime claim;
+`cyclone-fabric-cartographer` if the priority is validating the map/replay
+vocabulary on the already-mapped Cyclone IV backend. Split tools only after the
+contracts are stable.
 
 ## Inter-Project Contracts
 
@@ -554,50 +774,69 @@ Projects should interact through artifacts, not ad hoc source-tree references.
 
 Recommended artifacts:
 
-- genome contract: field layout, decode rules, valid ranges;
-- phenotype manifest: bitstream hash, pblock, allowed FAR/word/bit set,
+- versioned genome contract: field layout, decode rules, valid ranges;
+- versioned phenotype manifest: bitstream hash, pblock, allowed FAR/word/bit set,
   route-template IDs, LUT/select contract;
-- frame whitelist: candidate diffs must be fully contained in allowed bits;
-- run log: board ID, FCLK, temperature, generation, genome hash, fitness,
-  phenotype hash, mailbox words, frame-diff hash;
-- replay bundle: genome, manifest, expected mailbox words, optional framebank,
-  and load/run script.
+- versioned frame whitelist: candidate diffs must be fully contained in
+  allowed bits;
+- versioned run log: board ID, FCLK, temperature, generation, genome hash,
+  fitness, phenotype hash, mailbox words, frame-diff hash, search seed,
+  entropy source, persistent-store target, and write-budget counters;
+- versioned replay bundle: genome, manifest, expected mailbox words, optional
+  framebank, and load/run script.
+
+Each schema must have:
+
+- an explicit `schema_version`;
+- a compatibility policy;
+- a standalone validator;
+- a conformance test fixture shared by every repo that consumes the schema;
+- a replay-conformance gate: a reported champion must replay from artifacts
+  without hidden local state.
 
 This keeps `zynq-ehw` as a reference source and prevents future projects from
 silently depending on mutable internal paths.
 
 ## Immediate Next Step
 
-Create a new repository, preferably `cyclone-fabric-cartographer`, with:
+Do not start by opening another board-facing hardware line. Treat this document
+as the M0 seed and make it review-clean first:
 
-1. a short `README.md` explaining that it is a post-`zynq-ehw v1.2.0`
-   fabric-cartography continuation, not an extension of the finished EHW
-   ladder;
-2. `docs/design.md` describing the constrained-island cartography model;
-3. `docs/schema.md` defining the portable artifacts:
+1. review the claims ledger, non-claims, benchmark, and kill criteria here;
+2. add a short prior-art comparison against CoBEA, Thompson-style intrinsic EHW,
+   Whitley, prjxray/prjtrellis-style database work, and
+   `Cyclone_CRAM_Mapper`;
+3. create `docs/schema.md` or equivalent schema notes for:
    - local-map entries;
    - run logs;
    - replay bundles;
    - safety whitelist records;
    - candidate blacklist records;
-4. inherited Cyclone IV artifacts copied into the new repo, with provenance
-   recorded and without modifying `Cyclone_CRAM_Mapper` or `rot_tpu_handoff`:
-   - route sig-cache and relevant symbolic-map artifacts;
-   - CRC repair wrapper;
-   - safe byte ranges;
-   - fresh-gold gates;
-   - editable-LE allowlist loader;
-   - flash-budget state and recovery notes;
-   - volatile configuration notes marked pending until re-validated;
-5. a first milestone:
+   - storage/write-budget records;
+4. create the first benchmark package:
+   - PL-generated UART-like stream;
+   - training stimuli;
+   - holdout stimuli;
+   - adversarial/noise stimuli;
+   - expected telemetry/log fields;
+5. create a seed `docs/workflow.md` for the first new repo, carrying forward
+   the process contract from `zynq-ehw`:
+   - who writes RTL/firmware/host gates;
+   - who owns Vivado/OOC/place/board verification;
+   - where board truth is recorded;
+   - commit/push policy;
+   - rule that neither side's "done" is trusted without command or board
+     evidence;
+6. only after M0 is review-clean, create the first implementation repo.
+
+If `cyclone-fabric-cartographer` is chosen first, its first milestone is:
 
 ```text
 C4-AFC0: inherit validated Cyclone_CRAM_Mapper contracts and define the
 map/log/replay wrapper.
 ```
 
-After `C4-AFC0` and `C4-AFC1` prove the map/log/replay vocabulary, create
-`zynq-autoehw` and start:
+If `zynq-autoehw` is chosen first, its first milestone is:
 
 ```text
 A1.0: single-board autonomous loop using an already-safe phenotype.
