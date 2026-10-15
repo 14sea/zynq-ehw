@@ -1,0 +1,80 @@
+# EHW-5.2 board leg: FAIL — evidence package (Claude → ChatGPT, 2026-07-03)
+
+## Verdict
+impl_12 (rm_memetic_struct combined VRC + lite train unit) loaded clean on the
+board, but the smoke firmware reports the FAIL word. The VRC island is fully
+healthy on silicon; the divergence is confined to the HW-train-unit arm
+(adapt_tu): after 1 epoch its genome differs from the CPU golden in 2 bytes and
+its SSE is +51. Deterministic — two independent loadb runs produced identical
+words.
+
+## Board flow executed
+- Full power-cycle by user, then: SLCR reset → U-Boot → `fpga loadb`
+  vivado/dfx/build/dfx.runs/impl_12/dfx_top.bit (rebuilt 22:00, WNS +0.517 /
+  WHS +0.023, both write_bitstream Complete, 0 ERROR).
+- Firmware was re-baked first with a board-only evidence carousel in the
+  `#ifndef MEMETIC_STRUCT_TRAIN_HOST_STUB` final loop (EHW-3.2 precedent: every
+  pass-condition input must be in the steady republish loop — the original
+  one-shot publishes are unreadable over UART-paced md, and `marker` was never
+  published at all). Change is +14 lines in sw/ehw/memetic_struct_train_mbox.c,
+  board branch only; all 17 host gates re-run green; verify-image OK (4344 B).
+
+## Evidence words (steady carousel at PS 0x41200000, identical across 2 loads)
+  0xF5105352 / 0xF5115630   marker = 0x53525630 "SRV0"      ✓ correct
+  0xF54000a0                VRC mask = 0xa0                  ✓ == SR_FEATURE_TRUTH_MASK
+  0xF5202302                correct = 35 (0x23), mism = 2    ✗ host expects correct=38, mism=0
+  0xF53012a0                eval SSE(got genome) = 4768
+  0xF56011d0                gold_sse (CPU-on-board) = 4560   ✓ bit-exact to host stub
+  0xF5611203                got_sse  (HW TU arm)    = 4611   ✗
+  0xF562ffcd                gold_sse - got_sse = -51
+  0xF5F00001                final verdict = FAIL
+
+Host stub baseline (freshly re-run): PASS mask=a0 sse=4560 correct=38.
+So: board CPU-golden path == host twin exactly. Only the adapt_tu arm diverges.
+
+## What I already checked (all clean — don't re-litigate)
+1. Wrapper handshake in tpu_rp_rm_memetic_struct.v is the same start/pending
+   pattern as the silicon-proven tpu_rp_rm_memetic_train.v (EHW-4.3/4.4
+   bit-exact). Double-write on held-stb is idempotent for all SR/TU data regs;
+   UPD commands are guarded by !upd_active.
+2. Address maps verified end-to-end (SR_MASK→0x410→word4, MARKER→0x420,
+   GEN→0x440+4i; TU off[8:2] covers 0x800..0x934 incl. BUSY word 77).
+3. LOSS_D2 / D1 execute in ONE clocked cycle in memetic_train_unit_lite.v, so
+   the firmware's immediate D2/D1 readback (no tu_wait_idle) is safe; the
+   serialized phases (UPD_L2 8 cy, UPD_L1 16 cy) complete long before the first
+   XBUS BUSY read can even return.
+4. Arithmetic equivalence stub-vs-RTL checked term by term: leaky_apply
+   ((x+2)>>>2 == qmul(x,64)), clampd ±16384 == MEM_DELTA_CLAMP, clamperr ±2^20
+   == MEM_ERR_CLAMP, update sat16(w-(g>>>7)), qmul_sq 44-bit == int64 qmul —
+   all identical semantics.
+5. Timing met, DRC clean, deterministic behavior → not a marginal-Si smell.
+
+## Gate coverage gaps (the bug lives in one of these blind spots)
+A. The RTL tb in tests/compare_memetic_struct_train.py drives the TU with a
+   SMOKE sequence only (1 weight write, 1 dw, 1 UPD_L2, busy poll, 1 readback).
+   The full 40-sample epoch (LOSS_D2 → D1 → UPD_L2 → UPD_L1 → master_read per
+   sample) has never been RTL-simulated against the C golden.
+B. The host stub's sr_read(SR_OUTPUT) returns a constant 0 and sr_phi_hw is
+   modeled — the per-sample fabric phi path (sr_write(SR_INPUT,row) →
+   sr_read(SR_OUTPUT)) is exercised ONLY on the board, and it is exactly the
+   new-in-5.2 ingredient that EHW-4.4 (bit-exact) did not have. The sim tb
+   checks only rows 7 and 0 after genome load.
+
+## Suggested next moves (your call, your lane)
+- Cheapest decisive split: a diag firmware that (a) publishes the fabric phi
+  vector for all 8 rows via INPUT/OUTPUT (expect 0xa0), and (b) runs the HW-TU
+  arm fed with MODEL phi (expect sse 4560 / mism 0 if the TU is innocent).
+  One rebuild answers "phi path vs TU logic".
+- And/or extend the RTL gate to replay the full epoch transaction stream
+  against the C golden (kills blind spot A permanently, offline).
+
+## Current state
+- Board: U-Boot prompt, PL = instrumented impl_12, carousel live at 0x41200000.
+- Working tree: ab53136 (yours) + d0eb662 (my build integration) committed,
+  local not pushed; my +14-line carousel uncommitted in
+  sw/ehw/memetic_struct_train_mbox.c.
+- One board gotcha for the record: mid-sampling the board once spontaneously
+  reset into NAND Linux (cause unknown, possibly brownout); a later SLCR reset
+  attempt left cpu1 half-halted and the board wedged until a cpu0-halt SLCR
+  reset recovered it. Recovery path that works: `targets zynq.cpu0` → halt →
+  SLCR unlock+reset.

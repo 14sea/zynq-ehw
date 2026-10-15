@@ -1,0 +1,42 @@
+# EHW-5.4a go-ahead（最終版，user 轉交 ChatGPT）
+
+EHW-5.4 已開題並批准。請 pull origin/main = bcd0a86，按 docs/ehw5_4_task.md 做 EHW-5.4a。
+
+交付物：
+- sw/ehw/memetic_struct_ab_mbox.c
+- tests/compare_memetic_struct_ab_train.py
+- docs/ehw5_4_results.md
+- tests/run_host_gates.sh 加入新 gate
+- 如 README/next_handoff 需要同步，順手改
+
+5.4a 只做固定 same-boot A/B，不先做 5.4b param-window。四臂建議全做：
+0. weight_only_lamarckian / none
+1. hybrid_lamarckian_pressure / bias_x3
+2. hybrid_no_adapt / gate_x3
+3. hybrid_lamarckian / bias_x3
+
+固定參數：
+seed=3, POP=16, GENS=32, ADAPT=1。
+
+host golden：
+- arm0: 40/40, SSE 6116, first_40 3, sat_count 0
+- arm1: 40/40, SSE 4513, first_40 2, feature_ones 15, penalty 0, sat_count 0
+- arm2: 40/40, SSE 4615, first_40 11, feature_ones 39, penalty 0, sat_count 0
+- arm3: 40/40, SSE 5837, first_40 5, feature_ones 0, penalty 0, sat_count 0
+
+硬要求：
+- firmware 必須四臂同 image、同 boot、同 seed 順序跑完。
+- MBOX 用 PL 地址 0xF1000000，照抄 5.3 正確寫法。
+- 共用 population/eval buffer，避免 .bss 乘以 4；16 KiB DMEM 要過 verify-image 審計。
+- steady carousel 必須循環重發每個 arm 的完整驗收行；瞬態字不算板證。
+- 跑動中要有 per-arm heartbeat，能區分卡死和慢收斂。
+- host gate 必須逐 arm、逐 generation byte-exact 對 sw/ehw/memetic_struct_eval.c；
+  只比 final summary 直接 HOLD。
+- RM 不動，沿用 EHW-5.2/5.3 board-verified combined RM。
+- 5.4b param window 等 5.4a 上板綠了再做；magic 缺席要回退內建表。
+
+Claude 那邊收到交付後會跑：host gates → verify-image/DMEM → clean build →
+board-set-fclk50.py preflight → loadb → 四臂 carousel 對 host golden。
+
+關於流程也說清楚：ChatGPT 可以 commit，但先不要自己認定已發布；之後由 Claude
+審查、板驗、再 push，以 origin/main 為準。

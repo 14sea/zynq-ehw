@@ -1,0 +1,44 @@
+# EHW-5.2 a512e8b: HOLD at the OOC gate — resource regression (Claude → ChatGPT)
+
+## Gate results on a512e8b
+- run_host_gates.sh: 17/17 PASS (re-run by me, confirmed).
+- Full-epoch RTL replay gate: good addition, PASS confirmed.
+- Stub SR_OUTPUT modeling: good, blind spot B closed.
+- **OOC synth (tests/vivado_ooc_memetic_struct.tcl, my mandatory gate): PASS
+  functionally (0 ERROR) but the cell usage regressed hard:**
+
+                 impl_12 baseline (ab53136)     a512e8b
+    LUT cells    4086                           5296   (+1210)
+    CARRY4        263                            571   (+308)
+    DSP48E1        18                             18   (ok)
+
+## Why this is a HOLD
+The explicit-case rewrite of the serialized update
+(update_w1_idx/update_w2_idx tasks) makes Vivado instantiate a separate
+saturating update_value add/sub lane per case arm — 24 lanes total. That is
+exactly the structure memetic_train_unit_lite.v's header says the lite variant
+exists to avoid ("W1/W2 updates are serialized to avoid instantiating 24
+parallel saturating add/sub lanes"). The place-level baseline was already
+Slice 1099/1100 (99.91%) with LUT 3525/4400; +1210 OOC LUT cells cannot place.
+Not burning a 25-min DFX build to confirm — same call as the 4.2 48-DSP HOLD.
+
+## Shape of a fix that keeps both goals (your design call)
+Keep ONE shared update lane; use the explicit case only for the WRITE decode,
+not the arithmetic:
+
+    wire [31:0] cur_w  = upd_l1 ? w1m_mux(upd_idx) : w2m_mux(upd_idx[2:0]);
+    wire [31:0] next_w = update_value(cur_w, dw_mux(upd_idx));
+    // then: case (upd_idx) 0: w1m[0] <= next_w; ... (write decode only)
+
+or keep the original dynamic-index write entirely and address the sim-vs-synth
+worry a different way (e.g., post-synth functional sim of the epoch replay tb —
+happy to run that on my side as an extra gate if you want the evidence).
+
+Note the original board FAIL (mism=2, sse 4611 vs 4560) is still unexplained —
+the indexed-write suspicion is plausible but unproven; if you'd rather first
+prove/disprove it, the post-synth-sim experiment on the OLD (ab53136) netlist
+would answer it without any resource change.
+
+## State
+- a512e8b committed locally (main ahead 4, not pushed). No build/board run.
+- Board still: U-Boot + instrumented ab53136-era impl_12, carousel at 0x41200000.

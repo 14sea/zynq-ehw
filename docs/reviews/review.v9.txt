@@ -1,0 +1,118 @@
+# Review of docs/future_plan.md v2 (Claude) — methodology merge verified + 5 residual gaps
+
+Context: this v9 has two parts.
+  Part A — the research-method supplement I proposed (claims ledger, kill
+  criteria, benchmark, holdout, anti-re-claim, schema enforcement, report-first
+  sequencing) has been merged into docs/future_plan.md and I VERIFIED it in the
+  working tree (still uncommitted, `git status` = " M docs/future_plan.md").
+  Fidelity is high — M1 KILL even captured the DEVCFG-wedge nuance
+  (future_plan.md:267,271) and reward-hacking (:151,:314). Accepted.
+
+  Part B — 5 residual gaps that neither the original plan, the first review
+  (review.v8), nor this merge closes. These are second-order. Same format:
+  file:line + evidence + decisive check.
+
+--------------------------------------------------------------------------------
+[G1] "Persistent champion" never says WHERE it lives, and flash-budget discipline
+     is applied to Cyclone but not to the Zynq claim. MAJOR (internal inconsistency).
+--------------------------------------------------------------------------------
+Where: future_plan.md:106, :113, :265, :354 all assert a persistent champion /
+log that survives reset; :283 requires "flash-budget state is enforced" for
+Cyclone M2 only.
+
+Gap: on the EBAZ the only non-volatile store is NAND (the mtd partitions in
+CLAUDE.md's layout). A multi-hour autonomous loop that persists champions across
+power-cycle is writing NAND repeatedly — the SAME wear problem the plan carefully
+budgets for Cyclone, but M1 has no persistence-location or NAND-wear rule. Either
+name a wear-bounded store (e.g. rewrite one small mtd slice at a bounded rate, or
+keep champions in DDR + attest-only-to-flash-on-improvement) or the "persistent
+champion" claim has an unbudgeted cost.
+
+Decisive check: M1 PASS must state the champion's physical store and its write
+budget, the way M2 PASS (:283) does for Cyclone.
+
+--------------------------------------------------------------------------------
+[G2] "No PC in the loop" vs "replayable champion" is in tension: the plan never
+     says where the GA's own RNG/seed comes from or how it's logged. MAJOR.
+--------------------------------------------------------------------------------
+Where: replayability is claimed at :107, :116, :122, :265 and hardened into a
+replay-conformance gate at :764. "replay seeds" at :180 refers to the BENCHMARK
+stimulus, not the evolutionary search RNG.
+
+Gap: a self-contained on-chip GA needs randomness for mutation/selection. Two
+horns, both unaddressed:
+  - self-seed from a physical source (RO jitter, XADC temp) → authentically
+    autonomous but NOT bit-replayable;
+  - fixed seed → replayable but every boot evolves identically, and "no PC"
+    loses meaning if the PC supplies the seed.
+Resolution the plan should commit to: log the seed as a first-class run-log
+field, define replay as "same seed → same trajectory" (deterministic PRNG,
+board-generated seed captured at t0), and state explicitly that authentic-
+autonomy runs use a board entropy source with the seed RECORDED, not injected.
+
+Decisive check: run-log schema (:753) must list the search seed; replay-
+conformance (:764) must mean seed-reproducible, not just artifact-hash-match.
+
+--------------------------------------------------------------------------------
+[G3] The endurance claim's feasibility is untested: evals/sec is a wishlist
+     bullet, not an M1.0 prerequisite. MODERATE.
+--------------------------------------------------------------------------------
+Where: "Eval/sec and ICAP bandwidth measurement" appears once at :655 (good-fit
+list); M1 (:258) asserts a 1-4 hour run but never estimates how many
+generations that buys.
+
+Gap: one candidate eval = ICAP reconfig + stimulus sweep + CRC scoring. If that
+is seconds, 1-4 h may be only a few hundred evals — possibly too few for the
+UART benchmark to show holdout improvement, which would make the whole endurance
+claim vacuous. Feasibility must be measured BEFORE committing to the window.
+
+Fix: add M1.0 prerequisite "measure evals/sec on the real ICAP+stimulus path;
+derive the run window from a target generation count, not a round number of
+hours." Kill/Hold if evals/sec is too low to reach the benchmark's convergence
+budget.
+
+Decisive check: the run window in M1 PASS (:263) should be justified by a
+measured evals/sec × required-generations, not asserted as "1-4 hours."
+
+--------------------------------------------------------------------------------
+[G4] M1 (the headline claim) has no baseline control, though M4/M5 correctly do.
+     MODERATE.
+--------------------------------------------------------------------------------
+Where: M4/M5 PASS requires "a baseline hand-coded or static phenotype" (:313)
+and reward-hacking tests (:314). M1 PASS (:260-267) has NO comparison baseline.
+
+Gap: "the autonomous loop converged" is not a defensible claim without a
+same-eval-budget control. The standard EHW control is random-search-with-equal-
+budget (did evolution beat random?) — and this ladder already did exactly this
+kind of control (EHW-0.4 GA-vs-gradient, EHW-5.4a ablation). The headline
+milestone should not be weaker than M4/M5.
+
+Fix: add to M1 PASS "champion beats a random-search-equal-budget baseline on
+holdout." Kill/Hold if evolution does not beat random search.
+
+Decisive check: M1 must name its control arm, like M4/M5:313 does.
+
+--------------------------------------------------------------------------------
+[G5] The two-AI workflow contract is not carried into the new repos. MODERATE.
+--------------------------------------------------------------------------------
+Where: the plan defines inter-PROJECT contracts (schemas, :742) thoroughly but
+says nothing about the inter-AI process contract that actually produced the
+zynq-ehw ladder (docs/workflow.md: ChatGPT writes / Claude OOC-gates + boards +
+commits; board truth lives in docs/hw_notes not memory; who holds Vivado).
+
+Gap: a new repo starts with no workflow.md. The OOC-synth gate before board runs,
+the "neither side's 'done' trusted / verify from commands" rule, and the current
+Vivado-access split all need to be re-established per repo, or the new project
+loses the discipline that made this one work.
+
+Fix: M0 deliverables should include a `docs/workflow.md` seed for the new repo
+(gate policy, board-truth location, Vivado ownership, commit/push policy),
+carried over and updated, not re-improvised.
+
+Decisive check: does the new repo's first commit include a workflow contract?
+
+--------------------------------------------------------------------------------
+Priority: G1 and G2 are substantive (an unbudgeted cost and an unresolved
+autonomy/replay tension in the headline claim). G3/G4/G5 are milestone-hardening.
+None block M0 (the report) — but M0 is the right place to resolve all five,
+since M0 is where claims and schemas are pinned.

@@ -1,0 +1,131 @@
+# Review of docs/future_plan.md (Claude, board/repo-grounded pass)
+
+Scope: reviewed docs/future_plan.md against the actual state of the referenced
+sibling repos on this machine:
+  - ~/EP4CE6            = github.com/14sea/Cyclone_CRAM_Mapper (origin confirmed)
+  - ~/rot_tpu_handoff   = mode-H consumer (1-LE LUT surgery handoff)
+  - xilinx-workspace memory: project-k7-openroute (user decision 2026-07-05)
+
+Verdict: keep the plan's structure (risk-first sequencing, artifact/contract
+decoupling, composition-hazard + flash-wear risk registers). Fix the items
+below before this becomes the roadmap. Ranked most-consequential first.
+
+Format per docs/workflow.md:52 — file:line + evidence + a decisive check.
+
+--------------------------------------------------------------------------------
+[R1] Cyclone line understates Cyclone_CRAM_Mapper's actual completion. MAJOR.
+--------------------------------------------------------------------------------
+Where: future_plan.md:281-339 (C4 line), :96-119 (execution roadmap),
+       :43-47 (naming the Cyclone probe as the least-risk FIRST implementation).
+
+Claim in plan: the Cyclone IV work is a "low-resource, non-prjxray proof of
+device-local mapping"; C4-AFC0 = "consolidate the existing LUT edit path";
+"LUT surgery is the right first target; route/IOB/M9K surgery should not be
+treated as already safe or general."
+
+Evidence it is already far past that (Cyclone_CRAM_Mapper, silicon-validated):
+  - results/FINDINGS.md: CRAM address model 376/376 positions 100%, 22/22
+    columns verified; per-frame CRC spec closed.
+  - CLAUDE.md quick-start: full FASM toolchain (Yosys->nextpnr->FASM->RBF),
+    route sig-cache (route_cells_full.json), M9K mode bits, IOB routing,
+    clock-pin coverage.
+  - EP4CE6 memory: NEORV32 flashed + Linux boot HW-validated; zero-Quartus
+    byte-identity (arith + non-arith) CLOSED; cross-LAB carry chain silicon-
+    validated W=17/W=23.
+  - EP4CE6 memory 2026-07-07 (today): dy-key per-pip prediction gate,
+    mine->holdout->emit->unseen-gold closure, fresh-gold TP=1/FP=0 byte-
+    identical. This IS the "local-map + validation harness" the plan calls
+    C4-AFC1/AFC2/AFC3 future work.
+
+Also note the plan's behavioral token schema (future_plan.md:78-86,
+token_017/observed_behavior) is WEAKER than the symbolic FASM/per-pip-cell
+model Cyclone_CRAM_Mapper already has. Present behavioral tokens as a fallback
+for not-yet-symbolized wires, not as the main path.
+
+Fix: reframe C4 from "new probe" to "autonomous continuation of
+Cyclone_CRAM_Mapper" — the new deliverable is the self-contained cartography
+LOOP (configure->stimulate->measure->attest->blacklist->champion) and the
+map/log/replay contract, layered on the already-validated symbolic map. Drop
+"LUT-first, route/IOB not yet safe" framing (see R4 for the real reason).
+
+Decisive check: `git -C ~/EP4CE6 log --oneline -5` and open results/FINDINGS.md;
+if per-pip fresh-gold gating is already landing, C4-AFC0..3 cannot be "future".
+
+--------------------------------------------------------------------------------
+[R2] No reconciliation with the already-decided XC7K70T open-routing line. MAJOR.
+--------------------------------------------------------------------------------
+Where: future_plan.md:215-247 (R1 whitelisted route-template evolution on Zynq).
+
+Evidence: xilinx-workspace memory project-k7-openroute records a USER decision
+(2026-07-05): open-routing evolution platform = XC7K70T, explicitly chosen so
+routing experiments never run on the single EBAZ (buy two cheap sacrificial K7
+boards; prjxray-db officially covers xc7k70t; ICAP stack ports verbatim). The
+plan was authored in the zynq_ehw workspace and does not know this.
+
+Conflict: plan puts route-template evolution back on Zynq (the only board),
+which contradicts the "never routing-experiment on the only board" principle
+behind the K7 decision.
+
+Fix: add a paragraph pointing R1 at the K7 line (k7-ehw). If any route work
+stays on Zynq, restrict it to Vivado-legal template REPLAY only — never raw
+routing-bit mutation on the single board.
+
+Decisive check: the plan's hard rules (future_plan.md:238-244) already forbid
+raw routing-bit flips; make the platform (K7, two boards) explicit so a reader
+doesn't default to the Zynq board.
+
+--------------------------------------------------------------------------------
+[R3] "route/IOB not safe" — wrong reason; the real finding strengthens your own
+     Composition Hazard section. MODERATE.
+--------------------------------------------------------------------------------
+Where: future_plan.md:304 ("route/IOB/M9K surgery should not be treated as
+already safe") vs the Route-Template Composition Hazard register :382-410.
+
+Evidence: EP4CE6 memory — single routes ARE mined and byte-identical; the
+falsified thing is COMPOSITION. A3 route composition is NO-GO (Pitfall #14:
+contending routes don't compose byte-identically); LI-MUX is global-routing-
+dependent (track_d forensic 5a23fb65 = DO_NOT_FLASH, XOR-composition footgun).
+
+Fix: cite this specific silicon falsification as the evidence for the
+Composition Hazard section, and correct the C4 line to say routes are known
+individually, unsafe to COMPOSE — not "not yet mined."
+
+Decisive check: EP4CE6 memory routing_model_scoping_2026_05_28 + track_d memo.
+
+--------------------------------------------------------------------------------
+[R4] Volatile-config hot path + flash-wear register don't match measured state.
+     MODERATE.
+--------------------------------------------------------------------------------
+Where: future_plan.md:353-363, :409 (use JTAG / Passive Serial volatile config
+for high-frequency candidate eval; flash writes rate-limited).
+
+Evidence: EP4CE6 memory — JTAG Phase 2 is FALSIFIED (do not assume JTAG
+volatile is a working hot path). A flash-write BUDGET mechanism already exists
+(flash_budget_state.md, currently 2/3) — the plan should inherit it, not invent
+a fresh "rate-limited" abstraction.
+
+Fix: mark JTAG volatile path as "must be re-validated (JTAG Phase 2 was
+falsified)"; reference the existing flash_budget_state tracker as the wear
+control; confirm which volatile transport (PS) is actually proven before
+calling it the hot path.
+
+Decisive check: EP4CE6 memory xpart_capability_scoping + flash_budget_state.
+
+--------------------------------------------------------------------------------
+Minor
+--------------------------------------------------------------------------------
+- future_plan.md:524 "import or rewrite minimal Cyclone IV tools": Cyclone_CRAM_
+  Mapper has ~96 validated Python modules. Change to "INHERIT the validated
+  tools (sig-cache, CRC repair, safe-byte-ranges, fresh-gold gate); add only the
+  autonomous loop + map/log/replay contract." State the working rule explicitly:
+  new repo, COPY files in, never modify Cyclone_CRAM_Mapper / rot_tpu_handoff.
+- Naming: title uses "zynq-ehw"; local dir is zynq_ehw, GitHub is hyphen. Pin
+  one form in the artifact contracts to avoid path drift.
+- future_plan.md is currently untracked; commit the corrected version.
+
+--------------------------------------------------------------------------------
+Retracted from my first pass
+--------------------------------------------------------------------------------
+- "Cyclone_CRAM_Mapper doesn't exist / is a typo for EP4CE6" — WRONG. Confirmed
+  ~/EP4CE6 origin = github.com/14sea/Cyclone_CRAM_Mapper. The plan's repo name
+  is correct; the local checkout dir is just named EP4CE6.

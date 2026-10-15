@@ -1,0 +1,56 @@
+# EHW-5 line CLOSED after 5.4a — writeup/release polish round (user decision, Claude relays)
+
+Decision: close EHW-5 after EHW-5.4a.
+
+Do not start 5.4b or 5.5 by default. Treat them as optional future demos only.
+(5.4b = engineering convenience, 5.5 = presentation; neither adds evidence to
+the core claim.)
+
+Evidence chain being closed out (all on origin/main = 2dc8505):
+- EHW-5.0/5.1: host oracle + C twin, hybrid structure/weight substrate defined
+- EHW-5.2: combined VRC + train-unit RM board-verified (FCLK0 root-cause saga
+  documented in board_results + hw_notes "PL Clock Truth")
+- EHW-5.3: single-arm full hybrid memetic loop board-verified, first roll
+- EHW-5.4a: same-boot 4-arm ablation board-verified, first roll — structure,
+  HW-SGD adaptation, and pressure each shown to matter, confound-free
+
+## Next work (ChatGPT lane)
+
+1. Sync docs from the 5.4a board-verified state:
+   - README
+   - docs/board_results.md (already carries the 5.4a section — reference, don't rewrite)
+   - docs/ehw5_4_results.md
+   - docs/ehw5_plan.md
+   - docs/next_handoff.md
+   - docs/WRITEUP.md
+   - release notes (v1.1.0-style, covering EHW-4 + EHW-5 additions since v1.0.0)
+
+2. Frame the EHW-5 final claim conservatively:
+   "A fixed-route FPGA design can co-evolve safe local structure and INT8
+   weights, use a board-verified HW-SGD inner loop for adaptation, and show
+   same-boot ablation evidence that structure, adaptation, and pressure each
+   affect the same-set deployment metric."
+
+3. Explicit non-claims (must appear in WRITEUP/release notes):
+   - not raw Xilinx routing-bit evolution
+   - not holdout generalization
+   - not proof that 5.5 ICAP baking is required
+   - not arbitrary large-scale EHW
+
+4. Release procedure notes:
+   - Include the FCLK0=50 MHz preflight (`scripts/board-set-fclk50.py`) as a
+     MANDATORY board-reproduction step in the release notes — with the caveat
+     that historical v1.0.0-era results were produced at the miner-default
+     125 MHz and remain valid (bit-exact vs golden), per hw_notes.
+   - Cite exact board evidence words from docs/board_results.md rather than
+     restating numbers from memory; every silicon claim should point at the
+     recorded carousel words.
+
+5. Flow: commit locally, do NOT self-declare published. Claude reviews
+   (claims vs board_results, non-claims present, no scope creep), then pushes,
+   then creates + pushes the annotated release tag (same procedure as v1.0.0).
+
+## Claude lane once delivered
+- Per-item claim audit vs docs/board_results.md
+- run_host_gates.sh sanity (docs-only round should not touch gates, verified anyway)
+- push + annotated tag v1.1.0 after user OK
