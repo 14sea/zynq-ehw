@@ -503,7 +503,7 @@ wedge; all 8 frames baked cleanly in the background; sibling projects untouched.
   EHW-5 firmware read params from `0xF5000000` instead of a baked table; one
   bitstream, unlimited re-parameterization. (One power-cycle was needed before
   this run — board wedged during a failed first load attempt, cause consistent
-  with a CH340-brownout-missed intercept; recovered by Type-C replug, standard.)
+  with a CH340-dropout-missed intercept (cause unresolved, not a 3.3 V brownout); recovered by Type-C replug, standard.)
 
 ## EHW-5.2 — combined VRC + lite-train-unit RM: board FAIL; static/build lineage SUSPECTED, clean repro pending (2026-07-04)
 

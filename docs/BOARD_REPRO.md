@@ -11,7 +11,7 @@ are reused read-only.
 
 ```sh
 # devices: HS3 (FT232H, JTAG, usbipd busid 4-2) + CH340 (UART, busid 4-3, /dev/ebaz-uart)
-usbipd.exe attach --wsl --busid 4-3 --auto-attach &     # survive reset brownout
+usbipd.exe attach --wsl --busid 4-3 --auto-attach &     # survive the reset-time CH340 dropout
 # build firmware -> NEORV32 IMEM (BEFORE the Vivado build that bakes it!)
 cd sw_src/<build> && make NEORV32_HOME=../../rtl_src/neorv32_tpu/neorv32 \
     RISCV_PREFIX=riscv64-unknown-elf- USER_FLAGS+="-specs=picolibc.specs" APP_SRC=<fw>.c clean install
@@ -32,7 +32,9 @@ python3 /home/test/zynq_ehw/scripts/board-set-fclk50.py --port /dev/ebaz-uart
   placement-dependent wrong answers even when Vivado timing reports are clean.
   Historical note: the v1.0.0-era board milestones were produced before this
   mismatch was diagnosed, at the miner default 125 MHz, and remain valid because
-  their observed board outputs were bit-exact against their host goldens.
+  their observed board outputs were bit-exact against their host goldens. Where the ICAP clock is
+  taken from FCLK0, 125 MHz is also above the ICAPE2 maximum of 100 MHz (DS187 v1.21,
+  F_ICAPCK) — another reason to pin 50 MHz (noted 2026-11-03).
 - The target LUT/tile **moves every build** (P&R shifts with firmware size) → always re-extract frames from the freshly built bitstreams; never reuse an old framebank/seqs.
 - **Never run a multi-frame ICAP bake in the foreground** — a tool timeout kills it mid-`writeseq` and corrupts the ICAP FSM. Always background it.
 - Verify `readreg 12 == 0x13722093` and `PCAP_PR==0` before any PS-HWICAP ICAP write. **But an internal-ICAPE2 build (EHW-2) has NO PS HWICAP — do not poke it, it wedges PL-AXI.**

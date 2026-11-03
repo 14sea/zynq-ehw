@@ -99,7 +99,7 @@ plus a golden cross-check) that must pass before the board run.
   (Electronics 2020): ARM + the open-source IMPRESS tool rewriting LUT constants via ICAP,
   41.7 µs per configuration.
 - *Routing through LUT contents instead of raw PIPs, spare-resource repair* — Hübner et al.
-  (SBCCI 2004), Upegui (AHS 2006), Salvador et al. (2011–13), Garvie & Thompson (2004).
+  (SBCCI 2004), Upegui (AHS 2006), Salvador et al. (ReConFig 2011), Garvie & Thompson (2004).
 - *iCE40 direct-bitstream EHW* — **CoBEA** (Hoffmann et al., GECCO'22) and **Whitley et al.**
   (ISAL'21), which exploit device physics; we deliberately do not.
 

@@ -27,8 +27,10 @@ firmware/host code; the steps below are Claude's to run.
     -c "mww phys 0xF8000008 0xDF0D" -c "mww phys 0xF8000200 1" -c shutdown
   wait   # look for "U-Boot prompt detected"; autoboot break key is 'd', not Ctrl-C
   ```
-- **CH340 brownout on reset:** the reset drops a ~1 s 3.3 V brownout that detaches
-  the CH340 from WSL usbipd. Keep it re-attaching in the background:
+- **CH340 dropout on reset:** a board reset detaches the CH340 from WSL usbipd for
+  ~1 s. *(Corrected 2026-11-03: this was first attributed to a 3.3 V brownout, but the
+  CH340 module is powered from the host USB — only GND/TX/RX go to the board — so that
+  attribution is unsupported; the cause is unresolved.)* Keep it re-attaching in the background:
   `usbipd.exe attach --wsl --busid 4-3 --auto-attach`. Always use the `/dev/ebaz-uart`
   symlink — the underlying `/dev/ttyUSBn` number is unstable across detach/reattach.
 - **Iterating after a load:** after `fpga loadb`/`loadbp` the PS stays in U-Boot.

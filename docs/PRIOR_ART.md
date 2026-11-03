@@ -21,9 +21,9 @@ overturned during that same search, so treat them as provisional.
 |---|---|---|---|---|
 | On-chip processor rewrites a live LUT through ICAP during evolution (EHW-2, EHW-3.4) | Upegui & Sanchez, IPDPS 2006 RAW / AHS 2006 (MicroBlaze soft-core + OPB HWICAP); Cancare et al., ISCAS 2010 / TRETS 2012 (PowerPC 405) | Virtex-II, Virtex-4 | Same mechanism; Upegui even used a soft-core | RISC-V (NEORV32) instead of MicroBlaze/PPC; 7-series |
 | Same, **on Zynq-7000 / 7-series** | Dobai & Sekanina, "ZyEHW" (ICES 2013, AHS 2013, ICES 2014, FPL 2014, TRETS 2015): ARM PS + PCAP, difference-based LUT DPR, 8,700–30,000 candidates/s; García et al., Electronics 2020: ARM + IMPRESS (open source) rewriting LUT constants via ICAP, 41.7 µs per configuration; Norman-Tenazas et al. 2024 (CFGLUT5) | Zynq-7020 | Same chip family, same per-evaluation LUT rewriting | Driver sits in the PL (soft-core + fabric ICAPE2); the PS only stages candidates and hands over ICAP once; prjxray for bit location instead of a vendor-diff or IMPRESS flow |
-| VRC (register-configured virtual circuit) + LUT/ICAP hybrid (EHW-0/1) | Sekanina 2003 (VRC); Dobai & Sekanina AHS 2013 / TRETS 2015 (hybrid VRC + DPR) | Virtex-II, Zynq-7020 | Same hybrid idea | — |
+| VRC (register-configured virtual circuit) + LUT/ICAP hybrid (EHW-0/1) | Sekanina 2003 (VRC concept); Dobai & Sekanina AHS 2013 / TRETS 2015 (hybrid VRC + DPR) | Zynq-7020 (hybrid) | Same hybrid idea | — |
 | LUT used as a routing mux; fixed outer routing, evolved local select (EHW-3 spare-route island) | Hübner, Becker, Becker, SBCCI 2004 (LUT-based network topologies); Upegui AHS 2006 (LUT-as-mux, deliberately no PIP edits); Cancare 2010 (predefined MUXA1–4 LUT configurations) | Virtex-II, Virtex-4 | Same "route through LUT contents, never raw PIPs" safety choice | — |
-| Fault injection then evolutionary repair with spare resources (EHW-3) | Salvador et al., ReConFig 2011 / TC 2013; Garvie & Thompson, IOLTS 2004 (simulation); Lohn, Larchev, DeMara 2003 (mostly simulation) | Virtex-5, simulated | Same experiment shape | Our island is tiny (3-input majority) |
+| Fault injection then evolutionary repair with spare resources (EHW-3) | Salvador et al., ReConFig 2011; Garvie & Thompson, IOLTS 2004 (simulation); Lohn, Larchev, DeMara 2003 (mostly simulation) | Virtex-5, simulated | Same experiment shape | Our island is tiny (3-input majority) |
 | Evolved NN weights baked into LUT constants (EHW-0.5 LUT-KCM) | García et al. 2020 (BbNN weights/biases as LUT constants, rewritten during neuroevolution) | Zynq-7020 | Same idea, larger network | — |
 | Memetic GA × HW-SGD (EHW-4/5) | **Not searched** in the review | — | — | — |
 | PCAP_PR=0 for the ICAP path; no GRESTORE; ICAP readback handshake | AMD UG585 v1.15 (PL configuration paths, "set PCAP_PR = 0" for ICAP); UG470 v1.17 (GRESTORE resets CLB/IOB FFs; ABORT rules) | — | Documented vendor behaviour | We reproduced and recorded it on this board; **not a discovery** |
@@ -65,7 +65,7 @@ overturned during that same search, so treat them as provisional.
 - García, Zamacola, Otero, de la Torre. A dynamically reconfigurable BbNN architecture for scalable neuroevolution in hardware. Electronics 9(5):803, 2020, doi:10.3390/electronics9050803.
 - Norman-Tenazas et al. arXiv:2403.13105, 2024.
 - Hübner, Becker, Becker. Real-time LUT-based network topologies for dynamic and partial FPGA self-reconfiguration. SBCCI 2004, doi:10.1145/1016568.1016583.
-- Salvador et al. Self-reconfigurable evolvable hardware system for adaptive image processing. IEEE Trans. Computers 62(8), 2013.
+- Salvador et al. Fault tolerance analysis and self-healing strategy of autonomous, evolvable hardware systems. ReConFig 2011.
 - Garvie, Thompson. Scrubbing away transients and jiggling around the permanent. IOLTS 2004.
 - Lohn, Larchev, DeMara. Evolutionary fault recovery in a Virtex FPGA using a representation that incorporates routing. IPDPS 2003, doi:10.1109/IPDPS.2003.1213316.
 - Glette, Kaufmann. Lookup table partial reconfiguration for an evolvable hardware classifier system. CEC 2014, doi:10.1109/CEC.2014.6900503.
