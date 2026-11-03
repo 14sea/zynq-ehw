@@ -13,7 +13,11 @@ bitstream of a Xilinx XC6200 — a part whose bitstream was documented. Modern F
 encrypt/obscure their bitstreams and use rich switch-matrix routing, so arbitrary
 bitstream edits risk net contention and device damage; the field largely retreated to
 abstractions (virtual reconfigurable circuits, partial reconfiguration) or to the one
-open-bitstream modern part, the Lattice iCE40.
+open-bitstream modern part, the Lattice iCE40. On-chip self-reconfiguration of real LUTs for
+evolution nevertheless continued on Xilinx parts: Upegui & Sanchez (2006, MicroBlaze +
+HWICAP, Virtex-II), Cancare et al. (2010–12, PowerPC + ICAP, Virtex-4), and on Zynq-7000
+Dobai & Sekanina's ZyEHW (2013–15, ARM PS + PCAP, difference-based LUT DPR plus VRC
+connections, 8,700–30,000 candidates/s) and García et al. (2020, ARM + IMPRESS via ICAP).
 
 This project asks a narrower, safer question on a **7-series Xilinx part** (XC7Z010, on
 a ~$10 recycled EBAZ4205 bitcoin-miner board): *can a fitness-driven search design and
@@ -38,9 +42,11 @@ copied in read-only. The ladder separates *fast search* from *physical instantia
   then on a **true fabric VRC** (`rtl/cgp_vrc.v`, the grid as config-loaded LUTs, EHW-1.1-fabric),
   then **ICAP-rewritten** into a hardwired baked grid (EHW-1.2): a broken 7/16 multiplier
   becomes a perfect 16/16 by editing four LUT-INITs, live.
-- **EHW-2 (authentic per-eval bitstream evolution).** The closest to Thompson: NEORV32 drives
-  the **fabric ICAPE2** (`rtl/xbus_icap.v`) so that *every fitness evaluation* is a real on-chip
-  LUT-INIT edit of a live LUT, scored in place. Small (a single LUT-INIT toward a target).
+- **EHW-2 (per-eval bitstream evolution).** NEORV32 drives the **fabric ICAPE2**
+  (`rtl/xbus_icap.v`) so that *every fitness evaluation* is a real on-chip LUT-INIT edit of a
+  live LUT, scored in place. Small (a single LUT-INIT toward a target), and the candidate
+  frames are pre-staged by the PS rather than synthesized on chip. The same mechanism was
+  published by Upegui & Sanchez (2006) and, on Zynq-7000, by ZyEHW (2013–15).
 - **EHW-3 (spare-routing island).** A fixed-route island adds safe local path-select LUTs plus
   a spare node. The genome evolves both logic truth tables and local mux-select fields, without
   mutating global routing bits. It first demonstrates fault recovery in host/RTL fabric VRC form
@@ -82,17 +88,29 @@ plus a golden cross-check) that must pass before the board run.
 
 ## 4. Relation to prior art
 
-Two recent works revived intrinsic direct-bitstream EHW on a *modern* part (Lattice iCE40,
-open IceStorm): **CoBEA** (Hoffmann et al., GECCO'22 — a framework, 130× faster reconfig;
-it explicitly names "Xilinx 7-series + DPR" as future work) and **Whitley et al.** (ISAL'21 —
-intrinsic *analog* evolution exploiting device physics; evolved circuits die on sibling chips).
+**The mechanisms in this project were all published before** (full table:
+`docs/PRIOR_ART.md`):
 
-This project differs deliberately: (a) it runs on the **7-series part they named but did not
-target**, using prjxray as the open bit-location layer; (b) it is **self-reconfiguring** —
-on-chip ICAP under a running soft-core, not a host+MCU rig; (c) it trades Thompson-style
-physics-exploitation for **LUT-INIT/VRC safety + determinism + an ML application**. We do
-*not* claim to exploit analog/physical effects, nor cross-device transfer; our edits are
-pure truth-table changes and our results are deterministic and reproducible.
+- *On-chip processor rewriting live LUTs through ICAP during evolution* — Upegui & Sanchez
+  (IPDPS 2006, AHS 2006; MicroBlaze soft-core, Virtex-II) and Cancare et al. (ISCAS 2010,
+  TRETS 2012; PowerPC 405, Virtex-4; 26-bit parity took 79.2 h on average).
+- *The same on Zynq-7000* — Dobai & Sekanina, ZyEHW (ICES 2013 → TRETS 2015): ARM PS + PCAP,
+  hybrid VRC + LUT DPR, 8,700–30,000 candidates/s, 30-run statistics; García et al.
+  (Electronics 2020): ARM + the open-source IMPRESS tool rewriting LUT constants via ICAP,
+  41.7 µs per configuration.
+- *Routing through LUT contents instead of raw PIPs, spare-resource repair* — Hübner et al.
+  (SBCCI 2004), Upegui (AHS 2006), Salvador et al. (2011–13), Garvie & Thompson (2004).
+- *iCE40 direct-bitstream EHW* — **CoBEA** (Hoffmann et al., GECCO'22) and **Whitley et al.**
+  (ISAL'21), which exploit device physics; we deliberately do not.
+
+What this repo adds is engineering and evidence practice, not mechanism: (a) the driver is
+**PL-resident** (NEORV32 + fabric ICAPE2; the PS only stages candidates and hands over ICAP once) where ZyEHW/García use the PS;
+(b) bit locations come from **prjxray**; (c) every board artifact passes a **host oracle ↔ C
+twin ↔ board bit-exact** gate. Prior work is **ahead** of us on on-chip frame synthesis from
+the genome, read-modify-write of a single LUT, measured reconfiguration time, multi-run
+statistics and task size. We do *not* claim to exploit analog/physical effects, nor
+cross-device transfer; our edits are pure truth-table changes and our results are
+deterministic and reproducible.
 
 ## 5. Limitations (honest)
 

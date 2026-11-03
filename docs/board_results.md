@@ -231,7 +231,8 @@ reset. The CGP analogue of EHW-0.5.
 ## EHW-2: per-eval on-chip ICAPE2 LUT-INIT evolution — PASS (HW-VERIFIED 2026-06-30)
 
 **The hardest path: NEORV32 drives the fabric `xbus_icap` (ICAPE2) to rewrite a live
-LUT-INIT every fitness eval — authentic Thompson live-bitstream evolution.** Final
+LUT-INIT every fitness eval — per-eval live-bitstream evolution (candidates pre-staged by
+the PS; mechanism precedents in `docs/PRIOR_ART.md`).** Final
 result: the mechanism and the LUT-edit fidelity both pass on silicon.
 
 - Built PS7 + `neorv32_soc_icap` (`build_ehw2_icap.tcl`); 4 same-route INIT bitstreams
@@ -274,8 +275,8 @@ spans `0x00000c22`+`0x00000c23` in the rebuild — it moves every build, so re-e
 each a proper target+pad frame). Rebuilt (8KB framebuf RTL + new descriptor firmware),
 re-staged the multi-FAR framebank, ran the per-eval ICAP loop → steady **`0xeb0308e8`**
 (candidate 3 = e8, fitness 8/8, observed mask `0xe8` = target) — exactly the PASS condition,
-12× stable, no wedge, `lut_o` live. **This is authentic Thompson per-eval on-chip ICAPE2
-evolution on real silicon: NEORV32 rewrote a live LUT-INIT through the fabric `xbus_icap`
+12× stable, no wedge, `lut_o` live. **This is per-eval on-chip ICAPE2 evolution on real silicon (the same mechanism as
+Upegui & Sanchez 2006 and ZyEHW 2013–15; see `docs/PRIOR_ART.md`): NEORV32 rewrote a live LUT-INIT through the fabric `xbus_icap`
 every fitness evaluation and converged to the target.** Root cause: 7-series FDRI writes the
 last frame of a burst as a non-committed pad, so a single FAR-d22 envelope set d22 but left
 d23 uncommitted (truncated phenotype) — one envelope per spanned FAR fixes it.
@@ -369,10 +370,10 @@ mask=e8` → best candidate = index 3 (**repair**), **fitness 8/8, mask 0xe8**. 
 one-shot converge word `0xEA0308E8` flashed by before polling; the steady loop republishes
 `0xEC0308E8` with the same result.)
 
-**Result: authentic per-eval on-chip ICAPE2 evolution over the EHW-3 spare-routing
+**Result: per-eval on-chip ICAPE2 evolution over the EHW-3 spare-routing
 substrate, on real silicon — the NEORV32 rewrote the live baked island through the fabric
 `xbus_icap` for each candidate evaluation and converged to the repair genome (8/8, mask
-0xe8). This is the Thompson-style live-bitstream analogue of EHW-2, now on the spare-route
+0xe8). This is the live-bitstream analogue of EHW-2, now on the spare-route
 island. The whole EHW-3.0→3.4 ladder is board-verified.** No DEVCFG wedge; sibling
 projects untouched.
 

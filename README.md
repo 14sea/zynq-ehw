@@ -65,13 +65,16 @@ Apache-2.0 (see `LICENSE` / `NOTICE`). NEORV32 (BSD-3) is fetched, not vendored;
   never reset). mailbox `0xe3000007→0xe3000010` (rows 7→16). The CGP analogue of
   EHW-0.5 (`docs/board_results.md`). Also fixed a real `m75-build-frameseqs.py`
   anchoring bug (duplicate frame start for identical-diff frames).
-- **EHW-2 stretch HW-VERIFIED on EBAZ4205** — authentic Thompson **per-eval on-chip
-  ICAPE2** evolution: `sw/ehw/ehw2_icap_micro.c` runs on NEORV32 and, every fitness
+- **EHW-2 stretch HW-VERIFIED on EBAZ4205** — **per-eval on-chip ICAPE2** evolution
+  (each evaluation rewrites a live LUT; the candidates are pre-staged by the PS, not
+  synthesized on chip; the mechanism itself has precedents back to Upegui & Sanchez 2006
+  and, on Zynq-7000, ZyEHW 2013–15 — see `docs/PRIOR_ART.md`): `sw/ehw/ehw2_icap_micro.c` runs on NEORV32 and, every fitness
   evaluation, streams a candidate LUT-INIT frame sequence through `rtl/xbus_icap.v`
   (fabric ICAPE2) to **rewrite a live LUT in the running bitstream**, then scores the
   edited LUT. Converged to the target (mailbox `0xeb0308e8` = candidate e8, fitness
-  8/8, mask `0xe8`). Key fix: the LUT INIT spans two config FARs, so each candidate
-  needs **two** frame envelopes (the multi-FAR 8KB framebank) — a single envelope left
+  8/8, mask `0xe8`). Key fix: the INIT bits edited here span two minor frames (FARs)
+  for this LUT site (a full LUT6 INIT spans four), so each candidate needs **two**
+  frame envelopes (the multi-FAR 8KB framebank) — a single envelope left
   the 2nd frame as a non-committed pad (`docs/board_results.md`).
 - **EHW-3.0 host oracle done** — `sim/oracle_spare_routing.py` starts the optional
   spare-routing-island line: fixed outer routing, evolved LUT INITs plus local
@@ -243,6 +246,8 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
 - `docs/RELEASE_NOTES_v1.2.0.md` — release summary for the board-verified
   EHW-5.4b parameter window and EHW-5.5 ICAP reveal polish.
 - `docs/BOARD_REPRO.md` — ordered per-milestone board reproduction checklist.
+- `docs/PRIOR_ART.md` — mechanism-by-mechanism comparison with published work (2026-11
+  review): what was already done, where prior work is ahead of this repo, known issues.
 - `tests/run_host_gates.sh` — one-command host gate runner (no board/Vivado).
 - `docs/ehw0_4_results.md` — evolution-vs-gradient-training table for EHW-0.
 - `docs/ehw1_0_results.md` — host-only CGP 2-bit multiplier result.
@@ -404,11 +409,16 @@ Every board-bound deliverable ships with a host self-proof; this is the gate tha
   Whitley et al., ISAL '21). **gitignored** (copyrighted PDFs), like zynq-xpart's
   `references/`.
 
-## Positioning vs prior art (one line)
+## Positioning vs prior art
 
-CoBEA and Whitley do intrinsic **bitstream** EHW on **Lattice iCE40** (open
-IceStorm), embracing unconstrained edits to exploit device physics (Thompson
-lineage). We move that to the **7-series** part they named as future work, make it
-**self-reconfiguring** (on-chip ICAP under a running soft-core), and trade
-physics-exploitation for **LUT-INIT/VRC safety + determinism + an ML application**
-(evolution vs gradient training). See `docs/ehw_design.md`.
+The mechanisms here are not new: on-chip processors rewriting live LUTs through
+ICAP for evolution date back to Upegui & Sanchez (2006, MicroBlaze, Virtex-II) and
+Cancare et al. (2010–12, Virtex-4), and were done on Zynq-7000 by Dobai & Sekanina
+(ZyEHW, 2013–15, ARM PS + PCAP) and García et al. (2020, ARM + IMPRESS via ICAP).
+CoBEA and Whitley do intrinsic **bitstream** EHW on **Lattice iCE40** and exploit
+device physics; we instead stay with **LUT-INIT/VRC safety + determinism + an ML
+application**. What this repo adds is a PL-resident driver (NEORV32 + fabric ICAPE2;
+the PS only stages candidates and hands over ICAP once), an open prjxray bit-location layer, and host-oracle ↔ C-twin ↔
+board bit-exact gates. Prior work is ahead of us on on-chip frame synthesis,
+read-modify-write, measured throughput and multi-run statistics. See
+`docs/PRIOR_ART.md` (full comparison) and `docs/ehw_design.md` §11.

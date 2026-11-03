@@ -259,6 +259,11 @@ any board work — same opening move that made every M7 milestone land.
 
 ## 11. Related work & positioning (vs CoBEA and Whitley et al.)
 
+> **2026-11-03:** this section compares against two iCE40 papers only. The broader
+> prior art (Upegui 2006, Cancare 2010–12, ZyEHW 2013–15, García 2020 — all on-chip
+> LUT rewriting for evolution, the last two on Zynq-7000) is in `docs/PRIOR_ART.md`;
+> claims below that were only true against CoBEA/Whitley have been corrected.
+
 Two recent works revived direct-bitstream intrinsic EHW on a *modern* part (Lattice
 iCE40, open IceStorm toolchain). Both PDFs are in `ref/`. This section pins down how
 our design relates to them — and, by contrast, justifies our three core decisions.
@@ -286,13 +291,13 @@ our design relates to them — and, by contrast, justifies our three core decisi
 
 | Axis | Whitley (ISAL'21) | CoBEA (GECCO'22) | **This project** |
 |---|---|---|---|
-| FPGA part | Lattice iCE40 HX1K | iCE40 HX1K/HX8K | **Xilinx 7-series XC7Z010** (prjxray) — CoBEA's named future work |
+| FPGA part | Lattice iCE40 HX1K | iCE40 HX1K/HX8K | **Xilinx 7-series XC7Z010** (prjxray) — CoBEA's named future work, but Zynq-7000 DPR-EHW already existed (ZyEHW 2013–15; García 2020) |
 | Reconfig mechanism | host→flash/SRAM, whole chip | integrated direct reconfig + compaction, whole chip (no DPR on iCE40) | **(a) VRC: register-loaded, no bitstream write/eval; (b) on-chip ICAP/DPR self-reconfig** under a running soft-core |
 | Cost / eval | ~3.5 s | ~86 ms | **VRC ~µs–ms; ICAP paid once (champion only)** |
 | Genome / what's mutated | constrained **routing** + Boolean op | raw bitstream (philosophically unconstrained) | **LUT-INIT / register config only — routing never evolved** |
 | Intrinsic? | yes, **exploits analog physics** | yes | yes (real silicon) but **digital, clocked, physics-exploitation scoped out** |
 | Controller arch. | host CPU + external MCU + passive FPGA | host-driven | **GA/eval on-chip** (NEORV32 + PS + mailbox): chip = controller + substrate + measurement |
-| Cross-chip transfer | **no** (2/3 dead) — the physics proof | n/a | **yes / deterministic**, bit-exact to a host oracle |
+| Cross-chip transfer | **no** (2/3 dead) — the physics proof | n/a | **not measured in this repo** — bit-exact to a host oracle on one board; cross-die reproduction was done later in zynq-autoehw (Set B on 4203 `17A6`) |
 | Safety / attestation | none | future work | **already have** measured-boot (M5) + ICAP-readback attest |
 | Application | analog oscillators/discriminators | framework + reconfig speed + security | **ML: evolve NN weights, evolution-vs-gradient-training**; + CGP logic circuit |
 
@@ -306,12 +311,18 @@ our design relates to them — and, by contrast, justifies our three core decisi
    documented and less catastrophic to poke; 7-series is not. We trade Thompson-style
    "reach outside the abstraction" for **structural safety + determinism**. This is a
    genuine values fork, stated openly — not a claim of superiority.
-2. **On mechanism we are strictly ahead of both — and it is exactly CoBEA's wish
-   list.** CoBEA's future work is "7-series + DPR, reconfigure only part of the chip";
-   that is our *starting point*, already HW-verified (M7.3+/M7.5). Both papers use a
-   three-box rig (host GA + external MCU + passive FPGA); we **self-reconfigure**
-   (on-chip ICAP under a live NEORV32, fitness via on-chip mailbox). In the strong
-   sense of "intrinsic," our loop is more self-contained.
+2. **Relative to these two papers only, our loop is more self-contained — but that is
+   not a gap in the literature.** CoBEA's future work is "7-series + DPR, reconfigure
+   only part of the chip"; that is our *starting point* (M7.3+/M7.5), and both papers
+   use a three-box rig (host GA + external MCU + passive FPGA). However, on-chip
+   self-reconfiguration for evolution was published long before, including on
+   Zynq-7000: Upegui & Sanchez 2006 (MicroBlaze + HWICAP), Cancare et al. 2010–12
+   (PowerPC + ICAP), Dobai & Sekanina's ZyEHW 2013–15 (ARM PS + PCAP, hybrid VRC +
+   LUT DPR) and García et al. 2020 (ARM + IMPRESS via ICAP). Our difference is only
+   that the driver is a PL-resident soft-core with fabric ICAPE2 and the bit layer is
+   prjxray. **[2026-11-03 correction: this item originally read "on mechanism we are
+   strictly ahead of both", which was true only against CoBEA/Whitley. See
+   `docs/PRIOR_ART.md`.]**
 3. **The M7.2 gremlin is the very thing Whitley prizes — we just invert the stance.**
    Whitley's headline is circuits "entwined with physics" that die on a different
    die. Our **M7.2 build-dependent in-context-routing** (placement changes → STA-clean
@@ -339,11 +350,14 @@ that gap.
 
 ### One-line positioning
 
-We are not reproducing these papers: we move direct-bitstream/intrinsic EHW onto the
-**7-series part they named but did not target**, make it **self-reconfiguring**, and
-swap **physics-exploitation for LUT-INIT/VRC safety + an ML application** (evolution
-vs gradient training). Our EHW-2 stretch (on-chip ICAPE2 per-eval LUT-INIT edits) is
-the closest point of contact — still LUT-INIT-only and self-hosted, on harder silicon.
+We are not reproducing these papers: we run LUT-INIT/VRC-safe intrinsic EHW on the
+**7-series part they named but did not target**, with the self-reconfiguration driver
+moved into a **fabric soft-core** (ZyEHW and García et al. already self-reconfigure
+Zynq-7000 from the PS), and swap **physics-exploitation for LUT-INIT/VRC safety + an
+ML application** (evolution vs gradient training). Our EHW-2 stretch (on-chip ICAPE2
+per-eval LUT-INIT edits) is the closest point of contact with CoBEA/Whitley — and the
+same mechanism as Upegui 2006 / ZyEHW. **[2026-11-03: rewritten after the prior-art
+review; see `docs/PRIOR_ART.md`.]**
 
 ## 12. Lessons adopted from prior art (actionable)
 
