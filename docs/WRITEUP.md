@@ -107,7 +107,8 @@ What this repo adds is engineering and evidence practice, not mechanism: (a) the
 **PL-resident** (NEORV32 + fabric ICAPE2; the PS only stages candidates and hands over ICAP once) where ZyEHW/García use the PS;
 (b) bit locations come from **prjxray**; (c) every board artifact passes a **host oracle ↔ C
 twin ↔ board bit-exact** gate. Prior work is **ahead** of us on on-chip frame synthesis from
-the genome, read-modify-write of a single LUT, measured reconfiguration time, multi-run
+the genome, read-modify-write of a single LUT, reconfiguration speed (measured later at ≈ 290 µs per
+two-envelope evaluation, see `docs/PRIOR_ART.md`), multi-run
 statistics and task size. We do *not* claim to exploit analog/physical effects, nor
 cross-device transfer; our edits are pure truth-table changes and our results are
 deterministic and reproducible.

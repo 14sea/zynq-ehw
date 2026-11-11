@@ -37,8 +37,12 @@ overturned during that same search, so treat them as provisional.
 - **Read-modify-write of a single LUT.** Hübner 2006, Glette 2014 and VR-ZyCAP 2021 keep
   the rest of the frame; we overwrite whole frames from a build-time snapshot.
 - **Measured reconfiguration time / throughput.** Every precedent reports it
-  (Cancare 0.121 ms per individual; ZyEHW 8.7k–30k evals/s; García 41.7 µs). We never
-  measured ours.
+  (Cancare 0.121 ms per individual; ZyEHW 8.7k–30k evals/s; García 41.7 µs). This repo
+  never measured its own. *(2026-11-11: measured afterwards on the EBAZ4205 in the local
+  follow-up clone `zynq_ehw_parity` with an mcycle-instrumented EHW-2 firmware — one
+  233-word envelope ≈ 114 µs (≈ 24 cycles per word: the NEORV32 copying framebuf →
+  `xbus_icap` word by word), a two-envelope evaluation ≈ 290 µs ≈ 3,400 evaluations/s;
+  still behind ZyEHW and García.)*
 - **Statistics over many runs.** ZyEHW reports 30 runs with quartiles; this repo reports
   single runs.
 - **Task size.** Precedents evolve image filters, 26-bit parity, 7-bit multipliers; ours
